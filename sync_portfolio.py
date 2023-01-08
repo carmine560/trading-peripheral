@@ -49,7 +49,16 @@ def convert_to_yahoo_finance(portfolio, quotes, list_index=0):
 
     dictionary['list'][list_index]['secList'].reverse()
     for item in dictionary['list'][list_index]['secList']:
-        writer.writerow([item['secCd'] + '.T'] + row)
+        if item['secKbn'] == 'ST':
+            if item['marketCd'] == 'TKY':
+                writer.writerow([item['secCd'] + '.T'] + row)
+            elif item['marketCd'] == 'SPR':
+                writer.writerow([item['secCd'] + '.S'] + row)
+            elif item['marketCd'] == 'NGY':
+                # FIXME
+                writer.writerow([item['secCd'] + '.N'] + row)
+            elif item['marketCd'] == 'FKO':
+                writer.writerow([item['secCd'] + '.F'] + row)
 
     csvfile.close()
 
