@@ -28,7 +28,7 @@ def interact_with_browser(driver):
 def click_element(driver, xpath):
     driver.find_element(By.XPATH, xpath).click()
 
-def convert_to_yahoo_finance(portfolio, quotes):
+def convert_to_yahoo_finance(portfolio, quotes, list_index=0):
     import csv
     import json
 
@@ -46,8 +46,9 @@ def convert_to_yahoo_finance(portfolio, quotes):
     row = []
     for i in range(len(header) - 1):
         row.append('')
-        # FIXME
-    for item in dictionary['list'][0]['secList']:
+
+    dictionary['list'][list_index]['secList'].reverse()
+    for item in dictionary['list'][list_index]['secList']:
         writer.writerow([item['secCd'] + '.T'] + row)
 
     csvfile.close()
