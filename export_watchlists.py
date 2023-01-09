@@ -1,3 +1,5 @@
+import sys
+
 from selenium.webdriver.common.by import By
 
 # FIXME
@@ -28,33 +30,32 @@ def interact_with_browser(driver):
 def click_element(driver, xpath):
     driver.find_element(By.XPATH, xpath).click()
 
-def convert_to_yahoo_finance(portfolio, output_directory):
+def convert_to_yahoo_finance(portfolio, output_root):
     import csv
     import json
-    import sys
 
     with open(portfolio) as f:
         dictionary = json.load(f)
 
-    if not os.path.isdir(output_directory):
+    if not os.path.isdir(output_root):
         try:
-            os.makedirs(output_directory)
+            os.makedirs(output_root)
         except OSError as e:
             print(e)
             sys.exit(1)
 
-    header = ['Symbol', 'Current Price', 'Date', 'Time', 'Change', 'Open',
+    HEADER = ['Symbol', 'Current Price', 'Date', 'Time', 'Change', 'Open',
               'High', 'Low', 'Volume', 'Trade Date', 'Purchase Price',
               'Quantity', 'Commission', 'High Limit', 'Low Limit', 'Comment']
     row = []
-    for i in range(len(header) - 1):
+    for i in range(len(HEADER) - 1):
         row.append('')
 
     for list_index in range(len(dictionary['list'])):
         list_name = dictionary['list'][list_index]['listName']
-        csvfile = open(os.path.join(output_directory, list_name + '.csv'), 'w')
+        csvfile = open(os.path.join(output_root, list_name + '.csv'), 'w')
         writer = csv.writer(csvfile)
-        writer.writerow(header)
+        writer.writerow(HEADER)
         dictionary['list'][list_index]['secList'].reverse()
         for item in dictionary['list'][list_index]['secList']:
             if item['secKbn'] == 'ST':
@@ -87,14 +88,18 @@ if __name__ == '__main__':
     portfolio = ''
     if identifier:
         portfolio = os.path.join(HYPERSBI2_ROOT, identifier, 'portfolio.json')
+    else:
+        print('unspecified identifier')
+        sys.exit(1)
 
-    # BACKUP_ROOT = os.path.join(os.path.expanduser('~'),
-    #                            r'Dropbox\Documents\Trading\Backups')
-    # file_utilities.backup_file(portfolio, BACKUP_ROOT)
+    file_utilities.backup_file(portfolio,
+                               os.path.join(
+                                   os.path.expanduser('~'),
+                                   r'Dropbox\Documents\Trading\Backups'))
 
-    # driver = account.login(account.configure('SBI Securities'))
-    # interact_with_browser(driver)
-    # driver.quit()
+    driver = account.login(account.configure('SBI Securities'))
+    interact_with_browser(driver)
+    driver.quit()
 
-    output_directory = os.path.join(os.path.expanduser('~'), 'Downloads')
-    convert_to_yahoo_finance(portfolio, output_directory)
+    convert_to_yahoo_finance(portfolio, os.path.join(os.path.expanduser('~'),
+                                                     'Downloads'))
