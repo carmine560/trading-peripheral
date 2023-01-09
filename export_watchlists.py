@@ -15,6 +15,7 @@ def main():
 
     HYPERSBI2_ROOT = os.path.expandvars(r'$APPDATA\SBI Securities\HYPERSBI2')
     identifier = ''
+    # FIXME
     for f in os.listdir(HYPERSBI2_ROOT):
         if re.match('^[0-9a-z]{32}$', f):
             identifier = f
@@ -42,7 +43,7 @@ def configure():
 
     config = configparser.ConfigParser()
     config['SBI Securities'] = \
-        {'replace_website_with_hypersbi2':
+        {'replace_sbi_securities_with_hypersbi2':
          [('click_element',
            '//*[@id="link02M"]/ul/li[1]/a'),
           # https://site2.sbisec.co.jp/ETGate/?_ControlID=WPLETpfR001Control&_PageID=DefaultPID&_DataStoreID=DSWPLETpfR001Control&_ActionID=DefaultAID&getFlg=on
@@ -69,13 +70,15 @@ def configure():
           # https://site0.sbisec.co.jp/marble/portfolio/pfcopy/selectcheck.do
           ('click_element',
            '//input[@value="指示実行"]')]}
-    config['Yahoo Finance'] = {}
+    config['Yahoo Finance'] = \
+        {'export_hypersbi2_to_yahoo_finance':
+         []}
     config.path = os.path.splitext(__file__)[0] + '.ini'
     config.read(config.path, encoding='utf-8')
     return config
 
 def interact_with_browser(config, driver):
-    commands = eval(config['SBI Securities']['replace_website_with_hypersbi2'])
+    commands = eval(config['SBI Securities']['replace_sbi_securities_with_hypersbi2'])
     for i in range(len(commands)):
         command = commands[i][0]
         arguments = commands[i][1]
