@@ -28,40 +28,48 @@ def interact_with_browser(driver):
 def click_element(driver, xpath):
     driver.find_element(By.XPATH, xpath).click()
 
-def convert_to_yahoo_finance(portfolio, quotes, list_index=0):
+def convert_to_yahoo_finance(portfolio, output_directory):
     import csv
     import json
+    import sys
 
     with open(portfolio) as f:
         dictionary = json.load(f)
 
-    csvfile = open(quotes, 'w')
-    writer = csv.writer(csvfile)
+    if not os.path.isdir(output_directory):
+        try:
+            os.makedirs(output_directory)
+        except OSError as e:
+            print(e)
+            sys.exit(1)
 
     header = ['Symbol', 'Current Price', 'Date', 'Time', 'Change', 'Open',
               'High', 'Low', 'Volume', 'Trade Date', 'Purchase Price',
               'Quantity', 'Commission', 'High Limit', 'Low Limit', 'Comment']
-    writer.writerow(header)
-
     row = []
     for i in range(len(header) - 1):
         row.append('')
 
-    dictionary['list'][list_index]['secList'].reverse()
-    for item in dictionary['list'][list_index]['secList']:
-        if item['secKbn'] == 'ST':
-            if item['marketCd'] == 'TKY':
-                writer.writerow([item['secCd'] + '.T'] + row)
-            elif item['marketCd'] == 'SPR':
-                writer.writerow([item['secCd'] + '.S'] + row)
-            elif item['marketCd'] == 'NGY':
-                # Yahoo Finance does not seem to have any stocks
-                # listed solely on the Nagoya Stock Exchange.
-                writer.writerow([item['secCd'] + '.N'] + row)
-            elif item['marketCd'] == 'FKO':
-                writer.writerow([item['secCd'] + '.F'] + row)
+    for list_index in range(len(dictionary['list'])):
+        list_name = dictionary['list'][list_index]['listName']
+        csvfile = open(os.path.join(output_directory, list_name + '.csv'), 'w')
+        writer = csv.writer(csvfile)
+        writer.writerow(header)
+        dictionary['list'][list_index]['secList'].reverse()
+        for item in dictionary['list'][list_index]['secList']:
+            if item['secKbn'] == 'ST':
+                if item['marketCd'] == 'TKY':
+                    writer.writerow([item['secCd'] + '.T'] + row)
+                elif item['marketCd'] == 'SPR':
+                    writer.writerow([item['secCd'] + '.S'] + row)
+                elif item['marketCd'] == 'NGY':
+                    # Yahoo Finance does not seem to have any stocks
+                    # listed solely on the Nagoya Stock Exchange.
+                    writer.writerow([item['secCd'] + '.N'] + row)
+                elif item['marketCd'] == 'FKO':
+                    writer.writerow([item['secCd'] + '.F'] + row)
 
-    csvfile.close()
+        csvfile.close()
 
 if __name__ == '__main__':
     import os
@@ -80,13 +88,13 @@ if __name__ == '__main__':
     if identifier:
         portfolio = os.path.join(HYPERSBI2_ROOT, identifier, 'portfolio.json')
 
-    BACKUP_ROOT = os.path.join(os.path.expanduser('~'),
-                               r'Dropbox\Documents\Trading\Backups')
-    file_utilities.backup_file(portfolio, BACKUP_ROOT)
+    # BACKUP_ROOT = os.path.join(os.path.expanduser('~'),
+    #                            r'Dropbox\Documents\Trading\Backups')
+    # file_utilities.backup_file(portfolio, BACKUP_ROOT)
 
-    driver = account.login(account.configure('SBI Securities'))
-    interact_with_browser(driver)
-    driver.quit()
+    # driver = account.login(account.configure('SBI Securities'))
+    # interact_with_browser(driver)
+    # driver.quit()
 
-    quotes = os.path.join(os.path.expanduser('~'), 'Downloads', 'quotes.csv')
-    convert_to_yahoo_finance(portfolio, quotes)
+    output_directory = os.path.join(os.path.expanduser('~'), 'Downloads')
+    convert_to_yahoo_finance(portfolio, output_directory)
