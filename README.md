@@ -5,6 +5,13 @@
 
 ## Prerequisites ##
 
+``` batchfile
+pip install selenium
+pip install xdg
+pip install python-gnupg
+pip install webdriver-manager
+```
+
 ## Usage ##
 
 ### Backup Hyper SBI 2 Watchlists ###
