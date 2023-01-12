@@ -3,6 +3,8 @@
 > **Warning** This script is currently under heavy development.
 > Changes in functionality can occur at any time.
 
+## Prerequisites ##
+
 ## Usage ##
 
 ### Backup Hyper SBI 2 Watchlists ###
