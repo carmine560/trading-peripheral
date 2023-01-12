@@ -3,11 +3,13 @@
 > **Warning** This script is currently under heavy development.
 > Changes in functionality can occur at any time.
 
-## Backup Hyper SBI 2 Watchlists ##
+## Usage ##
 
-## Export Hyper SBI 2 Watchlists to SBI Securities ##
+### Backup Hyper SBI 2 Watchlists ###
 
-## Export Hyper SBI 2 Watchlists to Yahoo Finance ##
+### Export Hyper SBI 2 Watchlists to SBI Securities ###
+
+### Export Hyper SBI 2 Watchlists to Yahoo Finance ###
 
 ## Known Issue ##
 
