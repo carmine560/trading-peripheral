@@ -44,15 +44,15 @@ def configure(service):
 def login(config):
     from selenium import webdriver
     from selenium.webdriver.common.by import By
-    from selenium.webdriver.firefox.options import Options
-    from selenium.webdriver.firefox.service import Service
-    from webdriver_manager.firefox import GeckoDriverManager
+    from selenium.webdriver.edge.options import Options
+    from selenium.webdriver.edge.service import Service
+    from webdriver_manager.microsoft import EdgeChromiumDriverManager
 
-    service = Service(executable_path=GeckoDriverManager().install(),
+    service = Service(executable_path=EdgeChromiumDriverManager().install(),
                       log_path=os.path.devnull)
     options = Options()
     options.headless = True
-    driver = webdriver.Firefox(service=service, options=options)
+    driver = webdriver.Edge(service=service, options=options)
     driver.get(config['Common']['url'])
     user_id_input = driver.find_element(By.XPATH,
                                         config['Common']['user_id_xpath'])
