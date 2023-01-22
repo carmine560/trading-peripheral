@@ -13,7 +13,7 @@ def main():
     # with open(config.path, 'w', encoding='utf-8') as f:
     #     config.write(f)
 
-    HYPERSBI2_ROOT = os.path.expandvars(r'$APPDATA\SBI Securities\HYPERSBI2')
+    HYPERSBI2_ROOT = os.path.expandvars(r'%APPDATA%\SBI Securities\HYPERSBI2')
     identifier = ''
     # FIXME
     for f in os.listdir(HYPERSBI2_ROOT):
