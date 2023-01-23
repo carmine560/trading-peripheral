@@ -31,7 +31,7 @@ def main():
                                    os.path.expanduser('~'),
                                    r'Dropbox\Documents\Trading\Backups'))
 
-    driver = account.login(account.configure('SBI Securities'))
+    driver = account.login(account.configure('sbi_securities'))
     interact_with_browser(config, driver)
     driver.quit()
 

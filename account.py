@@ -3,7 +3,6 @@ import os
 def configure(service):
     import configparser
 
-    from xdg import xdg_config_home
     import gnupg
 
     config = configparser.ConfigParser()
@@ -13,8 +12,9 @@ def configure(service):
                         'login_xpath': 'LOGIN_XPATH'}
     config['Account'] = {'user_id': 'USER_ID',
                          'user_password': 'USER_PASSWORD'}
-    xdg_config_home = xdg_config_home()
-    config.path = os.path.join(xdg_config_home, service + '.ini.gpg')
+    config_home = os.path.join(os.path.expandvars('%LOCALAPPDATA%'),
+                               os.path.splitext(os.path.basename(__file__))[0])
+    config.path = os.path.join(config_home, service + '.ini.gpg')
     gpg = gnupg.GPG()
     if os.path.exists(config.path):
         with open(config.path, 'rb') as f:
@@ -26,9 +26,9 @@ def configure(service):
         import io
         import sys
 
-        if not os.path.isdir(xdg_config_home):
+        if not os.path.isdir(config_home):
             try:
-                os.makedirs(xdg_config_home)
+                os.makedirs(config_home)
             except OSError as e:
                 print(e)
                 sys.exit(1)
