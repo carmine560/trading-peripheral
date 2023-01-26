@@ -1,4 +1,4 @@
-# export-watchlists #
+# watchlists #
 
 > **Warning** This script is currently under heavy development.
 > Changes in functionality can occur at any time.
