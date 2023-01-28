@@ -17,6 +17,7 @@ def main():
         os.path.splitext(os.path.basename(__file__))[0] + '.ini')
     config = configure(config_file)
     # TODO
+    file_utilities.backup_file(config_file, number_of_backups=8)
     with open(config_file, 'w', encoding='utf-8') as f:
         config.write(f)
 
@@ -32,11 +33,8 @@ def main():
         print('unspecified identifier')
         sys.exit(1)
 
-    # TODO
-    # file_utilities.backup_file(portfolio,
-    #                            os.path.join(
-    #                                os.path.expanduser('~'),
-    #                                r'Dropbox\Documents\Trading\Backups'))
+    file_utilities.backup_file(
+        portfolio, backup_root=config['Common']['portfolio_backup_root'])
 
     from selenium import webdriver
     from selenium.webdriver.common.by import By
@@ -48,9 +46,10 @@ def main():
                       log_path=os.path.devnull)
     options = Options()
     options.add_argument('--headless=new')
-    options.add_argument('--user-data-dir=' + os.path.expandvars(
-        r'%LOCALAPPDATA%\Google\Chrome\User Data'))
-    options.add_argument('--profile-directory=Default')
+    options.add_argument('--user-data-dir='
+                         + config['Common']['user_data_dir'])
+    options.add_argument('--profile-directory='
+                         + config['Common']['profile_directory'])
     driver = webdriver.Chrome(service=service, options=options)
     # TODO
     driver.implicitly_wait(1)
@@ -71,6 +70,13 @@ def main():
 
 def configure(config_file):
     config = configparser.ConfigParser()
+    config['Common'] = \
+        {'portfolio_backup_root':
+         '',
+         'user_data_dir':
+         os.path.expandvars(r'%LOCALAPPDATA%\Google\Chrome\User Data'),
+         'profile_directory':
+         'Default'}
     config['Actions'] = \
         {'replace_sbi_securities_with_hypersbi2':
          [('get',
@@ -81,28 +87,22 @@ def configure(config_file):
            '//*[@id="new_login"]/form/p[2]/input'),
           ('click',
            '//*[@id="link02M"]/ul/li[1]/a'),
-          # https://site2.sbisec.co.jp/ETGate/?_ControlID=WPLETpfR001Control&_PageID=DefaultPID&_DataStoreID=DSWPLETpfR001Control&_ActionID=DefaultAID&getFlg=on
           ('click',
            '//a[text()="登録銘柄リストの追加・置き換え"]'),
-          # https://site0.sbisec.co.jp/marble/portfolio/pfcopy.do?
           ('click',
            '//*[@id="pfcopyinputForm"]/table/tbody/tr/td/div[3]/p/a'),
-          # https://site0.sbisec.co.jp/marble/portfolio/pfcopy/sender.do
           ('click',
            '//*[@name="tool_from" and @value="3"]'),
           ('click',
            '//input[@value="次へ"]'),
-          # https://site0.sbisec.co.jp/marble/portfolio/pfcopy/sendercheck.do
           ('click',
            '//*[@name="tool_to_1" and @value="1"]'),
           ('click',
            '//input[@value="次へ"]'),
-          # https://site0.sbisec.co.jp/marble/portfolio/pfcopy/receivercheck.do
           ('click',
            '//*[@name="add_replace_tool_01" and @value="1_2"]'),
           ('click',
            '//input[@value="確認画面へ"]'),
-          # https://site0.sbisec.co.jp/marble/portfolio/pfcopy/selectcheck.do
           ('click',
            '//input[@value="指示実行"]')]}
 
@@ -118,9 +118,9 @@ def configure(config_file):
     return config
 
 def interact_with_browser(driver, action):
-    for i in range(len(action)):
-        command = action[i][0]
-        arguments = action[i][1]
+    for index in range(len(action)):
+        command = action[index][0]
+        arguments = action[index][1]
         if command == 'get':
             driver.get(arguments)
         elif command == 'click':
@@ -147,7 +147,7 @@ def convert_to_yahoo_finance(portfolio, csv_root):
               'High', 'Low', 'Volume', 'Trade Date', 'Purchase Price',
               'Quantity', 'Commission', 'High Limit', 'Low Limit', 'Comment']
     row = []
-    for i in range(len(HEADER) - 1):
+    for _ in range(len(HEADER) - 1):
         row.append('')
     for index in range(len(dictionary['list'])):
         watchlist = dictionary['list'][index]['listName']
