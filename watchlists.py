@@ -15,7 +15,7 @@ def main():
 
     HYPERSBI2_ROOT = os.path.expandvars(r'%APPDATA%\SBI Securities\HYPERSBI2')
     identifier = ''
-    # FIXME
+    # TODO
     for f in os.listdir(HYPERSBI2_ROOT):
         if re.match('^[0-9a-z]{32}$', f):
             identifier = f
@@ -26,17 +26,38 @@ def main():
         print('unspecified identifier')
         sys.exit(1)
 
-    file_utilities.backup_file(portfolio,
-                               os.path.join(
-                                   os.path.expanduser('~'),
-                                   r'Dropbox\Documents\Trading\Backups'))
+    # file_utilities.backup_file(portfolio,
+    #                            os.path.join(
+    #                                os.path.expanduser('~'),
+    #                                r'Dropbox\Documents\Trading\Backups'))
 
-    driver = account.login(account.configure('sbi_securities'))
-    interact_with_browser(config, driver)
+    # driver = account.login(account.configure('sbi_securities'))
+    # interact_with_browser(config, driver)
+    # driver.quit()
+
+    csv_root = os.path.join(os.path.expanduser('~'), 'Downloads')
+    watchlists = convert_to_yahoo_finance(portfolio, csv_root)
+
+    from selenium import webdriver
+    from selenium.webdriver.common.by import By
+    from selenium.webdriver.chrome.options import Options
+    from selenium.webdriver.chrome.service import Service
+    from webdriver_manager.chrome import ChromeDriverManager
+
+    service = Service(executable_path=ChromeDriverManager().install(),
+                      log_path=os.path.devnull)
+    options = Options()
+    options.add_argument('--headless=new')
+    options.add_argument(r'--user-data-dir=' + os.path.expandvars(
+        r'%LOCALAPPDATA%\Google\Chrome\User Data'))
+    options.add_argument('--profile-directory=Default')
+    driver = webdriver.Chrome(service=service, options=options)
+    driver.implicitly_wait(1)
+
+    for watchlist in watchlists:
+        export_to_yahoo_finance(driver, csv_root, watchlist)
+
     driver.quit()
-
-    convert_to_yahoo_finance(portfolio, os.path.join(os.path.expanduser('~'),
-                                                     'Downloads'))
 
 def configure():
     import configparser
@@ -85,20 +106,21 @@ def interact_with_browser(config, driver):
         if command == 'click_element':
             driver.find_element(By.XPATH, arguments).click()
 
-def convert_to_yahoo_finance(portfolio, output_root):
+def convert_to_yahoo_finance(portfolio, csv_root):
     import csv
     import json
 
     with open(portfolio) as f:
         dictionary = json.load(f)
 
-    if not os.path.isdir(output_root):
+    if not os.path.isdir(csv_root):
         try:
-            os.makedirs(output_root)
+            os.makedirs(csv_root)
         except OSError as e:
             print(e)
             sys.exit(1)
 
+    watchlists = []
     HEADER = ['Symbol', 'Current Price', 'Date', 'Time', 'Change', 'Open',
               'High', 'Low', 'Volume', 'Trade Date', 'Purchase Price',
               'Quantity', 'Commission', 'High Limit', 'Low Limit', 'Comment']
@@ -106,13 +128,13 @@ def convert_to_yahoo_finance(portfolio, output_root):
     for i in range(len(HEADER) - 1):
         row.append('')
 
-    for list_index in range(len(dictionary['list'])):
-        list_name = dictionary['list'][list_index]['listName']
-        csvfile = open(os.path.join(output_root, list_name + '.csv'), 'w')
-        writer = csv.writer(csvfile)
+    for index in range(len(dictionary['list'])):
+        watchlist = dictionary['list'][index]['listName']
+        csv_file = open(os.path.join(csv_root, watchlist + '.csv'), 'w')
+        writer = csv.writer(csv_file)
         writer.writerow(HEADER)
-        dictionary['list'][list_index]['secList'].reverse()
-        for item in dictionary['list'][list_index]['secList']:
+        dictionary['list'][index]['secList'].reverse()
+        for item in dictionary['list'][index]['secList']:
             if item['secKbn'] == 'ST':
                 if item['marketCd'] == 'TKY':
                     writer.writerow([item['secCd'] + '.T'] + row)
@@ -125,7 +147,35 @@ def convert_to_yahoo_finance(portfolio, output_root):
                 elif item['marketCd'] == 'FKO':
                     writer.writerow([item['secCd'] + '.F'] + row)
 
-        csvfile.close()
+        csv_file.close()
+        watchlists.append(watchlist)
+
+    return watchlists
+
+def export_to_yahoo_finance(driver, csv_root, watchlist):
+    driver.get('https://finance.yahoo.com/portfolios')
+
+    elements = driver.find_elements(By.XPATH, '//*[@id="Col1-0-Portfolios-Proxy"]//a[text()="' + watchlist + '"]')
+    if elements:
+        elements[0].click()
+        driver.find_element(By.XPATH, '//*[@id="Lead-3-Portfolios-Proxy"]/main/header/div[2]/div/div/div[3]/div').click()
+        driver.find_element(By.XPATH, '//*[@id="dropdown-menu"]/ul/li[6]/button').click()
+        driver.find_element(By.XPATH, '//*[@id="myLightboxContainer"]/section/form/div[2]/button[1]').click()
+
+    driver.find_element(By.XPATH, '//*[@data-test="import-pf-btn"]').click()
+    driver.find_element(By.XPATH, '//*[@id="myLightboxContainer"]/section/form/div[1]/input').send_keys(os.path.join(csv_root, watchlist + '.csv'))
+    driver.find_element(By.XPATH, '//*[@id="myLightboxContainer"]/section/form/div[2]/button[1]').click()
+    driver.refresh()
+    driver.find_element(By.XPATH, '//*[@id="Col1-0-Portfolios-Proxy"]/main/table/tbody/tr[1]/td[1]/div[2]/a').click()
+    driver.find_element(By.XPATH, '//*[@id="Lead-3-Portfolios-Proxy"]/main/header/div[2]/div/div/div[3]/div').click()
+    driver.find_element(By.XPATH, '//*[@id="dropdown-menu"]/ul/li[5]/button').click()
+    driver.find_element(By.XPATH, '//*[@id="myLightboxContainer"]/section/form/div[1]/input').clear()
+    driver.find_element(By.XPATH, '//*[@id="myLightboxContainer"]/section/form/div[1]/input').send_keys(watchlist)
+    driver.find_element(By.XPATH, '//*[@id="myLightboxContainer"]/section/form/div[2]/button[1]').click()
+    # TODO
+    import time
+
+    time.sleep(1)
 
 if __name__ == '__main__':
     main()
