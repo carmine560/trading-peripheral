@@ -17,9 +17,9 @@ def main():
         os.path.splitext(os.path.basename(__file__))[0] + '.ini')
     config = configure(config_file)
     # TODO
-    # file_utilities.backup_file(config_file, number_of_backups=8)
-    # with open(config_file, 'w', encoding='utf-8') as f:
-    #     config.write(f)
+    file_utilities.backup_file(config_file, number_of_backups=8)
+    with open(config_file, 'w', encoding='utf-8') as f:
+        config.write(f)
 
     HYPERSBI2_ROOT = os.path.expandvars(r'%APPDATA%\SBI Securities\HYPERSBI2')
     identifier = ''
@@ -45,7 +45,7 @@ def main():
     service = Service(executable_path=ChromeDriverManager().install(),
                       log_path=os.path.devnull)
     options = Options()
-    # options.add_argument('--headless=new')
+    options.add_argument('--headless=new')
     options.add_argument('--user-data-dir='
                          + config['Common']['user_data_dir'])
     options.add_argument('--profile-directory='
@@ -54,26 +54,16 @@ def main():
     # TODO
     driver.implicitly_wait(1)
 
-    # action = ast.literal_eval(
-    #     config['Actions']['replace_sbi_securities_with_hypersbi2'])
-    # interact_with_browser(driver, action)
-    # driver.quit()
+    action = ast.literal_eval(
+        config['Actions']['replace_sbi_securities_with_hypersbi2'])
+    interact_with_browser(driver, action)
 
-    # sys.exit()
-
-    # watchlists = convert_to_yahoo_finance(config, portfolio)
-    watchlists = ['Favorites']
+    watchlists = convert_to_yahoo_finance(config, portfolio)
     for watchlist in watchlists:
         config['Common']['watchlist'] = watchlist
-        # config['Common']['watchlist_path'] = os.path.join(config['Common']['csv_root'], watchlist + '.csv')
-        # print(os.sep)
-        # sys.exit()
-        # print(type(config['Actions']['export_to_yahoo_finance']))
-        # print(config['Actions']['export_to_yahoo_finance'].replace('\\', '/'))
-        # print(config['Actions']['export_to_yahoo_finance'].replace(os.sep, '\\\\'))
-        # sys.exit()
-
-        action = ast.literal_eval(config['Actions']['export_to_yahoo_finance'].replace(os.sep, '/'))
+        action = ast.literal_eval(config['Actions']['export_to_yahoo_finance']
+                                  .replace('\\', '\\\\')
+                                  .replace('\\\\\\\\', '\\\\'))
         interact_with_browser(driver, action)
 
     driver.quit()
@@ -86,8 +76,6 @@ def configure(config_file):
          'user_data_dir':
          os.path.expandvars(r'%LOCALAPPDATA%\Google\Chrome\User Data'),
          'profile_directory': 'Default',
-         # TODO
-         # 'csv_root': os.path.join(os.path.expanduser('~'), 'Downloads').replace(os.sep, '/'),
          'csv_root': os.path.join(os.path.expanduser('~'), 'Downloads'),
          'watchlist': ''}
     config['Actions'] = \
@@ -113,10 +101,7 @@ def configure(config_file):
             ('click', '//*[@id="dropdown-menu"]/ul/li[6]/button'),
             ('click', '//*[@id="myLightboxContainer"]/section/form/div[2]/button[1]')]),
           ('click', '//*[@data-test="import-pf-btn"]'),
-          # TODO
-          # ('send_keys', '//*[@id="myLightboxContainer"]/section/form/div[1]/input', '${Common:csv_root}/${Common:watchlist}.csv'),
           ('send_keys', '//*[@id="myLightboxContainer"]/section/form/div[1]/input', r'${Common:csv_root}\${Common:watchlist}.csv'),
-          # ('send_keys', '//*[@id="myLightboxContainer"]/section/form/div[1]/input', '${Common:watchlist_path}'),
           ('click', '//*[@id="myLightboxContainer"]/section/form/div[2]/button[1]'),
           ('refresh',),
           ('click', '//*[@id="Col1-0-Portfolios-Proxy"]/main/table/tbody/tr[1]/td[1]/div[2]/a'),
@@ -140,8 +125,6 @@ def configure(config_file):
     return config
 
 def interact_with_browser(driver, action):
-    # print(action)
-    # sys.exit()
     for index in range(len(action)):
         command = action[index][0]
         if len(action[index]) > 1:
@@ -149,31 +132,18 @@ def interact_with_browser(driver, action):
 
         if command == 'get':
             driver.get(argument)
-            # print(index, command, argument)
         elif command == 'click':
             driver.find_element(By.XPATH, argument).click()
-            # print(index, command, argument)
         elif command == 'clear':
             driver.find_element(By.XPATH, argument).clear()
-            # print(index, command, argument)
         elif command == 'sleep':
             time.sleep(int(argument))
-            # print(index, command, argument)
         elif command == 'exist':
-            # print(index, command, argument, action[index][2])
-            # print(action[index])
-            # if True:
-                # subaction = ast.literal_eval(action[index][2])
-                # interact_with_browser(driver, subaction)
             if driver.find_elements(By.XPATH, argument):
                 interact_with_browser(driver, action[index][2])
         elif command == 'send_keys':
-            # print(action[index][2])
-            # sys.exit()
             driver.find_element(By.XPATH, argument).send_keys(action[index][2])
-            # print(index, command, argument, action[index][2])
         elif command == 'refresh':
-            # print(index, command)
             driver.refresh()
 
 def convert_to_yahoo_finance(config, portfolio):
@@ -220,33 +190,6 @@ def convert_to_yahoo_finance(config, portfolio):
         csv_file.close()
         watchlists.append(watchlist)
     return watchlists
-
-def export_to_yahoo_finance(config, driver):
-    # TODO
-    csv_root = config['Common']['csv_root']
-    watchlist = config['Common']['watchlist']
-
-    driver.get('https://finance.yahoo.com/portfolios')
-
-    elements = driver.find_elements(By.XPATH, '//*[@id="Col1-0-Portfolios-Proxy"]//a[text()="' + watchlist + '"]')
-    if elements:
-        elements[0].click()
-        driver.find_element(By.XPATH, '//*[@id="Lead-3-Portfolios-Proxy"]/main/header/div[2]/div/div/div[3]/div').click()
-        driver.find_element(By.XPATH, '//*[@id="dropdown-menu"]/ul/li[6]/button').click()
-        driver.find_element(By.XPATH, '//*[@id="myLightboxContainer"]/section/form/div[2]/button[1]').click()
-
-    driver.find_element(By.XPATH, '//*[@data-test="import-pf-btn"]').click()
-    driver.find_element(By.XPATH, '//*[@id="myLightboxContainer"]/section/form/div[1]/input').send_keys(os.path.join(csv_root, watchlist + '.csv'))
-    driver.find_element(By.XPATH, '//*[@id="myLightboxContainer"]/section/form/div[2]/button[1]').click()
-    driver.refresh()
-    driver.find_element(By.XPATH, '//*[@id="Col1-0-Portfolios-Proxy"]/main/table/tbody/tr[1]/td[1]/div[2]/a').click()
-    driver.find_element(By.XPATH, '//*[@id="Lead-3-Portfolios-Proxy"]/main/header/div[2]/div/div/div[3]/div').click()
-    driver.find_element(By.XPATH, '//*[@id="dropdown-menu"]/ul/li[5]/button').click()
-    driver.find_element(By.XPATH, '//*[@id="myLightboxContainer"]/section/form/div[1]/input').clear()
-    driver.find_element(By.XPATH, '//*[@id="myLightboxContainer"]/section/form/div[1]/input').send_keys(watchlist)
-    driver.find_element(By.XPATH, '//*[@id="myLightboxContainer"]/section/form/div[2]/button[1]').click()
-    # TODO
-    time.sleep(1)
 
 if __name__ == '__main__':
     main()
