@@ -69,7 +69,7 @@ def main():
 
     # driver.quit()
 
-    save_market_data(config)
+    update_market_data(config)
 
 def configure(config_file):
     import configparser
@@ -84,15 +84,12 @@ def configure(config_file):
          'csv_root': os.path.join(os.path.expanduser('~'), 'Downloads'),
          'watchlist': ''}
     config['Market Data'] = {
-        'opening_time': '9:20:00',
-        'closing_time': '15:50:00',
-        'time_zone': 'Asia/Tokyo',
-        'market_data_url': 'https://kabutan.jp/warning/?mode=2_9',
-        'number_of_pages': '2',
+        # TODO
+        'market_data': \
+        [('Active', 'https://kabutan.jp/warning/?mode=2_9&market=1'),
+         ('Limit Up', 'https://kabutan.jp/warning/?mode=3_1&market=0&capitalization=-1&stc=&stm=1&col=zenhiritsu')],
         'symbol_header': 'コード',
-        'closing_price_header': '株価',
-        'closing_prices':
-        os.path.join('${Common:csv_root}', 'closing_prices_')}
+        'price_header': '株価'}
     config['Actions'] = \
         {'replace_sbi_securities':
          [('get', 'https://www.sbisec.co.jp/ETGate'),
@@ -210,97 +207,75 @@ def convert_to_yahoo_finance(config):
         watchlists.append(watchlist)
     return watchlists
 
-def save_market_data(config):
-    global pd
+def update_market_data(config):
+    import ast
+    import datetime
+    import json
+    import random
+    import re
+    import string
+
     import pandas as pd
 
     section = config['Market Data']
-    opening_time = section['opening_time']
-    closing_time = section['closing_time']
-    time_zone = section['time_zone']
-    market_data_url = section['market_data_url']
-    number_of_pages = section['number_of_pages']
+    market_data = ast.literal_eval(section['market_data'])
     symbol_header = section['symbol_header']
-    closing_price_header = section['closing_price_header']
-    closing_prices = section['closing_prices']
+    price_header = section['price_header']
 
-    # market_data_url = 'https://kabutan.jp/warning/?mode=3_1'
-    number_of_pages = '1'
-    market_data_url = 'https://kabutan.jp/warning/?mode=3_1&market=0&capitalization=-1&stc=&stm=1&col=zenhiritsu'
-    market_data_url = 'https://kabutan.jp/warning/?mode=2_9&market=1'
+    for i in range(len(market_data)):
+        title = market_data[i][0]
+        url = market_data[i][1]
+        if len(market_data[i]) == 3:
+            number_of_pages = int(market_data[i][2])
+        else:
+            number_of_pages = 1
 
-    market_data = [('Favorites', 'https://kabutan.jp/warning/?mode=2_9&market=1'), ('Limit Up', 'https://kabutan.jp/warning/?mode=3_1&market=0&capitalization=-1&stc=&stm=1&col=zenhiritsu')]
-
-    # paths = []
-    # for i in range(1, 10):
-    #     paths.append(closing_prices + str(i) + '.csv')
-    # if get_latest(config, closing_time, time_zone, *paths,
-    #               volatile_time=opening_time):
-    # if True:
-    for title, url in market_data:
-        market_data_url = url
         dfs = []
-        for i in range(1, int(number_of_pages) + 1):
+        for i in range(number_of_pages):
             try:
-                dfs = dfs + pd.read_html(market_data_url + '&page=' + str(i),
+                dfs = dfs + pd.read_html(url + '&page=' + str(i + 1),
                                          match=symbol_header)
             except Exception as e:
                 print(e)
                 sys.exit(1)
 
         df = pd.concat(dfs)
-        # df.sort_values(by=symbol_header, inplace=True)
-        df = df.loc[df[closing_price_header] < 3000]
-
-        # for i in range(1, 10):
-        #     subset = df.loc[df[symbol_header].astype(str).str.match(
-        #         str(i) + '\d{3}5?$')]
-        #     subset.to_csv(closing_prices + str(i) + '.csv', header=False,
-        #                   index=False)
-
-        df.to_csv('00.csv', header=False, index=False)
-
+        # TODO
+        df = df.loc[df[price_header] < 3000]
         df = df[[symbol_header]]
         df = df.rename(columns={symbol_header: 'secCd'})
 
-        df.to_json('00.json', orient='records')
-        import json
-        asdf = json.loads(df.to_json(orient='records'))
-        for i in range(len(asdf)):
-            asdf[i]['marketCd'] = 'TKY'
-            asdf[i]['secKbn'] = 'ST'
-            asdf[i]['sortNo'] = i
-            asdf[i]['secCd'] = str(asdf[i]['secCd'])
-
-        import datetime
-        # datetime.datetime.now().strftime('%Y%m%d%H%M%S%f')
-        import re
+        stocks = json.loads(df.to_json(orient='records'))
+        for i in range(len(stocks)):
+            # TODO
+            stocks[i]['marketCd'] = 'TKY'
+            stocks[i]['secCd'] = str(stocks[i]['secCd'])
+            stocks[i]['secKbn'] = 'ST'
+            stocks[i]['sortNo'] = i
 
         watchlist = {
-            "listId": re.sub('\D', '', datetime.datetime.now().isoformat(timespec='milliseconds')),
+            "listId":
+            re.sub('\D', '',
+                   datetime.datetime.now().isoformat(timespec='milliseconds'))
+            + ''.join(random.choice(string.ascii_letters + string.digits) \
+                      for _ in range(8)),
             "listName": title,
-            "secCnt": len(asdf),
+            "secCnt": len(stocks),
             "sortNo": 0
         }
-        watchlist['secList'] = asdf
-        # watchlist_json = json.dumps(watchlist)
-        # print(watchlist_json)
+        watchlist['secList'] = stocks
 
-        with open(config['Common']['portfolio']) as f:
-            dictionary = json.load(f)
+        with open(config['Common']['portfolio'], 'r') as f:
+            watchlists = json.load(f)
 
-        # for i in range(len(dictionary['list'])):
-        #     print(dictionary['list'][i]['listName'])
-        # print([s for s in dictionary['list'] if s['listName'] != 'asdf'])
-        dictionary['list'] = [s for s in dictionary['list'] if s['listName'] != title]
-
-        dictionary['list'].append(watchlist)
-        # print(json.dumps(dictionary))
+        watchlists['list'] = \
+            [watchlist for watchlist in watchlists['list'] \
+             if watchlist['listName'] != title]
+        watchlists['list'].append(watchlist)
+        watchlists['listCnt'] = len(watchlists['list'])
 
         with open(config['Common']['portfolio'], 'w') as f:
-        #     dictionary = json.load(f)
-        # with open("sample.json", "w") as outfile:
-            json.dump(dictionary, f)
+            json.dump(watchlists, f)
 
 if __name__ == '__main__':
     main()
