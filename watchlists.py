@@ -229,12 +229,16 @@ def save_market_data(config):
     market_data_url = 'https://kabutan.jp/warning/?mode=3_1&market=0&capitalization=-1&stc=&stm=1&col=zenhiritsu'
     market_data_url = 'https://kabutan.jp/warning/?mode=2_9&market=1'
 
+    market_data = [('Favorites', 'https://kabutan.jp/warning/?mode=2_9&market=1'), ('Limit Up', 'https://kabutan.jp/warning/?mode=3_1&market=0&capitalization=-1&stc=&stm=1&col=zenhiritsu')]
+
     # paths = []
     # for i in range(1, 10):
     #     paths.append(closing_prices + str(i) + '.csv')
     # if get_latest(config, closing_time, time_zone, *paths,
     #               volatile_time=opening_time):
-    if True:
+    # if True:
+    for title, url in market_data:
+        market_data_url = url
         dfs = []
         for i in range(1, int(number_of_pages) + 1):
             try:
@@ -274,7 +278,7 @@ def save_market_data(config):
 
         watchlist = {
             "listId": re.sub('\D', '', datetime.datetime.now().isoformat(timespec='milliseconds')),
-            "listName": "asdf",
+            "listName": title,
             "secCnt": len(asdf),
             "sortNo": 0
         }
@@ -288,7 +292,7 @@ def save_market_data(config):
         # for i in range(len(dictionary['list'])):
         #     print(dictionary['list'][i]['listName'])
         # print([s for s in dictionary['list'] if s['listName'] != 'asdf'])
-        dictionary['list'] = [s for s in dictionary['list'] if s['listName'] != 'asdf']
+        dictionary['list'] = [s for s in dictionary['list'] if s['listName'] != title]
 
         dictionary['list'].append(watchlist)
         # print(json.dumps(dictionary))
