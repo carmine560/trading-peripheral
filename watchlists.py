@@ -69,7 +69,7 @@ def main():
 
     # driver.quit()
 
-    update_market_data(config)
+    update_watchlists(config)
 
 def configure(config_file):
     import configparser
@@ -89,7 +89,8 @@ def configure(config_file):
         [('Active', 'https://kabutan.jp/warning/?mode=2_9&market=1'),
          ('Limit Up', 'https://kabutan.jp/warning/?mode=3_1&market=0&capitalization=-1&stc=&stm=1&col=zenhiritsu')],
         'symbol_header': 'コード',
-        'price_header': '株価'}
+        'price_header': '株価',
+        'price_limit': '3000'}
     config['Actions'] = \
         {'replace_sbi_securities':
          [('get', 'https://www.sbisec.co.jp/ETGate'),
@@ -207,7 +208,7 @@ def convert_to_yahoo_finance(config):
         watchlists.append(watchlist)
     return watchlists
 
-def update_market_data(config):
+def update_watchlists(config):
     import ast
     import datetime
     import json
@@ -221,11 +222,12 @@ def update_market_data(config):
     market_data = ast.literal_eval(section['market_data'])
     symbol_header = section['symbol_header']
     price_header = section['price_header']
+    price_limit = float(section['price_limit'])
 
     for i in range(len(market_data)):
         title = market_data[i][0]
         url = market_data[i][1]
-        if len(market_data[i]) == 3:
+        if len(market_data[i]) > 2:
             number_of_pages = int(market_data[i][2])
         else:
             number_of_pages = 1
@@ -240,8 +242,9 @@ def update_market_data(config):
                 sys.exit(1)
 
         df = pd.concat(dfs)
-        # TODO
-        df = df.loc[df[price_header] < 3000]
+        if price_limit > 0:
+            df = df.loc[df[price_header] < price_limit]
+
         df = df[[symbol_header]]
         df = df.rename(columns={symbol_header: 'secCd'})
 
@@ -269,10 +272,11 @@ def update_market_data(config):
             watchlists = json.load(f)
 
         watchlists['list'] = \
-            [watchlist for watchlist in watchlists['list'] \
-             if watchlist['listName'] != title]
+            [w for w in watchlists['list'] if w['listName'] != title]
         watchlists['list'].append(watchlist)
         watchlists['listCnt'] = len(watchlists['list'])
+        for index in range(len(watchlists['list'])):
+            watchlists['list'][index]['sortNo'] = index
 
         with open(config['Common']['portfolio'], 'w') as f:
             json.dump(watchlists, f)
