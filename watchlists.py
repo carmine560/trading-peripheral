@@ -34,40 +34,40 @@ def main():
             print('unspecified identifier')
             sys.exit(1)
 
-    # # TODO
-    # file_utilities.backup_file(config_file, number_of_backups=8)
-    # with open(config_file, 'w', encoding='utf-8') as f:
-    #     config.write(f)
+    # TODO
+    file_utilities.backup_file(config_file, number_of_backups=8)
+    with open(config_file, 'w', encoding='utf-8') as f:
+        config.write(f)
 
-    # file_utilities.backup_file(
-    #     config['Common']['portfolio'],
-    #     backup_root=config['Common']['portfolio_backup_root'])
+    file_utilities.backup_file(
+        config['Common']['portfolio'],
+        backup_root=config['Common']['portfolio_backup_root'])
 
-    # service = Service(executable_path=ChromeDriverManager().install(),
-    #                   log_path=os.path.devnull)
-    # options = Options()
-    # options.add_argument('--headless=new')
-    # options.add_argument('--user-data-dir='
-    #                      + config['Common']['user_data_dir'])
-    # options.add_argument('--profile-directory='
-    #                      + config['Common']['profile_directory'])
-    # driver = webdriver.Chrome(service=service, options=options)
-    # # TODO
-    # driver.implicitly_wait(1)
+    service = Service(executable_path=ChromeDriverManager().install(),
+                      log_path=os.path.devnull)
+    options = Options()
+    options.add_argument('--headless=new')
+    options.add_argument('--user-data-dir='
+                         + config['Common']['user_data_dir'])
+    options.add_argument('--profile-directory='
+                         + config['Common']['profile_directory'])
+    driver = webdriver.Chrome(service=service, options=options)
+    # TODO
+    driver.implicitly_wait(1)
 
-    # action = ast.literal_eval(
-    #     config['Actions']['replace_sbi_securities'])
-    # interact_with_browser(driver, action)
+    action = ast.literal_eval(
+        config['Actions']['replace_sbi_securities'])
+    interact_with_browser(driver, action)
 
-    # watchlists = convert_to_yahoo_finance(config)
-    # for watchlist in watchlists:
-    #     config['Common']['watchlist'] = watchlist
-    #     action = ast.literal_eval(config['Actions']['export_to_yahoo_finance']
-    #                               .replace('\\', '\\\\')
-    #                               .replace('\\\\\\\\', '\\\\'))
-    #     interact_with_browser(driver, action)
+    watchlists = convert_to_yahoo_finance(config)
+    for watchlist in watchlists:
+        config['Common']['watchlist'] = watchlist
+        action = ast.literal_eval(config['Actions']['export_to_yahoo_finance']
+                                  .replace('\\', '\\\\')
+                                  .replace('\\\\\\\\', '\\\\'))
+        interact_with_browser(driver, action)
 
-    # driver.quit()
+    driver.quit()
 
     update_watchlists(config)
 
@@ -83,16 +83,6 @@ def configure(config_file):
          'profile_directory': 'Default',
          'csv_root': os.path.join(os.path.expanduser('~'), 'Downloads'),
          'watchlist': ''}
-    config['Market Data'] = {
-        # 'url': 'https://kabutan.jp/warning/?mode=2_9',
-        'url': 'https://kabutan.jp/warning/?mode=2_9&market=1',
-        'number_of_pages': '2',
-        'symbol_header': 'コード',
-        'price_header': '株価',
-        # TODO
-        'price_limit': '3000'
-        # 'price_limit': '0'
-    }
     config['Actions'] = \
         {'replace_sbi_securities':
          [('get', 'https://www.sbisec.co.jp/ETGate'),
@@ -209,94 +199,6 @@ def convert_to_yahoo_finance(config):
         csv_file.close()
         watchlists.append(watchlist)
     return watchlists
-
-def update_watchlists(config):
-    # import ast
-    # import datetime
-    # import json
-    # import random
-    # import re
-    # import string
-
-    import pandas as pd
-
-    section = config['Market Data']
-    url = section['url']
-    number_of_pages = int(section['number_of_pages'])
-    symbol_header = section['symbol_header']
-    price_header = section['price_header']
-    price_limit = float(section['price_limit'])
-
-    # for i in range(len(url)):
-    #     title = url[i][0]
-    #     url = url[i][1]
-    #     if len(url[i]) > 2:
-    #         number_of_pages = int(url[i][2])
-    #     else:
-    #         number_of_pages = 1
-
-    dfs = []
-    for i in range(number_of_pages):
-        try:
-            dfs = dfs + pd.read_html(url + '&page=' + str(i + 1),
-                                     match=symbol_header)
-        except Exception as e:
-            print(e)
-            sys.exit(1)
-
-    df = pd.concat(dfs)
-    if price_limit > 0:
-        df = df.loc[df[price_header] < price_limit]
-        # df.reset_index(inplace=True)
-
-    df = df[[symbol_header]]
-    # df = df.rename(columns={symbol_header: 'secCd'})
-    df.to_clipboard(index=False, header=False)
-
-    # stocks = json.loads(df.to_json(orient='records'))
-    # for i in range(len(stocks)):
-    #     # TODO
-    #     stocks[i]['marketCd'] = 'TKY'
-    #     stocks[i]['secCd'] = str(stocks[i]['secCd'])
-    #     stocks[i]['secKbn'] = 'ST'
-    #     stocks[i]['sortNo'] = i
-
-    # print(df)
-    # print(df.iloc[10, 0])
-    # sys.exit()
-
-    # stocks = []
-    # for i in range(len(df)):
-    #     stocks.append({'marketCd': 'TKY',
-    #                    # TODO
-    #                    'secCd': str(df.iloc[i, 0]),
-    #                    'secKbn': 'ST',
-    #                    'sortNo': i})
-
-    # watchlist = {
-    #     "listId":
-    #     re.sub('\D', '',
-    #            datetime.datetime.now().isoformat(timespec='milliseconds'))
-    #     + ''.join(random.choice(string.ascii_letters + string.digits) \
-        #               for _ in range(8)),
-    #     "listName": title,
-    #     "secCnt": len(stocks),
-    #     "sortNo": 0
-    # }
-    # watchlist['secList'] = stocks
-
-    # with open(config['Common']['portfolio'], 'r') as f:
-    #     watchlists = json.load(f)
-
-    # watchlists['list'] = \
-        #     [w for w in watchlists['list'] if w['listName'] != title]
-    # watchlists['list'].append(watchlist)
-    # watchlists['listCnt'] = len(watchlists['list'])
-    # for index in range(len(watchlists['list'])):
-    #     watchlists['list'][index]['sortNo'] = index
-
-    # with open(config['Common']['portfolio'], 'w') as f:
-    #     json.dump(watchlists, f)
 
 if __name__ == '__main__':
     main()
