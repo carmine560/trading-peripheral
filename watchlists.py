@@ -2,16 +2,24 @@ import os
 import sys
 
 def main():
+    import argparse
     import ast
     import re
 
-    from selenium import webdriver
-    from selenium.webdriver.common.by import By
-    from selenium.webdriver.chrome.options import Options
-    from selenium.webdriver.chrome.service import Service
-    from webdriver_manager.chrome import ChromeDriverManager
-
     import file_utilities
+
+    parser = argparse.ArgumentParser()
+    parser.add_argument(
+        '-p', action='store_true',
+        help='backup Hyper SBI 2 portfolio.json')
+    parser.add_argument(
+        '-s', action='store_true',
+        help='replace watchlists on the SBI Securities website '
+        'with Hyper SBI 2 watchlists')
+    parser.add_argument(
+        '-y', action='store_true',
+        help='export Hyper SBI 2 watchlists to My Portfolio on Yahoo Finance')
+    args = parser.parse_args(None if sys.argv[1:] else ['-h'])
 
     config_file = os.path.join(
         os.path.expandvars('%LOCALAPPDATA%'),
@@ -39,35 +47,27 @@ def main():
     with open(config_file, 'w', encoding='utf-8') as f:
         config.write(f)
 
-    file_utilities.backup_file(
-        config['Common']['portfolio'],
-        backup_root=config['Common']['portfolio_backup_root'])
+    if args.p:
+        file_utilities.backup_file(
+            config['Common']['portfolio'],
+            backup_root=config['Common']['portfolio_backup_root'])
+    if args.s or args.y:
+        driver = initialize_driver(config)
+        if args.s:
+            action = ast.literal_eval(
+                config['Actions']['replace_sbi_securities'])
+            interact_with_browser(driver, action)
+        if args.y:
+            watchlists = convert_to_yahoo_finance(config)
+            for watchlist in watchlists:
+                config['Common']['watchlist'] = watchlist
+                action = ast.literal_eval(
+                    config['Actions']['export_to_yahoo_finance']
+                    .replace('\\', '\\\\')
+                    .replace('\\\\\\\\', '\\\\'))
+                interact_with_browser(driver, action)
 
-    service = Service(executable_path=ChromeDriverManager().install(),
-                      log_path=os.path.devnull)
-    options = Options()
-    options.add_argument('--headless=new')
-    options.add_argument('--user-data-dir='
-                         + config['Common']['user_data_dir'])
-    options.add_argument('--profile-directory='
-                         + config['Common']['profile_directory'])
-    driver = webdriver.Chrome(service=service, options=options)
-    # TODO
-    driver.implicitly_wait(1)
-
-    action = ast.literal_eval(
-        config['Actions']['replace_sbi_securities'])
-    interact_with_browser(driver, action)
-
-    watchlists = convert_to_yahoo_finance(config)
-    for watchlist in watchlists:
-        config['Common']['watchlist'] = watchlist
-        action = ast.literal_eval(config['Actions']['export_to_yahoo_finance']
-                                  .replace('\\', '\\\\')
-                                  .replace('\\\\\\\\', '\\\\'))
-        interact_with_browser(driver, action)
-
-    driver.quit()
+        driver.quit()
 
 def configure(config_file):
     import configparser
@@ -77,7 +77,8 @@ def configure(config_file):
     config['Common'] = \
         {'portfolio': '',
          'portfolio_backup_root': '',
-         'user_data_dir': os.path.expandvars(r'%LOCALAPPDATA%\Google\Chrome\User Data'),
+         'user_data_dir':
+         os.path.expandvars(r'%LOCALAPPDATA%\Google\Chrome\User Data'),
          'profile_directory': 'Default',
          'csv_root': os.path.join(os.path.expanduser('~'), 'Downloads'),
          'watchlist': ''}
@@ -126,6 +127,25 @@ def configure(config_file):
 
     config.read(config_file, encoding='utf-8')
     return config
+
+def initialize_driver(config):
+    from selenium import webdriver
+    from selenium.webdriver.chrome.options import Options
+    from selenium.webdriver.chrome.service import Service
+    from webdriver_manager.chrome import ChromeDriverManager
+
+    service = Service(executable_path=ChromeDriverManager().install(),
+                      log_path=os.path.devnull)
+    options = Options()
+    options.add_argument('--headless=new')
+    options.add_argument('--user-data-dir='
+                         + config['Common']['user_data_dir'])
+    options.add_argument('--profile-directory='
+                         + config['Common']['profile_directory'])
+    driver = webdriver.Chrome(service=service, options=options)
+    # TODO
+    driver.implicitly_wait(1)
+    return driver
 
 def interact_with_browser(driver, action):
     import time
