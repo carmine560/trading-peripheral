@@ -69,8 +69,6 @@ def main():
 
     driver.quit()
 
-    update_watchlists(config)
-
 def configure(config_file):
     import configparser
 
