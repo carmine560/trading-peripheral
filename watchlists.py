@@ -4,12 +4,13 @@ import sys
 def main():
     import argparse
     import ast
-    import re
 
     import browser_driver
+    import configuration
     import file_utilities
 
     parser = argparse.ArgumentParser()
+    group = parser.add_mutually_exclusive_group()
     parser.add_argument(
         '-p', action='store_true',
         help='backup Hyper SBI 2 portfolio.json')
@@ -20,18 +21,37 @@ def main():
     parser.add_argument(
         '-y', action='store_true',
         help='export Hyper SBI 2 watchlists to My Portfolio on Yahoo Finance')
+    group.add_argument(
+        '-C', action='store_true',
+        help='configure common options and return')
+    group.add_argument(
+        '-M', const='LIST_ACTIONS', metavar='ACTION', nargs='?',
+        # TODO
+        help='modify an action and return')
     args = parser.parse_args(None if sys.argv[1:] else ['-h'])
 
     config_file = os.path.join(
         os.path.expandvars('%LOCALAPPDATA%'),
         os.path.basename(os.path.dirname(__file__)),
         os.path.splitext(os.path.basename(__file__))[0] + '.ini')
-    config = configure(config_file)
-
-    # TODO
-    file_utilities.backup_file(config_file, number_of_backups=8)
-    with open(config_file, 'w', encoding='utf-8') as f:
-        config.write(f)
+    if args.C or args.M:
+        config = configure(config_file, interpolation=False)
+        if args.C:
+            file_utilities.backup_file(config_file, number_of_backups=8)
+            configuration.modify_section(config, 'Common', config_file)
+        if args.M == 'LIST_ACTIONS':
+            configuration.list_section(config, 'Actions')
+            # TODO
+        if args.M in config.options('Actions'):
+            file_utilities.backup_file(config_file, number_of_backups=8)
+            # TODO
+            configuration.modify_tuples(config, 'Actions', args.M,
+                                        config_file, key_prompt='command',
+                                        value_prompt='argument',
+                                        end_of_list_prompt='end of commands')
+        return
+    else:
+        config = configure(config_file)
 
     if args.p:
         file_utilities.backup_file(
@@ -48,7 +68,7 @@ def main():
         if args.y:
             watchlists = convert_to_yahoo_finance(config)
             for watchlist in watchlists:
-                config['Common']['watchlist'] = watchlist
+                config['Variables']['watchlist'] = watchlist
                 action = ast.literal_eval(
                     config['Actions']['export_to_yahoo_finance']
                     .replace('\\', '\\\\')
@@ -57,19 +77,25 @@ def main():
 
         driver.quit()
 
-def configure(config_file):
+def configure(config_file, interpolation=True):
     import configparser
+    import re
 
-    config = configparser.ConfigParser(
-        interpolation=configparser.ExtendedInterpolation())
+    if interpolation:
+        config = configparser.ConfigParser(
+            interpolation=configparser.ExtendedInterpolation())
+    else:
+        config = configparser.ConfigParser()
+
     config['Common'] = \
         {'portfolio': '',
          'portfolio_backup_directory': '',
          'user_data_dir':
          os.path.expandvars(r'%LOCALAPPDATA%\Google\Chrome\User Data'),
          'profile_directory': 'Default',
-         'csv_directory': os.path.join(os.path.expanduser('~'), 'Downloads'),
-         'watchlist': ''}
+         'csv_directory': os.path.join(os.path.expanduser('~'), 'Downloads')}
+    config['Variables'] = \
+        {'watchlist': ''}
     config['Actions'] = \
         {'replace_sbi_securities':
          [('get', 'https://www.sbisec.co.jp/ETGate'),
@@ -87,28 +113,28 @@ def configure(config_file):
           ('click', '//input[@value="指示実行"]')],
          'export_to_yahoo_finance':
          [('get', 'https://finance.yahoo.com/portfolios'),
-          ('exist', '//*[@id="Col1-0-Portfolios-Proxy"]//a[text()="${Common:watchlist}"]',
-           [('click', '//*[@id="Col1-0-Portfolios-Proxy"]//a[text()="${Common:watchlist}"]'),
+          ('exist', '//*[@id="Col1-0-Portfolios-Proxy"]//a[text()="${Variables:watchlist}"]',
+           [('click', '//*[@id="Col1-0-Portfolios-Proxy"]//a[text()="${Variables:watchlist}"]'),
             ('click', '//*[@id="Lead-3-Portfolios-Proxy"]/main/header/div[2]/div/div/div[3]/div'),
             ('click', '//*[@id="dropdown-menu"]/ul/li[6]/button'),
             ('click', '//*[@id="myLightboxContainer"]/section/form/div[2]/button[1]')]),
           ('click', '//*[@data-test="import-pf-btn"]'),
-          ('send_keys', '//*[@id="myLightboxContainer"]/section/form/div[1]/input', r'${Common:csv_directory}\${Common:watchlist}.csv'),
+          ('send_keys', '//*[@id="myLightboxContainer"]/section/form/div[1]/input', r'${Common:csv_directory}\${Variables:watchlist}.csv'),
           ('click', '//*[@id="myLightboxContainer"]/section/form/div[2]/button[1]'),
           ('refresh',),
           ('click', '//*[@id="Col1-0-Portfolios-Proxy"]/main/table/tbody/tr[1]/td[1]/div[2]/a'),
           ('click', '//*[@id="Lead-3-Portfolios-Proxy"]/main/header/div[2]/div/div/div[3]/div'),
           ('click', '//*[@id="dropdown-menu"]/ul/li[5]/button'),
           ('clear', '//*[@id="myLightboxContainer"]/section/form/div[1]/input'),
-          ('send_keys', '//*[@id="myLightboxContainer"]/section/form/div[1]/input', '${Common:watchlist}'),
+          ('send_keys', '//*[@id="myLightboxContainer"]/section/form/div[1]/input', '${Variables:watchlist}'),
           ('click', '//*[@id="myLightboxContainer"]/section/form/div[2]/button[1]'),
           ('sleep', '1')]}
 
     # TODO
-    config_home = os.path.dirname(config_file)
-    if not os.path.isdir(config_home):
+    config_directory = os.path.dirname(config_file)
+    if not os.path.isdir(config_directory):
         try:
-            os.mkdir(config_home)
+            os.mkdir(config_directory)
         except OSError as e:
             print(e)
             sys.exit(1)

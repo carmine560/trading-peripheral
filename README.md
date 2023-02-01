@@ -15,7 +15,11 @@ pip install webdriver-manager
 The Hyper SBI 2 watchlists file `%APPDATA%\SBI
 Securities\HYPERSBI2\IDENTIFIER\portfolio.json`.
 
-`user_data_dir` and `profile_directory`.
+Change the value of the option `profile_directory`.
+
+``` batchfile
+py watchlists.py -C
+```
 
 ### Options ###
 
@@ -24,6 +28,8 @@ Securities\HYPERSBI2\IDENTIFIER\portfolio.json`.
     SBI 2 watchlists
   * `-y` export Hyper SBI 2 watchlists to My Portfolio on Yahoo
     Finance
+  * `-C` configure common options and return
+  * `-M [ACTION]` modify an action and return
 
 ## Known Issue ##
 
