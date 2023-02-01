@@ -47,7 +47,7 @@ def main():
             # TODO
             configuration.modify_tuples(config, 'Actions', args.M,
                                         config_file, key_prompt='command',
-                                        value_prompt='argument',
+                                        value_prompt='arguments',
                                         end_of_list_prompt='end of commands')
         return
     else:
@@ -115,7 +115,7 @@ def configure(config_file, interpolation=True):
          [('get', 'https://finance.yahoo.com/portfolios'),
           ('exist', '//*[@id="Col1-0-Portfolios-Proxy"]//a[text()="${Variables:watchlist}"]',
            [('click', '//*[@id="Col1-0-Portfolios-Proxy"]//a[text()="${Variables:watchlist}"]'),
-            ('click', '//*[@id="Lead-3-Portfolios-Proxy"]/main/header/div[2]/div/div/div[3]/div'),
+            ('click', '//*[@id="Lead-3-Portfolios-Proxy"]/main/header/div[2]/div/div/div[3]/div[1]'),
             ('click', '//*[@id="dropdown-menu"]/ul/li[6]/button'),
             ('click', '//*[@id="myLightboxContainer"]/section/form/div[2]/button[1]')]),
           ('click', '//*[@data-test="import-pf-btn"]'),

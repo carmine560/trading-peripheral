@@ -5,7 +5,7 @@
 
 ## Prerequisites ##
 
-``` batchfile
+``` powershell
 pip install selenium
 pip install webdriver-manager
 ```
@@ -17,7 +17,7 @@ Securities\HYPERSBI2\IDENTIFIER\portfolio.json`.
 
 Change the value of the option `profile_directory`.
 
-``` batchfile
+``` powershell
 py watchlists.py -C
 ```
 
