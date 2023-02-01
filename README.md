@@ -7,18 +7,23 @@
 
 ``` batchfile
 pip install selenium
-pip install xdg
-pip install python-gnupg
 pip install webdriver-manager
 ```
 
 ## Usage ##
 
-### Backup Hyper SBI 2 Watchlists ###
+The Hyper SBI 2 watchlists file `%APPDATA%\SBI
+Securities\HYPERSBI2\IDENTIFIER\portfolio.json`.
 
-### Export Hyper SBI 2 Watchlists to SBI Securities ###
+`user_data_dir` and `profile_directory`.
 
-### Export Hyper SBI 2 Watchlists to Yahoo Finance ###
+### Options ###
+
+  * `-p` backup Hyper SBI 2 `portfolio.json`
+  * `-s` replace watchlists on the SBI Securities website with Hyper
+    SBI 2 watchlists
+  * `-y` export Hyper SBI 2 watchlists to My Portfolio on Yahoo
+    Finance
 
 ## Known Issue ##
 

@@ -6,6 +6,7 @@ def main():
     import ast
     import re
 
+    import browser_driver
     import file_utilities
 
     parser = argparse.ArgumentParser()
@@ -35,13 +36,15 @@ def main():
     if args.p:
         file_utilities.backup_file(
             config['Common']['portfolio'],
-            backup_root=config['Common']['portfolio_backup_root'])
+            backup_directory=config['Common']['portfolio_backup_directory'])
     if args.s or args.y:
-        driver = initialize_driver(config)
+        driver = browser_driver.initialize(
+            user_data_dir=config['Common']['user_data_dir'],
+            profile_directory=config['Common']['profile_directory'])
         if args.s:
             action = ast.literal_eval(
                 config['Actions']['replace_sbi_securities'])
-            interact_with_browser(driver, action)
+            browser_driver.execute_action(driver, action)
         if args.y:
             watchlists = convert_to_yahoo_finance(config)
             for watchlist in watchlists:
@@ -50,7 +53,7 @@ def main():
                     config['Actions']['export_to_yahoo_finance']
                     .replace('\\', '\\\\')
                     .replace('\\\\\\\\', '\\\\'))
-                interact_with_browser(driver, action)
+                browser_driver.execute_action(driver, action)
 
         driver.quit()
 
@@ -61,11 +64,11 @@ def configure(config_file):
         interpolation=configparser.ExtendedInterpolation())
     config['Common'] = \
         {'portfolio': '',
-         'portfolio_backup_root': '',
+         'portfolio_backup_directory': '',
          'user_data_dir':
          os.path.expandvars(r'%LOCALAPPDATA%\Google\Chrome\User Data'),
          'profile_directory': 'Default',
-         'csv_root': os.path.join(os.path.expanduser('~'), 'Downloads'),
+         'csv_directory': os.path.join(os.path.expanduser('~'), 'Downloads'),
          'watchlist': ''}
     config['Actions'] = \
         {'replace_sbi_securities':
@@ -90,7 +93,7 @@ def configure(config_file):
             ('click', '//*[@id="dropdown-menu"]/ul/li[6]/button'),
             ('click', '//*[@id="myLightboxContainer"]/section/form/div[2]/button[1]')]),
           ('click', '//*[@data-test="import-pf-btn"]'),
-          ('send_keys', '//*[@id="myLightboxContainer"]/section/form/div[1]/input', r'${Common:csv_root}\${Common:watchlist}.csv'),
+          ('send_keys', '//*[@id="myLightboxContainer"]/section/form/div[1]/input', r'${Common:csv_directory}\${Common:watchlist}.csv'),
           ('click', '//*[@id="myLightboxContainer"]/section/form/div[2]/button[1]'),
           ('refresh',),
           ('click', '//*[@id="Col1-0-Portfolios-Proxy"]/main/table/tbody/tr[1]/td[1]/div[2]/a'),
@@ -113,66 +116,21 @@ def configure(config_file):
     config.read(config_file, encoding='utf-8')
 
     if not config['Common']['portfolio']:
-        HYPERSBI2_HOME = os.path.expandvars(
+        HYPERSBI2_PROFILES = os.path.expandvars(
             r'%APPDATA%\SBI Securities\HYPERSBI2')
         identifier = ''
         # TODO
-        for f in os.listdir(HYPERSBI2_HOME):
+        for f in os.listdir(HYPERSBI2_PROFILES):
             if re.match('^[0-9a-z]{32}$', f):
                 identifier = f
         if identifier:
             config['Common']['portfolio'] = \
-                os.path.join(HYPERSBI2_HOME, identifier, 'portfolio.json')
+                os.path.join(HYPERSBI2_PROFILES, identifier, 'portfolio.json')
         else:
             print('unspecified identifier')
             sys.exit(1)
 
     return config
-
-def initialize_driver(config):
-    from selenium import webdriver
-    from selenium.webdriver.chrome.options import Options
-    from selenium.webdriver.chrome.service import Service
-    from webdriver_manager.chrome import ChromeDriverManager
-
-    service = Service(executable_path=ChromeDriverManager().install(),
-                      log_path=os.path.devnull)
-    options = Options()
-    options.add_argument('--headless=new')
-    options.add_argument('--user-data-dir='
-                         + config['Common']['user_data_dir'])
-    options.add_argument('--profile-directory='
-                         + config['Common']['profile_directory'])
-    driver = webdriver.Chrome(service=service, options=options)
-    # TODO
-    driver.implicitly_wait(1)
-    return driver
-
-def interact_with_browser(driver, action):
-    import time
-
-    from selenium.webdriver.common.by import By
-
-    for index in range(len(action)):
-        command = action[index][0]
-        if len(action[index]) > 1:
-            argument = action[index][1]
-
-        if command == 'clear':
-            driver.find_element(By.XPATH, argument).clear()
-        elif command == 'click':
-            driver.find_element(By.XPATH, argument).click()
-        elif command == 'exist':
-            if driver.find_elements(By.XPATH, argument):
-                interact_with_browser(driver, action[index][2])
-        elif command == 'get':
-            driver.get(argument)
-        elif command == 'refresh':
-            driver.refresh()
-        elif command == 'send_keys':
-            driver.find_element(By.XPATH, argument).send_keys(action[index][2])
-        elif command == 'sleep':
-            time.sleep(int(argument))
 
 def convert_to_yahoo_finance(config):
     import csv
@@ -181,10 +139,10 @@ def convert_to_yahoo_finance(config):
     with open(config['Common']['portfolio']) as f:
         dictionary = json.load(f)
 
-    csv_root = config['Common']['csv_root']
-    if not os.path.isdir(csv_root):
+    csv_directory = config['Common']['csv_directory']
+    if not os.path.isdir(csv_directory):
         try:
-            os.makedirs(csv_root)
+            os.makedirs(csv_directory)
         except OSError as e:
             print(e)
             sys.exit(1)
@@ -198,7 +156,7 @@ def convert_to_yahoo_finance(config):
         row.append('')
     for index in range(len(dictionary['list'])):
         watchlist = dictionary['list'][index]['listName']
-        csv_file = open(os.path.join(csv_root, watchlist + '.csv'), 'w')
+        csv_file = open(os.path.join(csv_directory, watchlist + '.csv'), 'w')
         writer = csv.writer(csv_file)
         writer.writerow(HEADER)
         dictionary['list'][index]['secList'].reverse()
