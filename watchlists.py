@@ -27,21 +27,6 @@ def main():
         os.path.splitext(os.path.basename(__file__))[0] + '.ini')
     config = configure(config_file)
 
-    if not config['Common']['portfolio']:
-        HYPERSBI2_ROOT = os.path.expandvars(
-            r'%APPDATA%\SBI Securities\HYPERSBI2')
-        identifier = ''
-        # TODO
-        for f in os.listdir(HYPERSBI2_ROOT):
-            if re.match('^[0-9a-z]{32}$', f):
-                identifier = f
-        if identifier:
-            config['Common']['portfolio'] = \
-                os.path.join(HYPERSBI2_ROOT, identifier, 'portfolio.json')
-        else:
-            print('unspecified identifier')
-            sys.exit(1)
-
     # TODO
     file_utilities.backup_file(config_file, number_of_backups=8)
     with open(config_file, 'w', encoding='utf-8') as f:
@@ -126,6 +111,22 @@ def configure(config_file):
             sys.exit(1)
 
     config.read(config_file, encoding='utf-8')
+
+    if not config['Common']['portfolio']:
+        HYPERSBI2_HOME = os.path.expandvars(
+            r'%APPDATA%\SBI Securities\HYPERSBI2')
+        identifier = ''
+        # TODO
+        for f in os.listdir(HYPERSBI2_HOME):
+            if re.match('^[0-9a-z]{32}$', f):
+                identifier = f
+        if identifier:
+            config['Common']['portfolio'] = \
+                os.path.join(HYPERSBI2_HOME, identifier, 'portfolio.json')
+        else:
+            print('unspecified identifier')
+            sys.exit(1)
+
     return config
 
 def initialize_driver(config):
