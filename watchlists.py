@@ -23,11 +23,11 @@ def main():
         help='export Hyper SBI 2 watchlists to My Portfolio on Yahoo Finance')
     group.add_argument(
         '-C', action='store_true',
-        help='configure common options and return')
+        help='configure common options and exit')
     group.add_argument(
         '-M', const='LIST_ACTIONS', metavar='ACTION', nargs='?',
         # TODO
-        help='modify an action and return')
+        help='modify an action and exit')
     args = parser.parse_args(None if sys.argv[1:] else ['-h'])
 
     config_file = os.path.join(
@@ -100,10 +100,10 @@ def configure(config_file, interpolation=True):
         {'replace_sbi_securities':
          [('get', 'https://www.sbisec.co.jp/ETGate'),
           ('sleep', '1'),
-          ('click', '//*[@id="new_login"]/form/p[2]/input'),
-          ('click', '//*[@id="link02M"]/ul/li[1]/a'),
+          ('click', '//*[@id="new_login"]//input[@name="ACT_login"]'),
+          ('click', '//*[@id="link02M"]//a[@title="ポートフォリオ"]'),
           ('click', '//a[text()="登録銘柄リストの追加・置き換え"]'),
-          ('click', '//*[@id="pfcopyinputForm"]/table/tbody/tr/td/div[3]/p/a'),
+          ('click', '//*[@id="pfcopyinputForm"]//img[@alt="登録銘柄リストの追加・置き換え機能を利用する"]'),
           ('click', '//*[@name="tool_from" and @value="3"]'),
           ('click', '//input[@value="次へ"]'),
           ('click', '//*[@name="tool_to_1" and @value="1"]'),
@@ -115,19 +115,19 @@ def configure(config_file, interpolation=True):
          [('get', 'https://finance.yahoo.com/portfolios'),
           ('exist', '//*[@id="Col1-0-Portfolios-Proxy"]//a[text()="${Variables:watchlist}"]',
            [('click', '//*[@id="Col1-0-Portfolios-Proxy"]//a[text()="${Variables:watchlist}"]'),
-            ('click', '//*[@id="Lead-3-Portfolios-Proxy"]/main/header/div[2]/div/div/div[3]/div[1]'),
-            ('click', '//*[@id="dropdown-menu"]/ul/li[6]/button'),
-            ('click', '//*[@id="myLightboxContainer"]/section/form/div[2]/button[1]')]),
-          ('click', '//*[@data-test="import-pf-btn"]'),
-          ('send_keys', '//*[@id="myLightboxContainer"]/section/form/div[1]/input', r'${Common:csv_directory}\${Variables:watchlist}.csv'),
-          ('click', '//*[@id="myLightboxContainer"]/section/form/div[2]/button[1]'),
+            ('click', '//*[@id="Lead-3-Portfolios-Proxy"]//span[text()="Settings"]'),
+            ('click', '//*[@id="dropdown-menu"]//span[text()="Delete Portfolio"]'),
+            ('click', '//*[@id="myLightboxContainer"]//span[text()="Confirm"]')]),
+          ('click', '//*[@id="Col1-0-Portfolios-Proxy"]//span[text()="Import"]'),
+          ('send_keys', '//*[@id="myLightboxContainer"]//input[@name="ext_pf"]', r'${Common:csv_directory}\${Variables:watchlist}.csv'),
+          ('click', '//*[@id="myLightboxContainer"]//span[text()="Submit"]'),
           ('refresh',),
-          ('click', '//*[@id="Col1-0-Portfolios-Proxy"]/main/table/tbody/tr[1]/td[1]/div[2]/a'),
-          ('click', '//*[@id="Lead-3-Portfolios-Proxy"]/main/header/div[2]/div/div/div[3]/div'),
-          ('click', '//*[@id="dropdown-menu"]/ul/li[5]/button'),
-          ('clear', '//*[@id="myLightboxContainer"]/section/form/div[1]/input'),
-          ('send_keys', '//*[@id="myLightboxContainer"]/section/form/div[1]/input', '${Variables:watchlist}'),
-          ('click', '//*[@id="myLightboxContainer"]/section/form/div[2]/button[1]'),
+          ('click', '//*[@id="Col1-0-Portfolios-Proxy"]//a[text()="Imported from Yahoo"]'),
+          ('click', '//*[@id="Lead-3-Portfolios-Proxy"]//span[text()="Settings"]'),
+          ('click', '//*[@id="dropdown-menu"]//span[text()="Rename Portfolio"]'),
+          ('clear', '//*[@id="myLightboxContainer"]//input[@value="Imported from Yahoo"]'),
+          ('send_keys', '//*[@id="myLightboxContainer"]//input[@value="Imported from Yahoo"]', '${Variables:watchlist}'),
+          ('click', '//*[@id="myLightboxContainer"]//span[text()="Save"]'),
           ('sleep', '1')]}
 
     # TODO

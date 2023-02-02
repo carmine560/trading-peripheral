@@ -6,6 +6,7 @@ def initialize(user_data_dir=None, profile_directory=None):
 
     service = Service(executable_path=ChromeDriverManager().install())
     options = Options()
+    # TODO
     options.add_argument('--headless=new')
     if user_data_dir and profile_directory:
         options.add_argument('--user-data-dir=' + user_data_dir)
@@ -13,7 +14,7 @@ def initialize(user_data_dir=None, profile_directory=None):
 
     driver = webdriver.Chrome(service=service, options=options)
     # TODO
-    driver.implicitly_wait(1)
+    driver.implicitly_wait(4)
     return driver
 
 def execute_action(driver, action):
