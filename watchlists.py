@@ -25,30 +25,24 @@ def main():
         '-C', action='store_true',
         help='configure common options and exit')
     group.add_argument(
-        '-M', const='LIST_ACTIONS', metavar='ACTION', nargs='?',
+        '-A', action='store_true',
         # TODO
-        help='modify an action and exit')
+        help='configure actions and exit')
     args = parser.parse_args(None if sys.argv[1:] else ['-h'])
 
     config_file = os.path.join(
         os.path.expandvars('%LOCALAPPDATA%'),
         os.path.basename(os.path.dirname(__file__)),
         os.path.splitext(os.path.basename(__file__))[0] + '.ini')
-    if args.C or args.M:
+    if args.C or args.A:
         config = configure(config_file, interpolation=False)
         if args.C:
             file_utilities.backup_file(config_file, number_of_backups=8)
             configuration.modify_section(config, 'Common', config_file)
-        if args.M == 'LIST_ACTIONS':
-            configuration.list_section(config, 'Actions')
-            # TODO
-        if args.M in config.options('Actions'):
+        if args.A:
             file_utilities.backup_file(config_file, number_of_backups=8)
             # TODO
-            configuration.modify_tuples(config, 'Actions', args.M,
-                                        config_file, key_prompt='command',
-                                        value_prompt='arguments',
-                                        end_of_list_prompt='end of commands')
+            configuration.modify_section(config, 'Actions', config_file)
         return
     else:
         config = configure(config_file)
