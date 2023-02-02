@@ -14,7 +14,7 @@ def initialize(user_data_dir=None, profile_directory=None):
 
     driver = webdriver.Chrome(service=service, options=options)
     # TODO
-    driver.implicitly_wait(4)
+    driver.implicitly_wait(2)
     return driver
 
 def execute_action(driver, action):

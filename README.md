@@ -28,8 +28,8 @@ py watchlists.py -C
     SBI 2 watchlists
   * `-y` export Hyper SBI 2 watchlists to My Portfolio on Yahoo
     Finance
-  * `-C` configure common options and return
-  * `-M [ACTION]` modify an action and return
+  * `-C` configure common options and exit
+  * `-A` configure actions and exit
 
 ## Known Issue ##
 
