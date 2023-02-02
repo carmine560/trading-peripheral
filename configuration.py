@@ -13,26 +13,10 @@ def list_section(config, section):
 def modify_section(config, section, config_file):
     if config.has_section(section):
         for option in config[section]:
-            # TODO
-            if config[section][option][0:2] == '[(':
-                if not modify_option(config, section, option, config_file,
-                                     tuple_list=True):
-                    break
-            else:
-                if not modify_option(config, section, option, config_file):
-                    break
-            # import ast
-            # try:
-            #     print(ast.literal_eval(config['Common']['portfolio']))
-            #     print(type(ast.literal_eval(config[section][option])))
-            # except ValueError as e:
-            #     pass
-            #     # print(e)
-            # if not modify_option(config, section, option, config_file):
-            #     break
+            if not modify_option(config, section, option, config_file):
+                break
 
-def modify_option(config, section, option, config_file, tuple_list=False,
-                  value_prompt='value'):
+def modify_option(config, section, option, config_file, value_prompt='value'):
     global ANSI_DEFAULT
     global ANSI_RESET
     if config.has_option(section, option):
@@ -41,7 +25,8 @@ def modify_option(config, section, option, config_file, tuple_list=False,
         answer = tidy_answer(['modify', 'empty', 'default', 'quit'])
 
         if answer == 'modify':
-            if tuple_list:
+            # TODO
+            if config[section][option][0:2] == '[(':
                 modify_tuples(config, section, option, config_file)
             else:
                 value = config[section][option]

@@ -26,7 +26,6 @@ def main():
         help='configure common options and exit')
     group.add_argument(
         '-A', action='store_true',
-        # TODO
         help='configure actions and exit')
     args = parser.parse_args(None if sys.argv[1:] else ['-h'])
 
@@ -36,12 +35,10 @@ def main():
         os.path.splitext(os.path.basename(__file__))[0] + '.ini')
     if args.C or args.A:
         config = configure(config_file, interpolation=False)
+        file_utilities.backup_file(config_file, number_of_backups=8)
         if args.C:
-            file_utilities.backup_file(config_file, number_of_backups=8)
             configuration.modify_section(config, 'Common', config_file)
         if args.A:
-            file_utilities.backup_file(config_file, number_of_backups=8)
-            # TODO
             configuration.modify_section(config, 'Actions', config_file)
         return
     else:
