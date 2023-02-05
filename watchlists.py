@@ -120,16 +120,6 @@ def configure(config_file, interpolation=True):
           ('send_keys', '//input[@value="Imported from Yahoo"]', '${Variables:watchlist}'),
           ('click', '//span[text()="Save"]'),
           ('sleep', '1')]}
-
-    # TODO
-    config_directory = os.path.dirname(config_file)
-    if not os.path.isdir(config_directory):
-        try:
-            os.mkdir(config_directory)
-        except OSError as e:
-            print(e)
-            sys.exit(1)
-
     config.read(config_file, encoding='utf-8')
 
     if not config['Common']['portfolio']:
