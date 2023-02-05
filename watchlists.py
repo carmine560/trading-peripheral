@@ -20,7 +20,8 @@ def main():
         'with Hyper SBI 2 watchlists')
     parser.add_argument(
         '-y', action='store_true',
-        help='export Hyper SBI 2 watchlists to My Portfolio on Yahoo Finance')
+        help='export Hyper SBI 2 portfolio.json to My Portfolio '
+        'on Yahoo Finance')
     group.add_argument(
         '-C', action='store_true',
         help='configure common options and exit')
