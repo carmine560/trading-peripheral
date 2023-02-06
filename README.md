@@ -28,6 +28,8 @@ and uses the following web browser and packages:
     Python](https://github.com/SergeyPirogov/webdriver_manager)
     automatically updates the driver
 
+Install each package as needed.  For example:
+
 ``` powershell
 pip install selenium
 pip install webdriver-manager
