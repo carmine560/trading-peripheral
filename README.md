@@ -1,5 +1,8 @@
 # watchlists #
 
+<!-- Python script that exports Hyper SBI 2 Watchlists to SBI
+Securities and Yahoo Finance -->
+
 <!-- hypersbi2 python chrome selenium webdrivermanager -->
 
 `watchlists.py` replaces watchlists on the SBI Securities website with
@@ -12,15 +15,18 @@ Finance.
 
 ## Prerequisites ##
 
-This script has been tested with [Python for
-Windows](https://www.python.org/downloads/windows/) and Hyper SBI 2
+This script has been tested in [Python for
+Windows](https://www.python.org/downloads/windows/) with Hyper SBI 2
 and uses the following web browser and packages:
 
-  * [Chrome](https://www.google.com/chrome/)
+  * [Chrome](https://www.google.com/chrome/) authenticates to the
+    website and loads the page
   * [Selenium
     WebDriver](https://www.selenium.dev/documentation/webdriver/)
+    drives a browser
   * [Webdriver Manager for
     Python](https://github.com/SergeyPirogov/webdriver_manager)
+    automatically updates the driver
 
 ``` powershell
 pip install selenium
