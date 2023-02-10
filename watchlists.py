@@ -23,10 +23,10 @@ def main():
         help='export Hyper SBI 2 portfolio.json to My Portfolio '
         'on Yahoo Finance')
     group.add_argument(
-        '-C', action='store_true',
+        '-C', action='store_const', const='Common',
         help='configure common options and exit')
     group.add_argument(
-        '-A', action='store_true',
+        '-A', action='store_const', const='Actions',
         help='configure actions and exit')
     args = parser.parse_args(None if sys.argv[1:] else ['-h'])
 
@@ -37,10 +37,7 @@ def main():
     if args.C or args.A:
         config = configure(config_file, interpolation=False)
         file_utilities.backup_file(config_file, number_of_backups=8)
-        if args.C:
-            configuration.modify_section(config, 'Common', config_file)
-        if args.A:
-            configuration.modify_section(config, 'Actions', config_file)
+        configuration.modify_section(config, (args.C or args.A), config_file)
         return
     else:
         config = configure(config_file)

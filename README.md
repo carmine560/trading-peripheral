@@ -1,6 +1,6 @@
 # watchlists #
 
-<!-- Python script that exports Hyper SBI 2 Watchlists to SBI
+<!-- Python script that exports Hyper SBI 2 watchlists to SBI
 Securities and Yahoo Finance -->
 
 <!-- hypersbi2 python chrome selenium webdrivermanager -->
