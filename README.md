@@ -32,6 +32,7 @@ and uses the following web browser and packages:
 Install each package as needed.  For example:
 
 ``` powershell
+winget install Google.Chrome
 pip install selenium
 pip install webdriver-manager
 ```
