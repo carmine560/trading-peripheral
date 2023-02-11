@@ -7,8 +7,9 @@ Securities and Yahoo Finance -->
 
 `watchlists.py` replaces watchlists on the SBI Securities website with
 [Hyper SBI 2](https://go.sbisec.co.jp/lp/lp_hyper_sbi2_211112.html)
-watchlists and exports Hyper SBI 2 watchlists to My Portfolio on Yahoo
-Finance.
+watchlists and exports them from the file `%APPDATA%\SBI
+Securities\HYPERSBI2\IDENTIFIER\portfolio.json` to My Portfolio on
+Yahoo Finance.
 
 > **Warning** This script is currently under heavy development.
 > Changes in functionality can occur at any time.
@@ -44,10 +45,6 @@ the option `profile_directory` as follows:
 ``` powershell
 py watchlists.py -C
 ```
-
-Note that when exporting the Hyper SBI 2 watchlists to My Portfolio,
-this script loads the watchlist file `%APPDATA%\SBI
-Securities\HYPERSBI2\IDENTIFIER\portfolio.json`.
 
 ### Options ###
 
