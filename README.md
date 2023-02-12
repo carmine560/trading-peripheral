@@ -69,7 +69,9 @@ Nagoya Stock Exchange.
 
 [MIT](LICENSE.md)
 
-## Links ##
+## Link ##
 
   * [*Python Scripting to Export Hyper SBI 2 Watchlists to SBI
-    Securities and Yahoo Finance*](): a blog post for more details.
+    Securities and Yahoo
+    Finance*](https://carmine560.blogspot.com/2023/02/python-scripting-to-export-hyper-sbi-2.html):
+    a blog post for more details.
