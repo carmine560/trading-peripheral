@@ -123,11 +123,15 @@ def configure(config_file, interpolation=True):
     if not config['Common']['portfolio']:
         HYPERSBI2_PROFILES = os.path.expandvars(
             r'%APPDATA%\SBI Securities\HYPERSBI2')
+        latest_modified_time = 0.0
         identifier = ''
-        # TODO
         for f in os.listdir(HYPERSBI2_PROFILES):
             if re.match('^[0-9a-z]{32}$', f):
-                identifier = f
+                modified_time = os.path.getmtime(os.path.join(
+                    HYPERSBI2_PROFILES, f))
+                if modified_time > latest_modified_time:
+                    latest_modified_time = modified_time
+                    identifier = f
         if identifier:
             config['Common']['portfolio'] = \
                 os.path.join(HYPERSBI2_PROFILES, identifier, 'portfolio.json')
