@@ -48,8 +48,10 @@ def main():
             backup_directory=config['Common']['portfolio_backup_directory'])
     if args.s or args.y:
         driver = browser_driver.initialize(
+            headless=ast.literal_eval(config['Common']['headless']),
             user_data_dir=config['Common']['user_data_dir'],
-            profile_directory=config['Common']['profile_directory'])
+            profile_directory=config['Common']['profile_directory'],
+            implicitly_wait=float(config['Common']['implicitly_wait']))
         if args.s:
             action = ast.literal_eval(
                 config['Actions']['replace_sbi_securities'])
@@ -79,9 +81,11 @@ def configure(config_file, interpolation=True):
     config['Common'] = \
         {'portfolio': '',
          'portfolio_backup_directory': '',
+         'headless': 'True',
          'user_data_dir':
          os.path.expandvars(r'%LOCALAPPDATA%\Google\Chrome\User Data'),
          'profile_directory': 'Default',
+         'implicitly_wait': '2',
          'csv_directory': os.path.join(os.path.expanduser('~'), 'Downloads')}
     config['Variables'] = \
         {'watchlist': ''}
