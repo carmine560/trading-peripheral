@@ -52,13 +52,13 @@ These configurations are saved in the configuration file
 
 ### Options ###
 
-  * `-p` backup Hyper SBI 2 `portfolio.json`
-  * `-s` replace watchlists on the SBI Securities website with Hyper
+  * `-p`: backup Hyper SBI 2 `portfolio.json`
+  * `-s`: replace watchlists on the SBI Securities website with Hyper
     SBI 2 watchlists
-  * `-y` export Hyper SBI 2 `portfolio.json` to My Portfolio on Yahoo
+  * `-y`: export Hyper SBI 2 `portfolio.json` to My Portfolio on Yahoo
     Finance
-  * `-C` configure common options and exit
-  * `-A` configure actions and exit
+  * `-C`: configure common options and exit
+  * `-A`: configure actions and exit
 
 ## Known Issue ##
 
