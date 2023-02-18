@@ -48,7 +48,7 @@ def main():
             backup_directory=config['Common']['portfolio_backup_directory'])
     if args.s or args.y:
         driver = browser_driver.initialize(
-            headless=ast.literal_eval(config['Common']['headless']),
+            headless=config.getboolean('Common', 'headless'),
             user_data_dir=config['Common']['user_data_dir'],
             profile_directory=config['Common']['profile_directory'],
             implicitly_wait=float(config['Common']['implicitly_wait']))
