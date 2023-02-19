@@ -1,13 +1,14 @@
-# watchlists #
+# trading-peripherals #
 
 <!-- Python script that exports Hyper SBI 2 watchlists to SBI
 Securities and Yahoo Finance -->
 
 <!-- hypersbi2 python chrome selenium webdrivermanager -->
 
-`watchlists.py` replaces watchlists on the SBI Securities website with
-[Hyper SBI 2](https://go.sbisec.co.jp/lp/lp_hyper_sbi2_211112.html)
-watchlists and exports them from the file `%APPDATA%\SBI
+`trading_peripherals.py` replaces watchlists on the SBI Securities
+website with [Hyper SBI
+2](https://go.sbisec.co.jp/lp/lp_hyper_sbi2_211112.html) watchlists
+and exports them from the file `%APPDATA%\SBI
 Securities\HYPERSBI2\IDENTIFIER\portfolio.json` to [My
 Portfolio](https://finance.yahoo.com/portfolios) on Yahoo Finance.
 
@@ -44,11 +45,11 @@ profile that stores your credentials and specify it as the value of
 the option `profile_directory` as follows:
 
 ``` powershell
-py watchlists.py -C
+py trading_peripherals.py -C
 ```
 
 These configurations are saved in the configuration file
-`%LOCALAPPDATA%\watchlists\watchlists.ini`.
+`%LOCALAPPDATA%\trading-peripherals\trading_peripherals.ini`.
 
 ### Options ###
 
