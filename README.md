@@ -1,16 +1,20 @@
 # trading-peripheral #
 
-<!-- Python script that exports Hyper SBI 2 watchlists to SBI
-Securities and Yahoo Finance -->
+<!-- Python script that exports Hyper SBI 2 watchlists to Yahoo
+Finance and extracts order status from SBI Securities web page -->
 
 <!-- hypersbi2 python chrome selenium webdrivermanager -->
 
-`trading_peripheral.py` replaces watchlists on the SBI Securities
-website with [Hyper SBI
-2](https://go.sbisec.co.jp/lp/lp_hyper_sbi2_211112.html) watchlists
-and exports them from the file `%APPDATA%\SBI
-Securities\HYPERSBI2\IDENTIFIER\portfolio.json` to [My
-Portfolio](https://finance.yahoo.com/portfolios) on Yahoo Finance.
+`trading_peripheral.py`:
+
+  * replaces watchlists on the SBI Securities website with [Hyper SBI
+    2](https://go.sbisec.co.jp/lp/lp_hyper_sbi2_211112.html)
+    watchlists
+  * exports them from the file `%APPDATA%\SBI
+    Securities\HYPERSBI2\IDENTIFIER\portfolio.json` to [My
+    Portfolio](https://finance.yahoo.com/portfolios) on Yahoo Finance
+  * extracts order status from the SBI Securities web page and copy
+    them to the clipboard.
 
 > **Warning** This script is currently under heavy development.
 > Changes in functionality can occur at any time.
@@ -58,6 +62,8 @@ These configurations are saved in the configuration file
     SBI 2 watchlists
   * `-y`: export Hyper SBI 2 `portfolio.json` to My Portfolio on Yahoo
     Finance
+  * `-o`: extract order status from the SBI Securities web page and
+    copy them to the clipboard
   * `-C`: configure common options and exit
   * `-A`: configure actions and exit
 
@@ -70,9 +76,12 @@ Nagoya Stock Exchange.
 
 [MIT](LICENSE.md)
 
+<!-- ## Links ## -->
 ## Link ##
 
   * [*Python Scripting to Export Hyper SBI 2 Watchlists to SBI
     Securities and Yahoo
     Finance*](https://carmine560.blogspot.com/2023/02/python-scripting-to-export-hyper-sbi-2.html):
     a blog post for more details.
+  <!-- * [*Python Scripting to Extract Order Status from SBI Securities Web -->
+  <!--   Page*](): a blog post for more details. -->
