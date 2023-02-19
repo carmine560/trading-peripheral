@@ -79,9 +79,8 @@ Nagoya Stock Exchange.
 <!-- ## Links ## -->
 ## Link ##
 
-  * [*Python Scripting to Export Hyper SBI 2 Watchlists to SBI
-    Securities and Yahoo
+  * [*Python Scripting to Export Hyper SBI 2 Watchlists to Yahoo
     Finance*](https://carmine560.blogspot.com/2023/02/python-scripting-to-export-hyper-sbi-2.html):
-    a blog post for more details.
-  <!-- * [*Python Scripting to Extract Order Status from SBI Securities Web -->
-  <!--   Page*](): a blog post for more details. -->
+    a blog post for more details.  <!-- * [*Python Scripting to
+    Extract Order Status from SBI Securities Web --> <!-- Page*](): a
+    blog post for more details. -->
