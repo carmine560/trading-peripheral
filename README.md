@@ -1,11 +1,11 @@
-# trading-peripherals #
+# trading-peripheral #
 
 <!-- Python script that exports Hyper SBI 2 watchlists to SBI
 Securities and Yahoo Finance -->
 
 <!-- hypersbi2 python chrome selenium webdrivermanager -->
 
-`trading_peripherals.py` replaces watchlists on the SBI Securities
+`trading_peripheral.py` replaces watchlists on the SBI Securities
 website with [Hyper SBI
 2](https://go.sbisec.co.jp/lp/lp_hyper_sbi2_211112.html) watchlists
 and exports them from the file `%APPDATA%\SBI
@@ -45,11 +45,11 @@ profile that stores your credentials and specify it as the value of
 the option `profile_directory` as follows:
 
 ``` powershell
-py trading_peripherals.py -C
+py trading_peripheral.py -C
 ```
 
 These configurations are saved in the configuration file
-`%LOCALAPPDATA%\trading-peripherals\trading_peripherals.ini`.
+`%LOCALAPPDATA%\trading-peripheral\trading_peripheral.ini`.
 
 ### Options ###
 
