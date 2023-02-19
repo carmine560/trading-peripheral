@@ -22,6 +22,10 @@ def main():
         '-y', action='store_true',
         help='export Hyper SBI 2 portfolio.json to My Portfolio '
         'on Yahoo Finance')
+    parser.add_argument(
+        '-o', action='store_true',
+        help='extract order status from the SBI Securities web page '
+        'and copy them to the clipboard')
     group.add_argument(
         '-C', action='store_const', const='Common',
         help='configure common options and exit')
@@ -46,25 +50,31 @@ def main():
         file_utilities.backup_file(
             config['Common']['portfolio'],
             backup_directory=config['Common']['portfolio_backup_directory'])
-    if args.s or args.y:
+    if args.s or args.y or args.o:
         driver = browser_driver.initialize(
             headless=config.getboolean('Common', 'headless'),
             user_data_dir=config['Common']['user_data_dir'],
             profile_directory=config['Common']['profile_directory'],
             implicitly_wait=float(config['Common']['implicitly_wait']))
         if args.s:
-            action = ast.literal_eval(
-                config['Actions']['replace_sbi_securities'])
-            browser_driver.execute_action(driver, action)
+            browser_driver.execute_action(
+                driver,
+                ast.literal_eval(config['Actions']['replace_sbi_securities']))
         if args.y:
             watchlists = convert_to_yahoo_finance(config)
             for watchlist in watchlists:
                 config['Variables']['watchlist'] = watchlist
-                action = ast.literal_eval(
-                    config['Actions']['export_to_yahoo_finance']
-                    .replace('\\', '\\\\')
-                    .replace('\\\\\\\\', '\\\\'))
-                browser_driver.execute_action(driver, action)
+                browser_driver.execute_action(
+                    driver,
+                    ast.literal_eval(
+                        config['Actions']['export_to_yahoo_finance']
+                        .replace('\\', '\\\\')
+                        .replace('\\\\\\\\', '\\\\')))
+        if args.o:
+            browser_driver.execute_action(
+                driver,
+                ast.literal_eval(config['Actions']['get_order_status']))
+            format_order_status(driver)
 
         driver.quit()
 
@@ -121,7 +131,12 @@ def configure(config_file, interpolation=True):
           ('clear', '//input[@value="Imported from Yahoo"]'),
           ('send_keys', '//input[@value="Imported from Yahoo"]', '${Variables:watchlist}'),
           ('click', '//span[text()="Save"]'),
-          ('sleep', '1')]}
+          ('sleep', '1')],
+         'get_order_status':
+         [('get', 'https://www.sbisec.co.jp/ETGate'),
+          ('sleep', '1'),
+          ('click', '//input[@name="ACT_login"]'),
+          ('click', '//a[text()="注文照会"]')]}
     config.read(config_file, encoding='utf-8')
 
     if not config['Common']['portfolio']:
@@ -189,6 +204,111 @@ def convert_to_yahoo_finance(config):
         csv_file.close()
         watchlists.append(watchlist)
     return watchlists
+
+def format_order_status(driver):
+    import re
+    import sys
+
+    from selenium.webdriver.common.by import By
+    import pandas as pd
+
+    dfs = pd.DataFrame()
+    try:
+        dfs = pd.read_html(driver.page_source, match='注文種別', flavor='lxml')
+    except Exception as e:
+        print(e)
+        sys.exit(1)
+
+    index = 0
+    df = dfs[1]
+    size_price = pd.DataFrame(columns=['size', 'price'])
+    results = pd.DataFrame(columns=[
+        'entry_date',
+        'day_of_week',
+        'number',
+        'entry_time',
+        'symbol',
+        'size',
+        'trade_type',
+        'trade_style',
+        'entry_price',
+        'tactic',
+        'entry_reason',
+        'exit_date',
+        'exit_time',
+        'exit_price'
+    ])
+    while index < len(df):
+        if df.iloc[index, 3] == '約定':
+            if len(size_price) == 0:
+                size_price.loc[0] = [df.iloc[index - 1, 6],
+                                     df.iloc[index - 1, 7]]
+
+            size_price.loc[len(size_price)] = [df.iloc[index, 6],
+                                               df.iloc[index, 7]]
+            if index + 1 == len(df) or df.iloc[index + 1, 3] != '約定':
+                size_price_index = 0
+                size_price = size_price.astype(float)
+                summation = 0
+                while size_price_index < len(size_price):
+                    summation += \
+                        size_price.loc[size_price_index, 'size'] \
+                        * size_price.loc[size_price_index, 'price']
+                    size_price_index += 1
+
+                average_price = summation / size_price['size'].sum()
+                if '信新' in df.iloc[index - len(size_price), 3]:
+                    entry_price = average_price
+                else:
+                    results.loc[len(results) - 1, 'exit_price'] = average_price
+
+                size_price = pd.DataFrame(columns=['size', 'price'])
+
+            index += 1
+        else:
+            symbol = re.sub('^.* (\d{4}) 東証$', r'\1', df.iloc[index, 3])
+            size = df.iloc[index + 1, 6]
+            trade_style = 'day'
+            if '信新' in df.iloc[index + 1, 3]:
+                entry_date = re.sub('^(\d{2}/\d{2}) (\d{2}:\d{2}:\d{2})$',
+                                    r'\1', df.iloc[index + 2, 5])
+                entry_time = re.sub('^(\d{2}/\d{2}) (\d{2}:\d{2}:\d{2})$',
+                                    r'\2', df.iloc[index + 2, 5])
+                if '信新買' in df.iloc[index + 1, 3]:
+                    trade_type = 'long'
+                else:
+                    trade_type = 'short'
+
+                entry_price = df.iloc[index + 2, 7]
+            else:
+                exit_date = re.sub('^(\d{2}/\d{2}) (\d{2}:\d{2}:\d{2})$',
+                                   r'\1', df.iloc[index + 2, 5])
+                exit_time = re.sub('^(\d{2}/\d{2}) (\d{2}:\d{2}:\d{2})$',
+                                   r'\2', df.iloc[index + 2, 5])
+                exit_price = df.iloc[index + 2, 7]
+                results.loc[len(results)] = [
+                    entry_date,
+                    None,
+                    None,
+                    entry_time,
+                    symbol,
+                    size,
+                    trade_type,
+                    trade_style,
+                    entry_price,
+                    None,
+                    None,
+                    exit_date,
+                    exit_time,
+                    exit_price
+                ]
+
+            index += 3
+
+    if len(results) == 1:
+        results = results.reindex([0, 1])
+
+    results.to_clipboard(index=False, header=False)
 
 if __name__ == '__main__':
     main()
