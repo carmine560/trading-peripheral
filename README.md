@@ -13,8 +13,8 @@ Finance and extracts order status from SBI Securities web page -->
   * exports them from the file `%APPDATA%\SBI
     Securities\HYPERSBI2\IDENTIFIER\portfolio.json` to [My
     Portfolio](https://finance.yahoo.com/portfolios) on Yahoo Finance
-  * extracts order status from the SBI Securities web page and copy
-    them to the clipboard.
+  <!-- * extracts order status from the SBI Securities web page and copy -->
+  <!--   them to the clipboard. -->
 
 > **Warning** This script is currently under heavy development.
 > Changes in functionality can occur at any time.
@@ -62,8 +62,8 @@ These configurations are saved in the configuration file
     SBI 2 watchlists
   * `-y`: export Hyper SBI 2 `portfolio.json` to My Portfolio on Yahoo
     Finance
-  * `-o`: extract order status from the SBI Securities web page and
-    copy them to the clipboard
+  <!-- * `-o`: extract order status from the SBI Securities web page and -->
+  <!--   copy them to the clipboard -->
   * `-C`: configure common options and exit
   * `-A`: configure actions and exit
 
@@ -81,6 +81,6 @@ Nagoya Stock Exchange.
 
   * [*Python Scripting to Export Hyper SBI 2 Watchlists to Yahoo
     Finance*](https://carmine560.blogspot.com/2023/02/python-scripting-to-export-hyper-sbi-2.html):
-    a blog post for more details.  <!-- * [*Python Scripting to
-    Extract Order Status from SBI Securities Web --> <!-- Page*](): a
-    blog post for more details. -->
+    a blog post for more details.
+  <!-- * [*Python Scripting to Extract Order Status from SBI Securities Web -->
+  <!--   Page*](): a blog post for more details. -->
