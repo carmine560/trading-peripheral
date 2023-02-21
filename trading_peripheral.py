@@ -100,7 +100,7 @@ def configure(config_file, interpolation=True):
     config['Variables'] = \
         {'watchlist': ''}
     config['Order Status'] = \
-        {'results':
+        {'columns':
          ['entry_date', None, None, 'entry_time', 'symbol', 'size',
           'trade_type', 'trade_style', 'entry_price', None, None, 'exit_date',
           'exit_time', 'exit_price']}
@@ -228,7 +228,7 @@ def format_order_status(config, driver):
     index = 0
     df = dfs[1]
     size_price = pd.DataFrame(columns=['size', 'price'])
-    columns = ast.literal_eval(config['Order Status']['results'])
+    columns = ast.literal_eval(config['Order Status']['columns'])
     results = pd.DataFrame(columns=columns)
     while index < len(df):
         if df.iloc[index, 3] == '約定':
