@@ -1,9 +1,9 @@
+import ast
 import os
 import sys
 
 def main():
     import argparse
-    import ast
 
     import browser_driver
     import configuration
@@ -74,7 +74,7 @@ def main():
             browser_driver.execute_action(
                 driver,
                 ast.literal_eval(config['Actions']['get_order_status']))
-            format_order_status(driver)
+            format_order_status(config, driver)
 
         driver.quit()
 
@@ -99,6 +99,11 @@ def configure(config_file, interpolation=True):
          'csv_directory': os.path.join(os.path.expanduser('~'), 'Downloads')}
     config['Variables'] = \
         {'watchlist': ''}
+    config['Order Status'] = \
+        {'results':
+         ['entry_date', None, None, 'entry_time', 'symbol', 'size',
+          'trade_type', 'trade_style', 'entry_price', None, None, 'exit_date',
+          'exit_time', 'exit_price']}
     config['Actions'] = \
         {'replace_sbi_securities':
          [('get', 'https://www.sbisec.co.jp/ETGate'),
@@ -205,7 +210,8 @@ def convert_to_yahoo_finance(config):
         watchlists.append(watchlist)
     return watchlists
 
-def format_order_status(driver):
+# TODO
+def format_order_status(config, driver):
     import re
     import sys
 
@@ -222,22 +228,8 @@ def format_order_status(driver):
     index = 0
     df = dfs[1]
     size_price = pd.DataFrame(columns=['size', 'price'])
-    results = pd.DataFrame(columns=[
-        'entry_date',
-        'day_of_week',
-        'number',
-        'entry_time',
-        'symbol',
-        'size',
-        'trade_type',
-        'trade_style',
-        'entry_price',
-        'tactic',
-        'entry_reason',
-        'exit_date',
-        'exit_time',
-        'exit_price'
-    ])
+    columns = ast.literal_eval(config['Order Status']['results'])
+    results = pd.DataFrame(columns=columns)
     while index < len(df):
         if df.iloc[index, 3] == '約定':
             if len(size_price) == 0:
@@ -286,22 +278,18 @@ def format_order_status(driver):
                 exit_time = re.sub('^(\d{2}/\d{2}) (\d{2}:\d{2}:\d{2})$',
                                    r'\2', df.iloc[index + 2, 5])
                 exit_price = df.iloc[index + 2, 7]
-                results.loc[len(results)] = [
-                    entry_date,
-                    None,
-                    None,
-                    entry_time,
-                    symbol,
-                    size,
-                    trade_type,
-                    trade_style,
-                    entry_price,
-                    None,
-                    None,
-                    exit_date,
-                    exit_time,
-                    exit_price
-                ]
+
+                evaluated_results = []
+                for i in range(len(columns)):
+                    if columns[i]:
+                        parsed = ast.parse(columns[i], mode='eval')
+                        fixed = ast.fix_missing_locations(parsed)
+                        compiled = compile(fixed, '<string>', 'eval')
+                        evaluated_results.append(eval(compiled))
+                    else:
+                        evaluated_results.append(None)
+
+                results.loc[len(results)] = evaluated_results
 
             index += 3
 
