@@ -78,7 +78,7 @@ def main():
             browser_driver.execute_action(
                 driver,
                 ast.literal_eval(config['Actions']['get_order_status']))
-            format_order_status(config, driver)
+            extract_order_status(config, driver)
 
         driver.quit()
 
@@ -228,7 +228,7 @@ def convert_to_yahoo_finance(config):
     return watchlists
 
 # TODO
-def format_order_status(config, driver):
+def extract_order_status(config, driver):
     import re
     import sys
 
