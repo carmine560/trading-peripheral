@@ -105,10 +105,14 @@ def configure(config_file, interpolation=True):
          ['entry_date', None, None, 'entry_time', 'symbol', 'size',
           'trade_type', 'trade_style', 'entry_price', None, None, 'exit_date',
           'exit_time', 'exit_price'],
+         'execution_column': '3',
          'execution': '約定',
+         'size_column': '6',
+         'price_column': '7',
          'margin_trading': '信新',
          'symbol_regex': r'^.* (\d{4}) 東証$$',
          'symbol_replacement': r'\1',
+         'datetime_column': '5',
          'datetime_regex': r'^(\d{2}/\d{2}) (\d{2}:\d{2}:\d{2})$$',
          'date_replacement': r'\1',
          'time_replacement': r'\2',
@@ -229,10 +233,14 @@ def format_order_status(config, driver):
 
     section = config['Order Status']
     table_indicator = section['table_indicator']
+    execution_column = int(section['execution_column'])
     execution = section['execution']
+    size_column = int(section['size_column'])
+    price_column = int(section['price_column'])
     margin_trading = section['margin_trading']
     symbol_regex = section['symbol_regex']
     symbol_replacement = section['symbol_replacement']
+    datetime_column = int(section['datetime_column'])
     datetime_regex = section['datetime_regex']
     date_replacement = section['date_replacement']
     time_replacement = section['time_replacement']
@@ -252,14 +260,15 @@ def format_order_status(config, driver):
     columns = ast.literal_eval(section['columns'])
     results = pd.DataFrame(columns=columns)
     while index < len(df):
-        if df.iloc[index, 3] == execution:
+        if df.iloc[index, execution_column] == execution:
             if len(size_price) == 0:
-                size_price.loc[0] = [df.iloc[index - 1, 6],
-                                     df.iloc[index - 1, 7]]
+                size_price.loc[0] = [df.iloc[index - 1, size_column],
+                                     df.iloc[index - 1, price_column]]
 
-            size_price.loc[len(size_price)] = [df.iloc[index, 6],
-                                               df.iloc[index, 7]]
-            if index + 1 == len(df) or df.iloc[index + 1, 3] != execution:
+            size_price.loc[len(size_price)] = [df.iloc[index, size_column],
+                                               df.iloc[index, price_column]]
+            if index + 1 == len(df) \
+               or df.iloc[index + 1, execution_column] != execution:
                 size_price_index = 0
                 size_price = size_price.astype(float)
                 summation = 0
@@ -270,7 +279,8 @@ def format_order_status(config, driver):
                     size_price_index += 1
 
                 average_price = summation / size_price['size'].sum()
-                if margin_trading in df.iloc[index - len(size_price), 3]:
+                if margin_trading \
+                   in df.iloc[index - len(size_price), execution_column]:
                     entry_price = average_price
                 else:
                     results.loc[len(results) - 1, 'exit_price'] = average_price
@@ -280,26 +290,26 @@ def format_order_status(config, driver):
             index += 1
         else:
             symbol = re.sub(symbol_regex, symbol_replacement,
-                            df.iloc[index, 3])
-            size = df.iloc[index + 1, 6]
+                            df.iloc[index, execution_column])
+            size = df.iloc[index + 1, size_column]
             trade_style = 'day'
-            if margin_trading in df.iloc[index + 1, 3]:
+            if margin_trading in df.iloc[index + 1, execution_column]:
                 entry_date = re.sub(datetime_regex, date_replacement,
-                                    df.iloc[index + 2, 5])
+                                    df.iloc[index + 2, datetime_column])
                 entry_time = re.sub(datetime_regex, time_replacement,
-                                    df.iloc[index + 2, 5])
-                if buying_on_margin in df.iloc[index + 1, 3]:
+                                    df.iloc[index + 2, datetime_column])
+                if buying_on_margin in df.iloc[index + 1, execution_column]:
                     trade_type = 'long'
                 else:
                     trade_type = 'short'
 
-                entry_price = df.iloc[index + 2, 7]
+                entry_price = df.iloc[index + 2, price_column]
             else:
                 exit_date = re.sub(datetime_regex, date_replacement,
-                                   df.iloc[index + 2, 5])
+                                   df.iloc[index + 2, datetime_column])
                 exit_time = re.sub(datetime_regex, time_replacement,
-                                   df.iloc[index + 2, 5])
-                exit_price = df.iloc[index + 2, 7]
+                                   df.iloc[index + 2, datetime_column])
+                exit_price = df.iloc[index + 2, price_column]
 
                 evaluated_results = []
                 for i in range(len(columns)):

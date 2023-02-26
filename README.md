@@ -67,10 +67,11 @@ These configurations are saved in the configuration file
   * `-C`: configure common options and exit
   * `-A`: configure actions and exit
 
-## Known Issue ##
+## Known Issues ##
 
-Yahoo Finance does not seem to have any stocks listed solely on the
-Nagoya Stock Exchange.
+  * Yahoo Finance does not seem to have any stocks listed solely on
+    the Nagoya Stock Exchange.
+  * Extracting order status assumes day trading on margin.
 
 ## License ##
 
