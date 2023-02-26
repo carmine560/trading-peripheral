@@ -30,6 +30,9 @@ def main():
         '-C', action='store_const', const='Common',
         help='configure common options and exit')
     group.add_argument(
+        '-O', action='store_const', const='Order Status',
+        help='configure order state formats and exit')
+    group.add_argument(
         '-A', action='store_const', const='Actions',
         help='configure actions and exit')
     args = parser.parse_args(None if sys.argv[1:] else ['-h'])
@@ -38,10 +41,11 @@ def main():
         os.path.expandvars('%LOCALAPPDATA%'),
         os.path.basename(os.path.dirname(__file__)),
         os.path.splitext(os.path.basename(__file__))[0] + '.ini')
-    if args.C or args.A:
+    if args.C or args.O or args.A:
         config = configure(config_file, interpolation=False)
         file_utilities.backup_file(config_file, number_of_backups=8)
-        configuration.modify_section(config, (args.C or args.A), config_file)
+        configuration.modify_section(config, (args.C or args.O or args.A),
+                                     config_file)
         return
     else:
         config = configure(config_file)
@@ -100,23 +104,23 @@ def configure(config_file, interpolation=True):
     config['Variables'] = \
         {'watchlist': ''}
     config['Order Status'] = \
-        {'table_indicator': '注文種別',
-         'columns':
+        {'output_columns':
          ['entry_date', None, None, 'entry_time', 'symbol', 'size',
           'trade_type', 'trade_style', 'entry_price', None, None, 'exit_date',
           'exit_time', 'exit_price'],
-         'execution_column': '3',
-         'execution': '約定',
-         'size_column': '6',
-         'price_column': '7',
-         'margin_trading': '信新',
+         'table_identifier': '注文種別',
          'symbol_regex': r'^.* (\d{4}) 東証$$',
          'symbol_replacement': r'\1',
+         'margin_trading': '信新',
+         'buying_on_margin': '信新買',
+         'execution_column': '3',
+         'execution': '約定',
          'datetime_column': '5',
          'datetime_regex': r'^(\d{2}/\d{2}) (\d{2}:\d{2}:\d{2})$$',
          'date_replacement': r'\1',
          'time_replacement': r'\2',
-         'buying_on_margin': '信新買'}
+         'size_column': '6',
+         'price_column': '7'}
     config['Actions'] = \
         {'replace_sbi_securities':
          [('get', 'https://www.sbisec.co.jp/ETGate'),
@@ -228,27 +232,27 @@ def format_order_status(config, driver):
     import re
     import sys
 
-    from selenium.webdriver.common.by import By
     import pandas as pd
 
     section = config['Order Status']
-    table_indicator = section['table_indicator']
-    execution_column = int(section['execution_column'])
-    execution = section['execution']
-    size_column = int(section['size_column'])
-    price_column = int(section['price_column'])
-    margin_trading = section['margin_trading']
+    output_columns = ast.literal_eval(section['output_columns'])
+    table_identifier = section['table_identifier']
     symbol_regex = section['symbol_regex']
     symbol_replacement = section['symbol_replacement']
+    margin_trading = section['margin_trading']
+    buying_on_margin = section['buying_on_margin']
+    execution_column = int(section['execution_column'])
+    execution = section['execution']
     datetime_column = int(section['datetime_column'])
     datetime_regex = section['datetime_regex']
     date_replacement = section['date_replacement']
     time_replacement = section['time_replacement']
-    buying_on_margin = section['buying_on_margin']
+    size_column = int(section['size_column'])
+    price_column = int(section['price_column'])
 
     dfs = pd.DataFrame()
     try:
-        dfs = pd.read_html(driver.page_source, match=table_indicator,
+        dfs = pd.read_html(driver.page_source, match=table_identifier,
                            flavor='lxml')
     except Exception as e:
         print(e)
@@ -257,8 +261,7 @@ def format_order_status(config, driver):
     index = 0
     df = dfs[1]
     size_price = pd.DataFrame(columns=['size', 'price'])
-    columns = ast.literal_eval(section['columns'])
-    results = pd.DataFrame(columns=columns)
+    results = pd.DataFrame(columns=output_columns)
     while index < len(df):
         if df.iloc[index, execution_column] == execution:
             if len(size_price) == 0:
@@ -312,9 +315,9 @@ def format_order_status(config, driver):
                 exit_price = df.iloc[index + 2, price_column]
 
                 evaluated_results = []
-                for i in range(len(columns)):
-                    if columns[i]:
-                        parsed = ast.parse(columns[i], mode='eval')
+                for i in range(len(output_columns)):
+                    if output_columns[i]:
+                        parsed = ast.parse(output_columns[i], mode='eval')
                         fixed = ast.fix_missing_locations(parsed)
                         compiled = compile(fixed, '<string>', 'eval')
                         evaluated_results.append(eval(compiled))

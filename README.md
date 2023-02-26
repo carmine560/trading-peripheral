@@ -65,6 +65,7 @@ These configurations are saved in the configuration file
   * `-o`: extract order status from the SBI Securities web page and
     copy them to the clipboard
   * `-C`: configure common options and exit
+  * `-O`: configure order state formats and exit
   * `-A`: configure actions and exit
 
 ## Known Issues ##
