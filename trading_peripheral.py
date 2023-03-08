@@ -99,7 +99,7 @@ def configure(config_file, interpolation=True):
          'user_data_dir':
          os.path.expandvars(r'%LOCALAPPDATA%\Google\Chrome\User Data'),
          'profile_directory': 'Default',
-         'implicitly_wait': '2',
+         'implicitly_wait': '4',
          'csv_directory': os.path.join(os.path.expanduser('~'), 'Downloads')}
     config['Variables'] = \
         {'watchlist': ''}
@@ -124,7 +124,6 @@ def configure(config_file, interpolation=True):
     config['Actions'] = \
         {'replace_sbi_securities':
          [('get', 'https://www.sbisec.co.jp/ETGate'),
-          ('sleep', '1'),
           ('click', '//input[@name="ACT_login"]'),
           ('click', '//a[text()="ポートフォリオ"]'),
           ('click', '//a[text()="登録銘柄リストの追加・置き換え"]'),
@@ -141,22 +140,23 @@ def configure(config_file, interpolation=True):
           ('exist', '//*[@id="Col1-0-Portfolios-Proxy"]//a[text()="${Variables:watchlist}"]',
            [('click', '//*[@id="Col1-0-Portfolios-Proxy"]//a[text()="${Variables:watchlist}"]'),
             ('click', '//span[text()="Settings"]'),
+            ('sleep', '0.4'),
             ('click', '//span[text()="Delete Portfolio"]'),
             ('click', '//span[text()="Confirm"]')]),
           ('click', '//span[text()="Import"]'),
           ('send_keys', '//input[@name="ext_pf"]', r'${Common:csv_directory}\${Variables:watchlist}.csv'),
           ('click', '//span[text()="Submit"]'),
           ('refresh',),
+          ('sleep', '0.4'),
           ('click', '//a[text()="Imported from Yahoo"]'),
           ('click', '//span[text()="Settings"]'),
           ('click', '//span[text()="Rename Portfolio"]'),
           ('clear', '//input[@value="Imported from Yahoo"]'),
           ('send_keys', '//input[@value="Imported from Yahoo"]', '${Variables:watchlist}'),
           ('click', '//span[text()="Save"]'),
-          ('sleep', '1')],
+          ('sleep', '0.4')],
          'get_order_status':
          [('get', 'https://www.sbisec.co.jp/ETGate'),
-          ('sleep', '1'),
           ('click', '//input[@name="ACT_login"]'),
           ('click', '//a[text()="注文照会"]')]}
     config.read(config_file, encoding='utf-8')

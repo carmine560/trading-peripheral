@@ -41,4 +41,4 @@ def execute_action(driver, action):
         elif command == 'send_keys':
             driver.find_element(By.XPATH, argument).send_keys(action[index][2])
         elif command == 'sleep':
-            time.sleep(int(argument))
+            time.sleep(float(argument))
