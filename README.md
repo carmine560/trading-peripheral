@@ -52,8 +52,9 @@ the option `profile_directory` as follows:
 py trading_peripheral.py -C
 ```
 
-These configurations are saved in the configuration file
-`%LOCALAPPDATA%\trading-peripheral\trading_peripheral.ini`.
+The configuration file
+`%LOCALAPPDATA%\trading-peripheral\trading_peripheral.ini` saves these
+configurations.
 
 ### Options ###
 
@@ -70,8 +71,8 @@ These configurations are saved in the configuration file
 
 ## Known Issues ##
 
-  * Yahoo Finance does not seem to have any stocks listed solely on
-    the Nagoya Stock Exchange.
+  * It appears that Yahoo Finance does not have stocks listed solely
+    on the Nagoya Stock Exchange.
   * Extracting order status assumes day trading on margin.
 
 ## License ##
