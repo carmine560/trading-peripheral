@@ -5,7 +5,7 @@ Finance and extracts order status from SBI Securities web page -->
 
 <!-- hypersbi2 python chrome selenium webdrivermanager -->
 
-`trading_peripheral.py`:
+A `trading_peripheral.py` Python script:
 
   * replaces watchlists on the SBI Securities website with [Hyper SBI
     2](https://go.sbisec.co.jp/lp/lp_hyper_sbi2_211112.html)
@@ -46,15 +46,14 @@ pip install webdriver-manager
 
 If you are using Chrome as your default web browser, create a separate
 profile that stores your credentials and specify it as the value of
-the option `profile_directory` as follows:
+the `profile_directory` option as follows:
 
 ``` powershell
-py trading_peripheral.py -C
+py trading_peripheral.py -G
 ```
 
-The configuration file
-`%LOCALAPPDATA%\trading-peripheral\trading_peripheral.ini` saves these
-configurations.
+A `%LOCALAPPDATA%\trading-peripheral\trading_peripheral.ini`
+configuration file saves these configurations.
 
 ### Options ###
 
@@ -65,7 +64,7 @@ configurations.
     Finance
   * `-o`: extract order status from the SBI Securities web page and
     copy them to the clipboard
-  * `-C`: configure common options and exit
+  * `-G`: configure general options and exit
   * `-O`: configure order state formats and exit
   * `-A`: configure actions and exit
 

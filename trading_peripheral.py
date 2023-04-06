@@ -27,8 +27,8 @@ def main():
         help='extract order status from the SBI Securities web page '
         'and copy them to the clipboard')
     group.add_argument(
-        '-C', action='store_const', const='Common',
-        help='configure common options and exit')
+        '-G', action='store_const', const='General',
+        help='configure general options and exit')
     group.add_argument(
         '-O', action='store_const', const='Order Status',
         help='configure order state formats and exit')
@@ -41,10 +41,10 @@ def main():
         os.path.expandvars('%LOCALAPPDATA%'),
         os.path.basename(os.path.dirname(__file__)),
         os.path.splitext(os.path.basename(__file__))[0] + '.ini')
-    if args.C or args.O or args.A:
+    if args.G or args.O or args.A:
         config = configure(config_file, interpolation=False)
         file_utilities.backup_file(config_file, number_of_backups=8)
-        configuration.modify_section(config, (args.C or args.O or args.A),
+        configuration.modify_section(config, (args.G or args.O or args.A),
                                      config_file)
         return
     else:
@@ -52,14 +52,14 @@ def main():
 
     if args.p:
         file_utilities.backup_file(
-            config['Common']['portfolio'],
-            backup_directory=config['Common']['portfolio_backup_directory'])
+            config['General']['portfolio'],
+            backup_directory=config['General']['portfolio_backup_directory'])
     if args.s or args.y or args.o:
         driver = browser_driver.initialize(
-            headless=config.getboolean('Common', 'headless'),
-            user_data_dir=config['Common']['user_data_dir'],
-            profile_directory=config['Common']['profile_directory'],
-            implicitly_wait=float(config['Common']['implicitly_wait']))
+            headless=config.getboolean('General', 'headless'),
+            user_data_dir=config['General']['user_data_dir'],
+            profile_directory=config['General']['profile_directory'],
+            implicitly_wait=float(config['General']['implicitly_wait']))
         if args.s:
             browser_driver.execute_action(
                 driver,
@@ -92,7 +92,7 @@ def configure(config_file, interpolation=True):
     else:
         config = configparser.ConfigParser()
 
-    config['Common'] = \
+    config['General'] = \
         {'portfolio': '',
          'portfolio_backup_directory': '',
          'headless': 'True',
@@ -144,7 +144,7 @@ def configure(config_file, interpolation=True):
             ('click', '//span[text()="Delete Portfolio"]'),
             ('click', '//span[text()="Confirm"]')]),
           ('click', '//span[text()="Import"]'),
-          ('send_keys', '//input[@name="ext_pf"]', r'${Common:csv_directory}\${Variables:watchlist}.csv'),
+          ('send_keys', '//input[@name="ext_pf"]', r'${General:csv_directory}\${Variables:watchlist}.csv'),
           ('click', '//span[text()="Submit"]'),
           ('refresh',),
           ('sleep', '0.8'),
@@ -161,7 +161,7 @@ def configure(config_file, interpolation=True):
           ('click', '//a[text()="注文照会"]')]}
     config.read(config_file, encoding='utf-8')
 
-    if not config['Common']['portfolio']:
+    if not config['General']['portfolio']:
         HYPERSBI2_PROFILES = os.path.expandvars(
             r'%APPDATA%\SBI Securities\HYPERSBI2')
         latest_modified_time = 0.0
@@ -174,7 +174,7 @@ def configure(config_file, interpolation=True):
                     latest_modified_time = modified_time
                     identifier = f
         if identifier:
-            config['Common']['portfolio'] = \
+            config['General']['portfolio'] = \
                 os.path.join(HYPERSBI2_PROFILES, identifier, 'portfolio.json')
         else:
             print('unspecified identifier')
@@ -186,10 +186,10 @@ def convert_to_yahoo_finance(config):
     import csv
     import json
 
-    with open(config['Common']['portfolio']) as f:
+    with open(config['General']['portfolio']) as f:
         dictionary = json.load(f)
 
-    csv_directory = config['Common']['csv_directory']
+    csv_directory = config['General']['csv_directory']
     if not os.path.isdir(csv_directory):
         try:
             os.makedirs(csv_directory)
