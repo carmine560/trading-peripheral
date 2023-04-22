@@ -124,6 +124,7 @@ def configure(config_file, interpolation=True):
     config['Actions'] = \
         {'replace_sbi_securities':
          [('get', 'https://www.sbisec.co.jp/ETGate'),
+          ('sleep', '0.8'),
           ('click', '//input[@name="ACT_login"]'),
           ('click', '//a[text()="ポートフォリオ"]'),
           ('click', '//a[text()="登録銘柄リストの追加・置き換え"]'),
@@ -157,6 +158,7 @@ def configure(config_file, interpolation=True):
           ('sleep', '0.8')],
          'get_order_status':
          [('get', 'https://www.sbisec.co.jp/ETGate'),
+          ('sleep', '0.8'),
           ('click', '//input[@name="ACT_login"]'),
           ('click', '//a[text()="注文照会"]')]}
     config.read(config_file, encoding='utf-8')
