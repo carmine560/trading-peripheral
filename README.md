@@ -64,6 +64,7 @@ configuration file saves these configurations.
     Finance
   * `-o`: extract order status from the SBI Securities web page and
     copy them to the clipboard
+  * `-m`: insert scheduled maintenance (not implemented)
   * `-G`: configure general options and exit
   * `-O`: configure order state formats and exit
   * `-A`: configure actions and exit

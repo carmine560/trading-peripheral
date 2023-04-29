@@ -1,5 +1,6 @@
 import ast
 import os
+import re
 import sys
 
 def main():
@@ -26,6 +27,9 @@ def main():
         '-o', action='store_true',
         help='extract order status from the SBI Securities web page '
         'and copy them to the clipboard')
+    parser.add_argument(
+        '-m', action='store_true',
+        help='insert scheduled maintenance (not implemented)')
     group.add_argument(
         '-G', action='store_const', const='General',
         help='configure general options and exit')
@@ -81,10 +85,11 @@ def main():
             extract_order_status(config, driver)
 
         driver.quit()
+    if args.m:
+        insert_scheduled_maintenance()
 
 def configure(config_file, interpolation=True):
     import configparser
-    import re
 
     if interpolation:
         config = configparser.ConfigParser(
@@ -116,7 +121,7 @@ def configure(config_file, interpolation=True):
          'execution_column': '3',
          'execution': '約定',
          'datetime_column': '5',
-         'datetime_regex': r'^(\d{2}/\d{2}) (\d{2}:\d{2}:\d{2})$$',
+         'datetime_pattern': r'^(\d{2}/\d{2}) (\d{2}:\d{2}:\d{2})$$',
          'date_replacement': r'\1',
          'time_replacement': r'\2',
          'size_column': '6',
@@ -231,7 +236,6 @@ def convert_to_yahoo_finance(config):
 
 # TODO
 def extract_order_status(config, driver):
-    import re
     import sys
 
     import pandas as pd
@@ -246,7 +250,7 @@ def extract_order_status(config, driver):
     execution_column = int(section['execution_column'])
     execution = section['execution']
     datetime_column = int(section['datetime_column'])
-    datetime_regex = section['datetime_regex']
+    datetime_pattern = section['datetime_pattern']
     date_replacement = section['date_replacement']
     time_replacement = section['time_replacement']
     size_column = int(section['size_column'])
@@ -299,9 +303,9 @@ def extract_order_status(config, driver):
             size = df.iloc[index + 1, size_column]
             trade_style = 'day'
             if margin_trading in df.iloc[index + 1, execution_column]:
-                entry_date = re.sub(datetime_regex, date_replacement,
+                entry_date = re.sub(datetime_pattern, date_replacement,
                                     df.iloc[index + 2, datetime_column])
-                entry_time = re.sub(datetime_regex, time_replacement,
+                entry_time = re.sub(datetime_pattern, time_replacement,
                                     df.iloc[index + 2, datetime_column])
                 if buying_on_margin in df.iloc[index + 1, execution_column]:
                     trade_type = 'long'
@@ -310,9 +314,9 @@ def extract_order_status(config, driver):
 
                 entry_price = df.iloc[index + 2, price_column]
             else:
-                exit_date = re.sub(datetime_regex, date_replacement,
+                exit_date = re.sub(datetime_pattern, date_replacement,
                                    df.iloc[index + 2, datetime_column])
-                exit_time = re.sub(datetime_regex, time_replacement,
+                exit_time = re.sub(datetime_pattern, time_replacement,
                                    df.iloc[index + 2, datetime_column])
                 exit_price = df.iloc[index + 2, price_column]
 
@@ -334,6 +338,63 @@ def extract_order_status(config, driver):
         results = results.reindex([0, 1])
 
     results.to_clipboard(index=False, header=False)
+
+# TODO
+def insert_scheduled_maintenance():
+    import pandas as pd
+
+    url = 'https://search.sbisec.co.jp/v2/popwin/info/home/pop6040_maintenance.html'
+    service = 'HYPER SBI 2'
+
+    url = 'https://web.archive.org/web/20220212061732/https://search.sbisec.co.jp/v2/popwin/info/home/pop6040_maintenance.html'
+    service = 'HYPER先物'
+
+    maintenance_time_header = 'メンテナンス予定時間'
+    time_zone = 'Asia/Tokyo'
+    range_punctuation = '〜'
+    datetime_pattern = r'^(\d{1,2})/(\d{1,2})（.）(\d{1,2}:\d{2})$'
+    datetime_replacement = r'\1-\2 \3'
+    date_replacement = r'\1-\2'
+
+    if True:
+        dfs = pd.DataFrame()
+        try:
+            dfs = pd.read_html(url, match=service, header=0, index_col=0)
+        except Exception as e:
+            print(e)
+            sys.exit(1)
+
+        df = dfs[len(dfs) - 1]
+        # FIXME
+        maintenance_time = (df.filter(regex=service, axis=0)
+                            .iloc[0][maintenance_time_header].split())
+        now = pd.Timestamp.now(tz=time_zone)
+        year = now.strftime('%Y')
+
+        for i in range(len(maintenance_time)):
+            schedule = maintenance_time[i].split(range_punctuation)
+            print(schedule)
+            datetime = re.sub(datetime_pattern, datetime_replacement,
+                              schedule[0])
+            start = pd.Timestamp(year + '-' + datetime, tz=time_zone)
+            # FIXME
+            if pd.Timestamp(start) < now:
+                year = str(int(year) + 1)
+                start = pd.Timestamp(year + '-' + datetime, tz=time_zone)
+
+            date = re.sub(datetime_pattern, date_replacement, schedule[0])
+            schedule[0] = start.isoformat()
+
+            if re.match('^\d{1,2}:\d{2}$', schedule[1]):
+                end = pd.Timestamp(year + '-' + date + ' ' + schedule[1],
+                                   tz=time_zone)
+            else:
+                datetime = re.sub(datetime_pattern, datetime_replacement,
+                                  schedule[1])
+                end = pd.Timestamp(year + '-' + datetime, tz=time_zone)
+
+            schedule[1] = end.isoformat()
+            print(schedule)
 
 if __name__ == '__main__':
     main()
