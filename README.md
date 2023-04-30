@@ -33,6 +33,15 @@ and uses the following web browser and packages:
   * [Webdriver Manager for
     Python](https://github.com/SergeyPirogov/webdriver_manager)
     automatically updates the driver
+  * (optional) [pandas](https://pandas.pydata.org/) to retrieve SBI
+    Securities' maintenance schedules and insert them into Google
+    Calendar
+  * (optional)
+    [google-api-python-client](https://googleapis.github.io/google-api-python-client/docs/),
+    [google-auth-httplib2](https://github.com/googleapis/google-auth-library-python-httplib2),
+    and
+    [google-auth-oauthlib](https://github.com/googleapis/google-auth-library-python-oauthlib)
+    to access to Google APIs
 
 Install each package as needed.  For example:
 
@@ -64,7 +73,7 @@ configuration file saves these configurations.
     Finance
   * `-o`: extract order status from the SBI Securities web page and
     copy them to the clipboard
-  * `-m`: insert scheduled maintenance (not implemented)
+  * `-m`: insert maintenance schedules into Google Calendar
   * `-G`: configure general options and exit
   * `-O`: configure order state formats and exit
   * `-A`: configure actions and exit

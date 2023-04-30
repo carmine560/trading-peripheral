@@ -29,7 +29,7 @@ def main():
         'and copy them to the clipboard')
     parser.add_argument(
         '-m', action='store_true',
-        help='insert scheduled maintenance (not implemented)')
+        help='insert maintenance schedules into Google Calendar')
     group.add_argument(
         '-G', action='store_const', const='General',
         help='configure general options and exit')
@@ -86,7 +86,7 @@ def main():
 
         driver.quit()
     if args.m:
-        insert_scheduled_maintenance()
+        insert_maintenance_schedules(config, config_file)
 
 def configure(config_file, interpolation=True):
     import configparser
@@ -166,6 +166,18 @@ def configure(config_file, interpolation=True):
           ('sleep', '0.8'),
           ('click', '//input[@name="ACT_login"]'),
           ('click', '//a[text()="注文照会"]')]}
+    config['Maintenance Schedules'] = \
+        {'url': 'https://search.sbisec.co.jp/v2/popwin/info/home/pop6040_maintenance.html',
+         'maintenance_service': 'HYPER SBI 2',
+         'maintenance_function_header': 'メンテナンス対象機能',
+         'maintenance_time_header': 'メンテナンス予定時間',
+         'time_zone': 'Asia/Tokyo',
+         'range_punctuation': '〜',
+         'datetime_pattern': r'^(\d{1,2})/(\d{1,2})（.）(\d{1,2}:\d{2})$$',
+         'datetime_replacement': r'\1-\2 \3',
+         'date_replacement': r'\1-\2',
+         'calendar_id': 'primary',
+         'last_inserted': '1970-01-01T00:00:00+00:00'}
     config.read(config_file, encoding='utf-8')
 
     if not config['General']['portfolio']:
@@ -339,62 +351,131 @@ def extract_order_status(config, driver):
 
     results.to_clipboard(index=False, header=False)
 
-# TODO
-def insert_scheduled_maintenance():
+def insert_maintenance_schedules(config, config_file):
+    import requests
+
+    from googleapiclient.discovery import build
+    from googleapiclient.errors import HttpError
     import pandas as pd
 
-    url = 'https://search.sbisec.co.jp/v2/popwin/info/home/pop6040_maintenance.html'
-    service = 'HYPER SBI 2'
+    section = config['Maintenance Schedules']
+    url = section['url']
+    maintenance_service = section['maintenance_service']
+    maintenance_function_header = section['maintenance_function_header']
+    maintenance_time_header = section['maintenance_time_header']
+    time_zone = section['time_zone']
+    range_punctuation = section['range_punctuation']
+    datetime_pattern = section['datetime_pattern']
+    datetime_replacement = section['datetime_replacement']
+    date_replacement = section['date_replacement']
+    calendar_id = section['calendar_id']
+    last_inserted = section['last_inserted']
 
-    url = 'https://web.archive.org/web/20220212061732/https://search.sbisec.co.jp/v2/popwin/info/home/pop6040_maintenance.html'
-    service = 'HYPER先物'
+    head = requests.head(url)
+    try:
+        head.raise_for_status()
+    except Exception as e:
+        print(e)
+        sys.exit(1)
 
-    maintenance_time_header = 'メンテナンス予定時間'
-    time_zone = 'Asia/Tokyo'
-    range_punctuation = '〜'
-    datetime_pattern = r'^(\d{1,2})/(\d{1,2})（.）(\d{1,2}:\d{2})$'
-    datetime_replacement = r'\1-\2 \3'
-    date_replacement = r'\1-\2'
-
-    if True:
+    if pd.Timestamp(last_inserted) \
+       < pd.Timestamp(head.headers['last-modified']):
         dfs = pd.DataFrame()
         try:
-            dfs = pd.read_html(url, match=service, header=0, index_col=0)
+            dfs = pd.read_html(url, match=maintenance_service, flavor='lxml',
+                               header=0, index_col=0)
         except Exception as e:
             print(e)
             sys.exit(1)
 
-        df = dfs[len(dfs) - 1]
+        df = dfs[len(dfs) - 1].filter(regex=maintenance_service, axis=0)
+        maintenance_function = df.iloc[0][maintenance_function_header]
         # FIXME
-        maintenance_time = (df.filter(regex=service, axis=0)
-                            .iloc[0][maintenance_time_header].split())
+        maintenance_time = df.iloc[0][maintenance_time_header].split()
         now = pd.Timestamp.now(tz=time_zone)
         year = now.strftime('%Y')
+        credentials = get_credentials()
 
         for i in range(len(maintenance_time)):
-            schedule = maintenance_time[i].split(range_punctuation)
-            print(schedule)
+            maintenance_schedule = maintenance_time[i].split(range_punctuation)
+            print(maintenance_schedule)
+
+            # Assume that the year of the date is omitted.
             datetime = re.sub(datetime_pattern, datetime_replacement,
-                              schedule[0])
+                              maintenance_schedule[0])
+            date = re.sub(datetime_pattern, date_replacement,
+                          maintenance_schedule[0])
             start = pd.Timestamp(year + '-' + datetime, tz=time_zone)
-            # FIXME
-            if pd.Timestamp(start) < now:
-                year = str(int(year) + 1)
-                start = pd.Timestamp(year + '-' + datetime, tz=time_zone)
 
-            date = re.sub(datetime_pattern, date_replacement, schedule[0])
-            schedule[0] = start.isoformat()
+            # # FIXME
+            # if pd.Timestamp(start) < now:
+            #     year = str(int(year) + 1)
+            #     start = pd.Timestamp(year + '-' + datetime, tz=time_zone)
 
-            if re.match('^\d{1,2}:\d{2}$', schedule[1]):
-                end = pd.Timestamp(year + '-' + date + ' ' + schedule[1],
-                                   tz=time_zone)
+            maintenance_schedule[0] = start.isoformat()
+
+            if re.match('^\d{1,2}:\d{2}$', maintenance_schedule[1]):
+                end = pd.Timestamp(year + '-' + date + ' '
+                                   + maintenance_schedule[1], tz=time_zone)
             else:
                 datetime = re.sub(datetime_pattern, datetime_replacement,
-                                  schedule[1])
+                                  maintenance_schedule[1])
                 end = pd.Timestamp(year + '-' + datetime, tz=time_zone)
 
-            schedule[1] = end.isoformat()
-            print(schedule)
+            maintenance_schedule[1] = end.isoformat()
+            print(maintenance_schedule)
+
+            try:
+                service = build('calendar', 'v3', credentials=credentials)
+                event = {
+                    'summary': '🛠️ ' \
+                    + maintenance_service + ' ' + maintenance_function,
+                    'start': {
+                        'dateTime': maintenance_schedule[0],
+                    },
+                    'end': {
+                        'dateTime': maintenance_schedule[1],
+                    },
+                    'source': {
+                        # TODO
+                        'title': '定期・臨時システムメンテナンスのお知らせ｜SBI証券',
+                        'url': url},
+                }
+                event = service.events().insert(calendarId=calendar_id,
+                                                body=event).execute()
+                print('Event created: %s' % (event.get('htmlLink')))
+            except HttpError as e:
+                print(e)
+                sys.exit(1)
+
+        section['last_inserted'] = now.isoformat()
+        with open(config_file, 'w', encoding='utf-8') as f:
+            config.write(f)
+
+def get_credentials():
+    from google.auth.transport.requests import Request
+    from google.oauth2.credentials import Credentials
+    from google_auth_oauthlib.flow import InstalledAppFlow
+
+    # TODO
+    token_json = 'token.json'
+    credentials_json = 'credentials.json'
+
+    credentials = None
+    SCOPES = ['https://www.googleapis.com/auth/calendar']
+    if os.path.exists(token_json):
+        credentials = Credentials.from_authorized_user_file(token_json, SCOPES)
+    if not credentials or not credentials.valid:
+        if credentials and credentials.expired and credentials.refresh_token:
+            credentials.refresh(Request())
+        else:
+            flow = InstalledAppFlow.from_client_secrets_file(credentials_json,
+                                                             SCOPES)
+            credentials = flow.run_local_server(port=0)
+        with open(token_json, 'w') as token:
+            token.write(credentials.to_json())
+
+    return credentials
 
 if __name__ == '__main__':
     main()
