@@ -3,18 +3,21 @@
 <!-- Python script that exports Hyper SBI 2 watchlists to Yahoo
 Finance and extracts order status from SBI Securities web page -->
 
-<!-- hypersbi2 python chrome selenium webdrivermanager -->
+<!-- hypersbi2 python chrome selenium webdrivermanager pandas
+google-api -->
 
 A `trading_peripheral.py` Python script:
 
   * replaces watchlists on the SBI Securities website with [Hyper SBI
     2](https://go.sbisec.co.jp/lp/lp_hyper_sbi2_211112.html)
     watchlists
-  * exports them from the file `%APPDATA%\SBI
-    Securities\HYPERSBI2\IDENTIFIER\portfolio.json` to [My
+  * exports them from the `%APPDATA%\SBI
+    Securities\HYPERSBI2\IDENTIFIER\portfolio.json` file to [My
     Portfolio](https://finance.yahoo.com/portfolios) on Yahoo Finance
-  * extracts order status from the SBI Securities web page and copy
+  * extracts order status from the SBI Securities web page and copies
     them to the clipboard
+  * (optional) retrieves SBI Securities maintenance schedules and
+    inserts them into Google Calendar
 
 > **Warning** This script is currently under heavy development.
 > Changes in functionality can occur at any time.
@@ -33,9 +36,8 @@ and uses the following web browser and packages:
   * [Webdriver Manager for
     Python](https://github.com/SergeyPirogov/webdriver_manager)
     automatically updates the driver
-  * (optional) [pandas](https://pandas.pydata.org/) to retrieve SBI
-    Securities' maintenance schedules and insert them into Google
-    Calendar
+  * [pandas](https://pandas.pydata.org/) to extract data from the web
+    pages
   * (optional)
     [google-api-python-client](https://googleapis.github.io/google-api-python-client/docs/),
     [google-auth-httplib2](https://github.com/googleapis/google-auth-library-python-httplib2),

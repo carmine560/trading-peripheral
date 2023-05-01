@@ -352,11 +352,10 @@ def extract_order_status(config, driver):
     results.to_clipboard(index=False, header=False)
 
 def insert_maintenance_schedules(config, config_file):
-    import requests
-
     from googleapiclient.discovery import build
     from googleapiclient.errors import HttpError
     import pandas as pd
+    import requests
 
     section = config['Maintenance Schedules']
     url = section['url']
@@ -393,12 +392,18 @@ def insert_maintenance_schedules(config, config_file):
         # FIXME
         maintenance_time = df.iloc[0][maintenance_time_header].split()
         now = pd.Timestamp.now(tz=time_zone)
+        time_frame = 30
         year = now.strftime('%Y')
+
         credentials = get_credentials()
+        response = requests.get(url)
+        response.encoding = response.apparent_encoding
+        matched = re.search('<title>(.*)</title>', response.text)
+        if matched:
+            title = matched.group(1)
 
         for i in range(len(maintenance_time)):
             maintenance_schedule = maintenance_time[i].split(range_punctuation)
-            print(maintenance_schedule)
 
             # Assume that the year of the date is omitted.
             datetime = re.sub(datetime_pattern, datetime_replacement,
@@ -407,12 +412,14 @@ def insert_maintenance_schedules(config, config_file):
                           maintenance_schedule[0])
             start = pd.Timestamp(year + '-' + datetime, tz=time_zone)
 
-            # # FIXME
-            # if pd.Timestamp(start) < now:
-            #     year = str(int(year) + 1)
-            #     start = pd.Timestamp(year + '-' + datetime, tz=time_zone)
-
-            maintenance_schedule[0] = start.isoformat()
+            timedelta = pd.Timestamp(start) - now
+            threshold = pd.Timedelta(days=365 - time_frame)
+            if timedelta < -threshold:
+                year = str(int(year) + 1)
+                start = pd.Timestamp(year + '-' + datetime, tz=time_zone)
+            elif timedelta > threshold:
+                year = str(int(year) - 1)
+                start = pd.Timestamp(year + '-' + datetime, tz=time_zone)
 
             if re.match('^\d{1,2}:\d{2}$', maintenance_schedule[1]):
                 end = pd.Timestamp(year + '-' + date + ' '
@@ -422,23 +429,19 @@ def insert_maintenance_schedules(config, config_file):
                                   maintenance_schedule[1])
                 end = pd.Timestamp(year + '-' + datetime, tz=time_zone)
 
-            maintenance_schedule[1] = end.isoformat()
-            print(maintenance_schedule)
-
             try:
                 service = build('calendar', 'v3', credentials=credentials)
                 event = {
                     'summary': '🛠️ ' \
                     + maintenance_service + ' ' + maintenance_function,
                     'start': {
-                        'dateTime': maintenance_schedule[0],
+                        'dateTime': start.isoformat(),
                     },
                     'end': {
-                        'dateTime': maintenance_schedule[1],
+                        'dateTime': end.isoformat(),
                     },
                     'source': {
-                        # TODO
-                        'title': '定期・臨時システムメンテナンスのお知らせ｜SBI証券',
+                        'title': title,
                         'url': url},
                 }
                 event = service.events().insert(calendarId=calendar_id,
