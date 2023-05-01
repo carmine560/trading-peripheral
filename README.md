@@ -51,6 +51,7 @@ Install each package as needed.  For example:
 winget install Google.Chrome
 pip install selenium
 pip install webdriver-manager
+pip install pandas
 ```
 
 ## Usage ##

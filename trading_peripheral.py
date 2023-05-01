@@ -105,7 +105,13 @@ def configure(config_file, interpolation=True):
          os.path.expandvars(r'%LOCALAPPDATA%\Google\Chrome\User Data'),
          'profile_directory': 'Default',
          'implicitly_wait': '4',
-         'csv_directory': os.path.join(os.path.expanduser('~'), 'Downloads')}
+         'csv_directory': os.path.join(os.path.expanduser('~'), 'Downloads'),
+         'token_json': os.path.join(
+             os.path.expandvars('%LOCALAPPDATA%'),
+             os.path.basename(os.path.dirname(__file__)), 'token.json'),
+         'credentials_json': os.path.join(
+             os.path.expandvars('%LOCALAPPDATA%'),
+             os.path.basename(os.path.dirname(__file__)), 'credentials.json')}
     config['Variables'] = \
         {'watchlist': ''}
     config['Order Status'] = \
@@ -395,7 +401,7 @@ def insert_maintenance_schedules(config, config_file):
         time_frame = 30
         year = now.strftime('%Y')
 
-        credentials = get_credentials()
+        credentials = get_credentials(config)
         response = requests.get(url)
         response.encoding = response.apparent_encoding
         matched = re.search('<title>(.*)</title>', response.text)
@@ -431,7 +437,7 @@ def insert_maintenance_schedules(config, config_file):
 
             try:
                 service = build('calendar', 'v3', credentials=credentials)
-                event = {
+                body = {
                     'summary': '🛠️ ' \
                     + maintenance_service + ' ' + maintenance_function,
                     'start': {
@@ -445,8 +451,8 @@ def insert_maintenance_schedules(config, config_file):
                         'url': url},
                 }
                 event = service.events().insert(calendarId=calendar_id,
-                                                body=event).execute()
-                print('Event created: %s' % (event.get('htmlLink')))
+                                                body=body).execute()
+                print(event.get('start')['dateTime'], event.get('summary'))
             except HttpError as e:
                 print(e)
                 sys.exit(1)
@@ -455,14 +461,14 @@ def insert_maintenance_schedules(config, config_file):
         with open(config_file, 'w', encoding='utf-8') as f:
             config.write(f)
 
-def get_credentials():
+def get_credentials(config):
     from google.auth.transport.requests import Request
     from google.oauth2.credentials import Credentials
     from google_auth_oauthlib.flow import InstalledAppFlow
 
-    # TODO
-    token_json = 'token.json'
-    credentials_json = 'credentials.json'
+    section = config['General']
+    token_json = section['token_json']
+    credentials_json = section['credentials_json']
 
     credentials = None
     SCOPES = ['https://www.googleapis.com/auth/calendar']
@@ -472,9 +478,13 @@ def get_credentials():
         if credentials and credentials.expired and credentials.refresh_token:
             credentials.refresh(Request())
         else:
-            flow = InstalledAppFlow.from_client_secrets_file(credentials_json,
-                                                             SCOPES)
-            credentials = flow.run_local_server(port=0)
+            try:
+                flow = InstalledAppFlow.from_client_secrets_file(
+                    credentials_json, SCOPES)
+                credentials = flow.run_local_server(port=0)
+            except Exception as e:
+                print(e)
+                sys.exit(1)
         with open(token_json, 'w') as token:
             token.write(credentials.to_json())
 
