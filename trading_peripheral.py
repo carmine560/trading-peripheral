@@ -39,17 +39,20 @@ def main():
     group.add_argument(
         '-A', action='store_const', const='Actions',
         help='configure actions and exit')
+    group.add_argument(
+        '-M', action='store_const', const='Maintenance Schedules',
+        help='configure maintenance schedules and exit')
     args = parser.parse_args(None if sys.argv[1:] else ['-h'])
 
     config_file = os.path.join(
         os.path.expandvars('%LOCALAPPDATA%'),
         os.path.basename(os.path.dirname(__file__)),
         os.path.splitext(os.path.basename(__file__))[0] + '.ini')
-    if args.G or args.O or args.A:
+    if args.G or args.O or args.A or args.M:
         config = configure(config_file, interpolation=False)
         file_utilities.backup_file(config_file, number_of_backups=8)
-        configuration.modify_section(config, (args.G or args.O or args.A),
-                                     config_file)
+        configuration.modify_section(
+            config, (args.G or args.O or args.A or args.M), config_file)
         return
     else:
         config = configure(config_file)
@@ -179,7 +182,6 @@ def configure(config_file, interpolation=True):
          'service_header': '対象サービス',
          'function_header': 'メンテナンス対象機能',
          'schedule_header': 'メンテナンス予定時間',
-         # TODO
          'time_zone': 'Asia/Tokyo',
          'range_punctuation': '〜',
          'datetime_pattern': r'^(\d{1,2})/(\d{1,2})（.）(\d{1,2}:\d{2})$$',

@@ -81,6 +81,7 @@ configuration file saves these configurations.
   * `-G`: configure general options and exit
   * `-O`: configure order state formats and exit
   * `-A`: configure actions and exit
+  * `-M`: configure maintenance schedules and exit
 
 ## Known Issues ##
 
