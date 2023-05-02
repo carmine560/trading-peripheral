@@ -109,6 +109,7 @@ def configure(config_file, interpolation=True):
          'token_json': os.path.join(
              os.path.expandvars('%LOCALAPPDATA%'),
              os.path.basename(os.path.dirname(__file__)), 'token.json'),
+         'scopes': ['https://www.googleapis.com/auth/calendar'],
          'credentials_json': os.path.join(
              os.path.expandvars('%LOCALAPPDATA%'),
              os.path.basename(os.path.dirname(__file__)), 'credentials.json')}
@@ -174,10 +175,11 @@ def configure(config_file, interpolation=True):
           ('click', '//a[text()="注文照会"]')]}
     config['Maintenance Schedules'] = \
         {'url': 'https://search.sbisec.co.jp/v2/popwin/info/home/pop6040_maintenance.html',
-         'services': ['メインサイト（PCサイト）', 'HYPER SBI 2'],
+         'services': ('メインサイト（PCサイト）', 'HYPER SBI 2'),
          'service_header': '対象サービス',
          'function_header': 'メンテナンス対象機能',
          'schedule_header': 'メンテナンス予定時間',
+         # TODO
          'time_zone': 'Asia/Tokyo',
          'range_punctuation': '〜',
          'datetime_pattern': r'^(\d{1,2})/(\d{1,2})（.）(\d{1,2}:\d{2})$$',
@@ -362,6 +364,11 @@ def insert_maintenance_schedules(config, config_file):
     import pandas as pd
     import requests
 
+    section = config['General']
+    token_json = section['token_json']
+    scopes = ast.literal_eval(section['scopes'])
+    credentials_json = section['credentials_json']
+
     section = config['Maintenance Schedules']
     url = section['url']
     services = ast.literal_eval(section['services'])
@@ -392,6 +399,17 @@ def insert_maintenance_schedules(config, config_file):
             print(e)
             sys.exit(1)
 
+        now = pd.Timestamp.now(tz=time_zone)
+        time_frame = 30
+        year = now.strftime('%Y')
+
+        credentials = get_credentials(token_json, scopes, credentials_json)
+        response = requests.get(url)
+        response.encoding = response.apparent_encoding
+        matched = re.search('<title>(.*)</title>', response.text)
+        if matched:
+            title = matched.group(1)
+
         for service in services:
             for index, df in enumerate(dfs):
                 # Assume the first table is for temporary maintenance.
@@ -404,16 +422,6 @@ def insert_maintenance_schedules(config, config_file):
             function = df.iloc[0][function_header]
             # FIXME
             schedules = df.iloc[0][schedule_header].split()
-            now = pd.Timestamp.now(tz=time_zone)
-            time_frame = 30
-            year = now.strftime('%Y')
-
-            credentials = get_credentials(config)
-            response = requests.get(url)
-            response.encoding = response.apparent_encoding
-            matched = re.search('<title>(.*)</title>', response.text)
-            if matched:
-                title = matched.group(1)
 
             for i in range(len(schedules)):
                 datetime_range = schedules[i].split(range_punctuation)
@@ -458,27 +466,21 @@ def insert_maintenance_schedules(config, config_file):
         with open(config_file, 'w', encoding='utf-8') as f:
             config.write(f)
 
-def get_credentials(config):
+def get_credentials(token_json, scopes, credentials_json):
     from google.auth.transport.requests import Request
     from google.oauth2.credentials import Credentials
     from google_auth_oauthlib.flow import InstalledAppFlow
 
-    section = config['General']
-    token_json = section['token_json']
-    credentials_json = section['credentials_json']
-
     credentials = None
-    # TODO
-    SCOPES = ['https://www.googleapis.com/auth/calendar']
     if os.path.exists(token_json):
-        credentials = Credentials.from_authorized_user_file(token_json, SCOPES)
+        credentials = Credentials.from_authorized_user_file(token_json, scopes)
     if not credentials or not credentials.valid:
         if credentials and credentials.expired and credentials.refresh_token:
             credentials.refresh(Request())
         else:
             try:
                 flow = InstalledAppFlow.from_client_secrets_file(
-                    credentials_json, SCOPES)
+                    credentials_json, scopes)
                 credentials = flow.run_local_server(port=0)
             except Exception as e:
                 print(e)
