@@ -112,10 +112,7 @@ def configure(config_file, interpolation=True):
          'token_json': os.path.join(
              os.path.expandvars('%LOCALAPPDATA%'),
              os.path.basename(os.path.dirname(__file__)), 'token.json'),
-         'scopes': ['https://www.googleapis.com/auth/calendar'],
-         'credentials_json': os.path.join(
-             os.path.expandvars('%LOCALAPPDATA%'),
-             os.path.basename(os.path.dirname(__file__)), 'credentials.json')}
+         'scopes': ['https://www.googleapis.com/auth/calendar']}
     config['Variables'] = \
         {'watchlist': ''}
     config['Order Status'] = \
@@ -178,7 +175,7 @@ def configure(config_file, interpolation=True):
           ('click', '//a[text()="注文照会"]')]}
     config['Maintenance Schedules'] = \
         {'url': 'https://search.sbisec.co.jp/v2/popwin/info/home/pop6040_maintenance.html',
-         'services': ('メインサイト（PCサイト）', 'HYPER SBI 2'),
+         'services': ('HYPER SBI 2',),
          'service_header': '対象サービス',
          'function_header': 'メンテナンス対象機能',
          'schedule_header': 'メンテナンス予定時間',
@@ -369,7 +366,6 @@ def insert_maintenance_schedules(config, config_file):
     section = config['General']
     token_json = section['token_json']
     scopes = ast.literal_eval(section['scopes'])
-    credentials_json = section['credentials_json']
 
     section = config['Maintenance Schedules']
     url = section['url']
@@ -405,7 +401,7 @@ def insert_maintenance_schedules(config, config_file):
         time_frame = 30
         year = now.strftime('%Y')
 
-        credentials = get_credentials(token_json, scopes, credentials_json)
+        credentials = get_credentials(token_json, scopes)
         response = requests.get(url)
         response.encoding = response.apparent_encoding
         matched = re.search('<title>(.*)</title>', response.text)
@@ -468,7 +464,7 @@ def insert_maintenance_schedules(config, config_file):
         with open(config_file, 'w', encoding='utf-8') as f:
             config.write(f)
 
-def get_credentials(token_json, scopes, credentials_json):
+def get_credentials(token_json, scopes):
     from google.auth.transport.requests import Request
     from google.oauth2.credentials import Credentials
     from google_auth_oauthlib.flow import InstalledAppFlow
@@ -482,7 +478,7 @@ def get_credentials(token_json, scopes, credentials_json):
         else:
             try:
                 flow = InstalledAppFlow.from_client_secrets_file(
-                    credentials_json, scopes)
+                    input('Path to client_secrets.json: '), scopes)
                 credentials = flow.run_local_server(port=0)
             except Exception as e:
                 print(e)
