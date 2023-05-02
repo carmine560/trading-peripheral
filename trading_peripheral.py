@@ -174,7 +174,8 @@ def configure(config_file, interpolation=True):
           ('click', '//a[text()="注文照会"]')]}
     config['Maintenance Schedules'] = \
         {'url': 'https://search.sbisec.co.jp/v2/popwin/info/home/pop6040_maintenance.html',
-         'service': 'HYPER SBI 2', # TODO
+         'services': ['メインサイト（PCサイト）', 'HYPER SBI 2'],
+         'service_header': '対象サービス',
          'function_header': 'メンテナンス対象機能',
          'schedule_header': 'メンテナンス予定時間',
          'time_zone': 'Asia/Tokyo',
@@ -273,7 +274,6 @@ def extract_order_status(config, driver):
     size_column = int(section['size_column'])
     price_column = int(section['price_column'])
 
-    dfs = pd.DataFrame()
     try:
         dfs = pd.read_html(driver.page_source, match=table_identifier,
                            flavor='lxml')
@@ -364,7 +364,8 @@ def insert_maintenance_schedules(config, config_file):
 
     section = config['Maintenance Schedules']
     url = section['url']
-    service = section['service']
+    services = ast.literal_eval(section['services'])
+    service_header = section['service_header']
     function_header = section['function_header']
     schedule_header = section['schedule_header']
     time_zone = section['time_zone']
@@ -381,71 +382,77 @@ def insert_maintenance_schedules(config, config_file):
         print(e)
         sys.exit(1)
 
+    # Assume that all schedules are updated at the same time.
     if pd.Timestamp(last_inserted) \
        < pd.Timestamp(head.headers['last-modified']):
-        dfs = pd.DataFrame()
         try:
-            dfs = pd.read_html(url, match=service, flavor='lxml',
-                               header=0, index_col=0)
+            dfs = pd.read_html(url, match='|'.join(services), flavor='lxml',
+                               header=0)
         except Exception as e:
             print(e)
             sys.exit(1)
 
-        # for service in services:
+        for service in services:
+            for index, df in enumerate(dfs):
+                # Assume the first table is for temporary maintenance.
+                if tuple(df.columns.values) == \
+                   (service_header, function_header, schedule_header):
+                    df = dfs[index].loc[df[service_header].str
+                                        .contains(service)]
+                    break
 
-        df = dfs[len(dfs) - 1].filter(regex=service, axis=0)
-        function = df.iloc[0][function_header]
-        # FIXME
-        schedules = df.iloc[0][schedule_header].split()
-        now = pd.Timestamp.now(tz=time_zone)
-        time_frame = 30
-        year = now.strftime('%Y')
+            function = df.iloc[0][function_header]
+            # FIXME
+            schedules = df.iloc[0][schedule_header].split()
+            now = pd.Timestamp.now(tz=time_zone)
+            time_frame = 30
+            year = now.strftime('%Y')
 
-        credentials = get_credentials(config)
-        response = requests.get(url)
-        response.encoding = response.apparent_encoding
-        matched = re.search('<title>(.*)</title>', response.text)
-        if matched:
-            title = matched.group(1)
+            credentials = get_credentials(config)
+            response = requests.get(url)
+            response.encoding = response.apparent_encoding
+            matched = re.search('<title>(.*)</title>', response.text)
+            if matched:
+                title = matched.group(1)
 
-        for i in range(len(schedules)):
-            datetime_range = schedules[i].split(range_punctuation)
+            for i in range(len(schedules)):
+                datetime_range = schedules[i].split(range_punctuation)
 
-            # Assume that the year of the date is omitted.
-            datetime = re.sub(datetime_pattern, datetime_replacement,
-                              datetime_range[0])
-            start = pd.Timestamp(year + '-' + datetime, tz=time_zone)
-
-            timedelta = pd.Timestamp(start) - now
-            threshold = pd.Timedelta(days=365 - time_frame)
-            if timedelta < -threshold:
-                year = str(int(year) + 1)
-                start = pd.Timestamp(year + '-' + datetime, tz=time_zone)
-            elif timedelta > threshold:
-                year = str(int(year) - 1)
-                start = pd.Timestamp(year + '-' + datetime, tz=time_zone)
-
-            if re.match('^\d{1,2}:\d{2}$', datetime_range[1]):
-                end = pd.Timestamp(start.strftime('%Y-%m-%d') + ' '
-                                   + datetime_range[1], tz=time_zone)
-            else:
+                # Assume that the year of the date is omitted.
                 datetime = re.sub(datetime_pattern, datetime_replacement,
-                                  datetime_range[1])
-                end = pd.Timestamp(year + '-' + datetime, tz=time_zone)
+                                  datetime_range[0])
+                start = pd.Timestamp(year + '-' + datetime, tz=time_zone)
 
-            try:
-                resource = build('calendar', 'v3', credentials=credentials)
-                body = {'summary': '🛠️ ' \
-                        + service + ' ' + function,
-                        'start': {'dateTime': start.isoformat()},
-                        'end': {'dateTime': end.isoformat()},
-                        'source': {'title': title, 'url': url}}
-                event = resource.events().insert(calendarId=calendar_id,
-                                                 body=body).execute()
-                print(event.get('start')['dateTime'], event.get('summary'))
-            except HttpError as e:
-                print(e)
-                sys.exit(1)
+                timedelta = pd.Timestamp(start) - now
+                threshold = pd.Timedelta(days=365 - time_frame)
+                if timedelta < -threshold:
+                    year = str(int(year) + 1)
+                    start = pd.Timestamp(year + '-' + datetime, tz=time_zone)
+                elif timedelta > threshold:
+                    year = str(int(year) - 1)
+                    start = pd.Timestamp(year + '-' + datetime, tz=time_zone)
+
+                if re.match('^\d{1,2}:\d{2}$', datetime_range[1]):
+                    end = pd.Timestamp(start.strftime('%Y-%m-%d') + ' '
+                                       + datetime_range[1], tz=time_zone)
+                else:
+                    datetime = re.sub(datetime_pattern, datetime_replacement,
+                                      datetime_range[1])
+                    end = pd.Timestamp(year + '-' + datetime, tz=time_zone)
+
+                try:
+                    resource = build('calendar', 'v3', credentials=credentials)
+                    body = {'summary': '🛠️ ' \
+                            + service + ' ' + function,
+                            'start': {'dateTime': start.isoformat()},
+                            'end': {'dateTime': end.isoformat()},
+                            'source': {'title': title, 'url': url}}
+                    event = resource.events().insert(calendarId=calendar_id,
+                                                     body=body).execute()
+                    print(event.get('start')['dateTime'], event.get('summary'))
+                except HttpError as e:
+                    print(e)
+                    sys.exit(1)
 
         section['last_inserted'] = now.isoformat()
         with open(config_file, 'w', encoding='utf-8') as f:
