@@ -61,7 +61,7 @@ def main():
     if args.s or args.y or args.o:
         driver = browser_driver.initialize(
             headless=config.getboolean('General', 'headless'),
-            user_data_dir=config['General']['user_data_dir'],
+            user_data_dir=config['General']['user_data_directory'],
             profile_directory=config['General']['profile_directory'],
             implicitly_wait=float(config['General']['implicitly_wait']))
         if args.s:
@@ -101,7 +101,7 @@ def configure(config_file, interpolation=True):
         {'portfolio': '',
          'portfolio_backup_directory': '',
          'headless': 'True',
-         'user_data_dir':
+         'user_data_directory':
          os.path.expandvars(r'%LOCALAPPDATA%\Google\Chrome\User Data'),
          'profile_directory': 'Default',
          'implicitly_wait': '4',
@@ -174,14 +174,13 @@ def configure(config_file, interpolation=True):
           ('click', '//a[text()="注文照会"]')]}
     config['Maintenance Schedules'] = \
         {'url': 'https://search.sbisec.co.jp/v2/popwin/info/home/pop6040_maintenance.html',
-         'maintenance_service': 'HYPER SBI 2',
-         'maintenance_function_header': 'メンテナンス対象機能',
-         'maintenance_time_header': 'メンテナンス予定時間',
+         'service': 'HYPER SBI 2', # TODO
+         'function_header': 'メンテナンス対象機能',
+         'schedule_header': 'メンテナンス予定時間',
          'time_zone': 'Asia/Tokyo',
          'range_punctuation': '〜',
          'datetime_pattern': r'^(\d{1,2})/(\d{1,2})（.）(\d{1,2}:\d{2})$$',
          'datetime_replacement': r'\1-\2 \3',
-         'date_replacement': r'\1-\2',
          'calendar_id': 'primary',
          'last_inserted': '1970-01-01T00:00:00+00:00'}
     config.read(config_file, encoding='utf-8')
@@ -365,14 +364,13 @@ def insert_maintenance_schedules(config, config_file):
 
     section = config['Maintenance Schedules']
     url = section['url']
-    maintenance_service = section['maintenance_service']
-    maintenance_function_header = section['maintenance_function_header']
-    maintenance_time_header = section['maintenance_time_header']
+    service = section['service']
+    function_header = section['function_header']
+    schedule_header = section['schedule_header']
     time_zone = section['time_zone']
     range_punctuation = section['range_punctuation']
     datetime_pattern = section['datetime_pattern']
     datetime_replacement = section['datetime_replacement']
-    date_replacement = section['date_replacement']
     calendar_id = section['calendar_id']
     last_inserted = section['last_inserted']
 
@@ -387,16 +385,18 @@ def insert_maintenance_schedules(config, config_file):
        < pd.Timestamp(head.headers['last-modified']):
         dfs = pd.DataFrame()
         try:
-            dfs = pd.read_html(url, match=maintenance_service, flavor='lxml',
+            dfs = pd.read_html(url, match=service, flavor='lxml',
                                header=0, index_col=0)
         except Exception as e:
             print(e)
             sys.exit(1)
 
-        df = dfs[len(dfs) - 1].filter(regex=maintenance_service, axis=0)
-        maintenance_function = df.iloc[0][maintenance_function_header]
+        # for service in services:
+
+        df = dfs[len(dfs) - 1].filter(regex=service, axis=0)
+        function = df.iloc[0][function_header]
         # FIXME
-        maintenance_time = df.iloc[0][maintenance_time_header].split()
+        schedules = df.iloc[0][schedule_header].split()
         now = pd.Timestamp.now(tz=time_zone)
         time_frame = 30
         year = now.strftime('%Y')
@@ -408,14 +408,12 @@ def insert_maintenance_schedules(config, config_file):
         if matched:
             title = matched.group(1)
 
-        for i in range(len(maintenance_time)):
-            maintenance_schedule = maintenance_time[i].split(range_punctuation)
+        for i in range(len(schedules)):
+            datetime_range = schedules[i].split(range_punctuation)
 
             # Assume that the year of the date is omitted.
             datetime = re.sub(datetime_pattern, datetime_replacement,
-                              maintenance_schedule[0])
-            date = re.sub(datetime_pattern, date_replacement,
-                          maintenance_schedule[0])
+                              datetime_range[0])
             start = pd.Timestamp(year + '-' + datetime, tz=time_zone)
 
             timedelta = pd.Timestamp(start) - now
@@ -427,31 +425,23 @@ def insert_maintenance_schedules(config, config_file):
                 year = str(int(year) - 1)
                 start = pd.Timestamp(year + '-' + datetime, tz=time_zone)
 
-            if re.match('^\d{1,2}:\d{2}$', maintenance_schedule[1]):
-                end = pd.Timestamp(year + '-' + date + ' '
-                                   + maintenance_schedule[1], tz=time_zone)
+            if re.match('^\d{1,2}:\d{2}$', datetime_range[1]):
+                end = pd.Timestamp(start.strftime('%Y-%m-%d') + ' '
+                                   + datetime_range[1], tz=time_zone)
             else:
                 datetime = re.sub(datetime_pattern, datetime_replacement,
-                                  maintenance_schedule[1])
+                                  datetime_range[1])
                 end = pd.Timestamp(year + '-' + datetime, tz=time_zone)
 
             try:
-                service = build('calendar', 'v3', credentials=credentials)
-                body = {
-                    'summary': '🛠️ ' \
-                    + maintenance_service + ' ' + maintenance_function,
-                    'start': {
-                        'dateTime': start.isoformat(),
-                    },
-                    'end': {
-                        'dateTime': end.isoformat(),
-                    },
-                    'source': {
-                        'title': title,
-                        'url': url},
-                }
-                event = service.events().insert(calendarId=calendar_id,
-                                                body=body).execute()
+                resource = build('calendar', 'v3', credentials=credentials)
+                body = {'summary': '🛠️ ' \
+                        + service + ' ' + function,
+                        'start': {'dateTime': start.isoformat()},
+                        'end': {'dateTime': end.isoformat()},
+                        'source': {'title': title, 'url': url}}
+                event = resource.events().insert(calendarId=calendar_id,
+                                                 body=body).execute()
                 print(event.get('start')['dateTime'], event.get('summary'))
             except HttpError as e:
                 print(e)
@@ -471,6 +461,7 @@ def get_credentials(config):
     credentials_json = section['credentials_json']
 
     credentials = None
+    # TODO
     SCOPES = ['https://www.googleapis.com/auth/calendar']
     if os.path.exists(token_json):
         credentials = Credentials.from_authorized_user_file(token_json, SCOPES)

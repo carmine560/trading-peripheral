@@ -16,8 +16,8 @@ A `trading_peripheral.py` Python script:
     Portfolio](https://finance.yahoo.com/portfolios) on Yahoo Finance
   * extracts order status from the SBI Securities web page and copies
     them to the clipboard
-  * (optional) retrieves SBI Securities maintenance schedules and
-    inserts them into Google Calendar
+  * retrieves SBI Securities maintenance schedules and inserts them
+    into Google Calendar
 
 > **Warning** This script is currently under heavy development.
 > Changes in functionality can occur at any time.
@@ -28,22 +28,22 @@ This script has been tested in [Python for
 Windows](https://www.python.org/downloads/windows/) with Hyper SBI 2
 and uses the following web browser and packages:
 
-  * [Chrome](https://www.google.com/chrome/) authenticates to the
-    website and loads the page
+  * [Chrome](https://www.google.com/chrome/) to authenticate to the
+    website and loads the page (for the `-s`, `-y`, and `-o` options)
   * [Selenium
-    WebDriver](https://www.selenium.dev/documentation/webdriver/)
-    drives a browser
+    WebDriver](https://www.selenium.dev/documentation/webdriver/) to
+    drive a browser (for the `-s`, `-y`, and `-o` options)
   * [Webdriver Manager for
-    Python](https://github.com/SergeyPirogov/webdriver_manager)
-    automatically updates the driver
+    Python](https://github.com/SergeyPirogov/webdriver_manager) to
+    automatically update the driver (for the `-s`, `-y`, and `-o`
+    options)
   * [pandas](https://pandas.pydata.org/) to extract data from the web
-    pages
-  * (optional)
-    [google-api-python-client](https://googleapis.github.io/google-api-python-client/docs/),
+    pages (for the `-o` and `-m` options)
+  * [google-api-python-client](https://googleapis.github.io/google-api-python-client/docs/),
     [google-auth-httplib2](https://github.com/googleapis/google-auth-library-python-httplib2),
     and
     [google-auth-oauthlib](https://github.com/googleapis/google-auth-library-python-oauthlib)
-    to access to Google APIs
+    to access Google APIs (for the `-m` option)
 
 Install each package as needed.  For example:
 
@@ -52,6 +52,7 @@ winget install Google.Chrome
 pip install selenium
 pip install webdriver-manager
 pip install pandas
+pip install google-api-python-client google-auth-httplib2 google-auth-oauthlib
 ```
 
 ## Usage ##
