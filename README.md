@@ -1,7 +1,8 @@
 # trading-peripheral #
 
 <!-- Python script that exports Hyper SBI 2 watchlists to Yahoo
-Finance and extracts order status from SBI Securities web page -->
+Finance, extracts order status, and inserts maintenance schedules into
+Google Calendar -->
 
 <!-- hypersbi2 python chrome selenium webdrivermanager pandas
 google-api -->
@@ -29,21 +30,20 @@ Windows](https://www.python.org/downloads/windows/) with Hyper SBI 2
 and uses the following web browser and packages:
 
   * [Chrome](https://www.google.com/chrome/) to authenticate to the
-    website and loads the page (for the `-s`, `-y`, and `-o` options)
+    website and load the page
   * [Selenium
     WebDriver](https://www.selenium.dev/documentation/webdriver/) to
-    drive a browser (for the `-s`, `-y`, and `-o` options)
+    drive a browser
   * [Webdriver Manager for
     Python](https://github.com/SergeyPirogov/webdriver_manager) to
-    automatically update the driver (for the `-s`, `-y`, and `-o`
-    options)
+    automatically update the driver
   * [pandas](https://pandas.pydata.org/) to extract data from the web
-    pages (for the `-o` and `-m` options)
+    pages
   * [google-api-python-client](https://googleapis.github.io/google-api-python-client/docs/),
     [google-auth-httplib2](https://github.com/googleapis/google-auth-library-python-httplib2),
     and
     [google-auth-oauthlib](https://github.com/googleapis/google-auth-library-python-oauthlib)
-    to access Google APIs (for the `-m` option)
+    to access Google APIs
 
 Install each package as needed.  For example:
 
@@ -70,18 +70,17 @@ configuration file saves these configurations.
 
 ### Options ###
 
-  * `-p`: backup Hyper SBI 2 `portfolio.json`
-  * `-s`: replace watchlists on the SBI Securities website with Hyper
-    SBI 2 watchlists
-  * `-y`: export Hyper SBI 2 `portfolio.json` to My Portfolio on Yahoo
-    Finance
-  * `-o`: extract order status from the SBI Securities web page and
-    copy them to the clipboard
-  * `-m`: insert maintenance schedules into Google Calendar
-  * `-G`: configure general options and exit
-  * `-O`: configure order state formats and exit
-  * `-A`: configure actions and exit
-  * `-M`: configure maintenance schedules and exit
+| Option | Description                                                                          | Chrome & Webdriver | pandas   | google-api |
+|--------|--------------------------------------------------------------------------------------|--------------------|----------|------------|
+| `-p`   | backup Hyper SBI 2 `portfolio.json`                                                  |                    |          |            |
+| `-s`   | replace watchlists on the SBI Securities website with Hyper SBI 2 watchlists         | required           |          |            |
+| `-y`   | export Hyper SBI 2 `portfolio.json` to My Portfolio on Yahoo Finance                 | required           |          |            |
+| `-o`   | extract order status from the SBI Securities web page and copy them to the clipboard | required           | required |            |
+| `-m`   | insert maintenance schedules into Google Calendar                                    |                    | required | required   |
+| `-G`   | configure general options and exit                                                   |                    |          |            |
+| `-O`   | configure order state formats and exit                                               |                    |          |            |
+| `-A`   | configure actions and exit                                                           |                    |          |            |
+| `-M`   | configure maintenance schedules and exit                                             |                    |          |            |
 
 ## Known Issues ##
 
