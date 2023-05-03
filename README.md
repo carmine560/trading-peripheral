@@ -34,7 +34,7 @@ and uses the following web browser and packages:
   * [Selenium
     WebDriver](https://www.selenium.dev/documentation/webdriver/) to
     drive a browser
-  * [Webdriver Manager for
+  * [WebDriver Manager for
     Python](https://github.com/SergeyPirogov/webdriver_manager) to
     automatically update the driver
   * [pandas](https://pandas.pydata.org/) to extract data from the web
@@ -70,7 +70,7 @@ configuration file saves these configurations.
 
 ### Options ###
 
-| Option | Description                                                                          | Chrome & Webdriver | pandas   | google-api |
+| Option | Description                                                                          | Chrome & WebDriver | pandas   | google-api |
 |--------|--------------------------------------------------------------------------------------|--------------------|----------|------------|
 | `-p`   | backup Hyper SBI 2 `portfolio.json`                                                  |                    |          |            |
 | `-s`   | replace watchlists on the SBI Securities website with Hyper SBI 2 watchlists         | required           |          |            |
