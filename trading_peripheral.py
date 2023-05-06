@@ -100,91 +100,91 @@ def configure(config_file, interpolation=True):
     else:
         config = configparser.ConfigParser()
 
-    config['General'] = \
-        {'portfolio': '',
-         'portfolio_backup_directory': '',
-         'headless': 'True',
-         'user_data_directory':
-         os.path.expandvars(r'%LOCALAPPDATA%\Google\Chrome\User Data'),
-         'profile_directory': 'Default',
-         'implicitly_wait': '4',
-         'csv_directory': os.path.join(os.path.expanduser('~'), 'Downloads'),
-         'token_json': os.path.join(
-             os.path.expandvars('%LOCALAPPDATA%'),
-             os.path.basename(os.path.dirname(__file__)), 'token.json'),
-         'scopes': ['https://www.googleapis.com/auth/calendar']}
-    config['Variables'] = \
-        {'watchlist': ''}
-    config['Order Status'] = \
-        {'output_columns':
-         ['entry_date', None, None, 'entry_time', 'symbol', 'size',
-          'trade_type', 'trade_style', 'entry_price', None, None, 'exit_date',
-          'exit_time', 'exit_price'],
-         'table_identifier': '注文種別',
-         'symbol_regex': r'^.* (\d{4}) 東証$$',
-         'symbol_replacement': r'\1',
-         'margin_trading': '信新',
-         'buying_on_margin': '信新買',
-         'execution_column': '3',
-         'execution': '約定',
-         'datetime_column': '5',
-         'datetime_pattern': r'^(\d{2}/\d{2}) (\d{2}:\d{2}:\d{2})$$',
-         'date_replacement': r'\1',
-         'time_replacement': r'\2',
-         'size_column': '6',
-         'price_column': '7'}
-    config['Actions'] = \
-        {'replace_sbi_securities':
-         [('get', 'https://www.sbisec.co.jp/ETGate'),
-          ('sleep', '0.8'),
-          ('click', '//input[@name="ACT_login"]'),
-          ('click', '//a[text()="ポートフォリオ"]'),
-          ('click', '//a[text()="登録銘柄リストの追加・置き換え"]'),
-          ('click', '//img[@alt="登録銘柄リストの追加・置き換え機能を利用する"]'),
-          ('click', '//*[@name="tool_from" and @value="3"]'),
-          ('click', '//input[@value="次へ"]'),
-          ('click', '//*[@name="tool_to_1" and @value="1"]'),
-          ('click', '//input[@value="次へ"]'),
-          ('click', '//*[@name="add_replace_tool_01" and @value="1_2"]'),
-          ('click', '//input[@value="確認画面へ"]'),
-          ('click', '//input[@value="指示実行"]')],
-         'export_to_yahoo_finance':
-         [('get', 'https://finance.yahoo.com/portfolios'),
-          ('exist', '//*[@id="Col1-0-Portfolios-Proxy"]//a[text()="${Variables:watchlist}"]',
-           [('click', '//*[@id="Col1-0-Portfolios-Proxy"]//a[text()="${Variables:watchlist}"]'),
-            ('click', '//span[text()="Settings"]'),
-            ('sleep', '0.8'),
-            ('click', '//span[text()="Delete Portfolio"]'),
-            ('click', '//span[text()="Confirm"]')]),
-          ('click', '//span[text()="Import"]'),
-          ('send_keys', '//input[@name="ext_pf"]', r'${General:csv_directory}\${Variables:watchlist}.csv'),
-          ('click', '//span[text()="Submit"]'),
-          ('refresh',),
-          ('sleep', '0.8'),
-          ('click', '//a[text()="Imported from Yahoo"]'),
-          ('click', '//span[text()="Settings"]'),
-          ('click', '//span[text()="Rename Portfolio"]'),
-          ('clear', '//input[@value="Imported from Yahoo"]'),
-          ('send_keys', '//input[@value="Imported from Yahoo"]', '${Variables:watchlist}'),
-          ('click', '//span[text()="Save"]'),
-          ('sleep', '0.8')],
-         'get_order_status':
-         [('get', 'https://www.sbisec.co.jp/ETGate'),
-          ('sleep', '0.8'),
-          ('click', '//input[@name="ACT_login"]'),
-          ('click', '//a[text()="注文照会"]')]}
-    config['Maintenance Schedules'] = \
-        {'url': 'https://search.sbisec.co.jp/v2/popwin/info/home/pop6040_maintenance.html',
-         'services': ('HYPER SBI 2',),
-         'service_header': '対象サービス',
-         'function_header': 'メンテナンス対象機能',
-         'schedule_header': 'メンテナンス予定時間',
-         'time_zone': 'Asia/Tokyo',
-         'range_punctuation': '〜',
-         'datetime_pattern': r'^(\d{1,2})/(\d{1,2})（.）(\d{1,2}:\d{2})$$',
-         'datetime_replacement': r'\1-\2 \3',
-         'calendar_id': 'primary',
-         'last_inserted': '1970-01-01T00:00:00+00:00'}
+    config['General'] = {
+        'portfolio': '',
+        'portfolio_backup_directory': '',
+        'headless': 'True',
+        'user_data_directory':
+        os.path.expandvars(r'%LOCALAPPDATA%\Google\Chrome\User Data'),
+        'profile_directory': 'Default',
+        'implicitly_wait': '4',
+        'csv_directory': os.path.join(os.path.expanduser('~'), 'Downloads'),
+        'token_json': os.path.join(
+            os.path.expandvars('%LOCALAPPDATA%'),
+            os.path.basename(os.path.dirname(__file__)), 'token.json'),
+        'scopes': ['https://www.googleapis.com/auth/calendar']}
+    config['Order Status'] = {
+        'output_columns':
+        ['entry_date', None, None, 'entry_time', 'symbol', 'size',
+         'trade_type', 'trade_style', 'entry_price', None, None, 'exit_date',
+         'exit_time', 'exit_price'],
+        'table_identifier': '注文種別',
+        'symbol_regex': r'^.* (\d{4}) 東証$$',
+        'symbol_replacement': r'\1',
+        'margin_trading': '信新',
+        'buying_on_margin': '信新買',
+        'execution_column': '3',
+        'execution': '約定',
+        'datetime_column': '5',
+        'datetime_pattern': r'^(\d{2}/\d{2}) (\d{2}:\d{2}:\d{2})$$',
+        'date_replacement': r'\1',
+        'time_replacement': r'\2',
+        'size_column': '6',
+        'price_column': '7'}
+    config['Actions'] = {
+        'replace_sbi_securities':
+        [('get', 'https://www.sbisec.co.jp/ETGate'),
+         ('sleep', '0.8'),
+         ('click', '//input[@name="ACT_login"]'),
+         ('click', '//a[text()="ポートフォリオ"]'),
+         ('click', '//a[text()="登録銘柄リストの追加・置き換え"]'),
+         ('click', '//img[@alt="登録銘柄リストの追加・置き換え機能を利用する"]'),
+         ('click', '//*[@name="tool_from" and @value="3"]'),
+         ('click', '//input[@value="次へ"]'),
+         ('click', '//*[@name="tool_to_1" and @value="1"]'),
+         ('click', '//input[@value="次へ"]'),
+         ('click', '//*[@name="add_replace_tool_01" and @value="1_2"]'),
+         ('click', '//input[@value="確認画面へ"]'),
+         ('click', '//input[@value="指示実行"]')],
+        'export_to_yahoo_finance':
+        [('get', 'https://finance.yahoo.com/portfolios'),
+         ('exist', '//*[@id="Col1-0-Portfolios-Proxy"]//a[text()="${Variables:watchlist}"]',
+          [('click', '//*[@id="Col1-0-Portfolios-Proxy"]//a[text()="${Variables:watchlist}"]'),
+           ('click', '//span[text()="Settings"]'),
+           ('sleep', '0.8'),
+           ('click', '//span[text()="Delete Portfolio"]'),
+           ('click', '//span[text()="Confirm"]')]),
+         ('click', '//span[text()="Import"]'),
+         ('send_keys', '//input[@name="ext_pf"]', r'${General:csv_directory}\${Variables:watchlist}.csv'),
+         ('click', '//span[text()="Submit"]'),
+         ('refresh',),
+         ('sleep', '0.8'),
+         ('click', '//a[text()="Imported from Yahoo"]'),
+         ('click', '//span[text()="Settings"]'),
+         ('click', '//span[text()="Rename Portfolio"]'),
+         ('clear', '//input[@value="Imported from Yahoo"]'),
+         ('send_keys', '//input[@value="Imported from Yahoo"]', '${Variables:watchlist}'),
+         ('click', '//span[text()="Save"]'),
+         ('sleep', '0.8')],
+        'get_order_status':
+        [('get', 'https://www.sbisec.co.jp/ETGate'),
+         ('sleep', '0.8'),
+         ('click', '//input[@name="ACT_login"]'),
+         ('click', '//a[text()="注文照会"]')]}
+    config['Maintenance Schedules'] = {
+        'url': 'https://search.sbisec.co.jp/v2/popwin/info/home/pop6040_maintenance.html',
+        'services': ('HYPER SBI 2',),
+        'service_header': '対象サービス',
+        'function_header': 'メンテナンス対象機能',
+        'schedule_header': 'メンテナンス予定時間',
+        'time_zone': 'Asia/Tokyo',
+        'range_punctuation': '〜',
+        'datetime_pattern': r'^(\d{1,2})/(\d{1,2})（.）(\d{1,2}:\d{2})$$',
+        'datetime_replacement': r'\1-\2 \3',
+        'calendar_id': 'primary',
+        'last_inserted': '1970-01-01T00:00:00+00:00'}
+    config['Variables'] = {
+        'watchlist': ''}
     config.read(config_file, encoding='utf-8')
 
     if not config['General']['portfolio']:
