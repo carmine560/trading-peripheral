@@ -51,6 +51,7 @@ def main():
     if args.G or args.O or args.A or args.M:
         config = configure(config_file, interpolation=False)
         file_utilities.backup_file(config_file, number_of_backups=8)
+        # TODO
         configuration.modify_section(
             config, (args.G or args.O or args.A or args.M), config_file)
         return
