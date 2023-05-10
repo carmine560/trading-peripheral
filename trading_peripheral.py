@@ -51,9 +51,9 @@ def main():
     if args.G or args.O or args.A or args.M:
         config = configure(config_file, interpolation=False)
         file_utilities.backup_file(config_file, number_of_backups=8)
-        # TODO
         configuration.modify_section(
-            config, (args.G or args.O or args.A or args.M), config_file)
+            config, (args.G or args.O or args.A or args.M), config_file,
+            boolean_keys=['exist'])
         return
     else:
         config = configure(config_file)
@@ -116,9 +116,9 @@ def configure(config_file, interpolation=True):
         'scopes': ['https://www.googleapis.com/auth/calendar']}
     config['Order Status'] = {
         'output_columns':
-        ['entry_date', None, None, 'entry_time', 'symbol', 'size',
+        ('entry_date', None, None, 'entry_time', 'symbol', 'size',
          'trade_type', 'trade_style', 'entry_price', None, None, 'exit_date',
-         'exit_time', 'exit_price'],
+         'exit_time', 'exit_price'),
         'table_identifier': '注文種別',
         'symbol_regex': r'^.* (\d{4}) 東証$$',
         'symbol_replacement': r'\1',
@@ -285,7 +285,7 @@ def extract_order_status(config, driver):
 
     index = 0
     df = dfs[1]
-    size_price = pd.DataFrame(columns=['size', 'price'])
+    size_price = pd.DataFrame(columns=('size', 'price'))
     results = pd.DataFrame(columns=output_columns)
     while index < len(df):
         if df.iloc[index, execution_column] == execution:
@@ -313,7 +313,7 @@ def extract_order_status(config, driver):
                 else:
                     results.loc[len(results) - 1, 'exit_price'] = average_price
 
-                size_price = pd.DataFrame(columns=['size', 'price'])
+                size_price = pd.DataFrame(columns=('size', 'price'))
 
             index += 1
         else:
@@ -419,7 +419,7 @@ def insert_maintenance_schedules(config, config_file):
                     break
 
             function = df.iloc[0][function_header]
-            # FIXME
+            # TODO
             schedules = df.iloc[0][schedule_header].split()
 
             for i in range(len(schedules)):

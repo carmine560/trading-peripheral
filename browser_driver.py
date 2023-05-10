@@ -39,6 +39,7 @@ def execute_action(driver, action):
         elif command == 'refresh':
             driver.refresh()
         elif command == 'send_keys':
+            # TODO
             driver.find_element(By.XPATH, argument).send_keys(action[index][2])
         elif command == 'sleep':
             time.sleep(float(argument))
