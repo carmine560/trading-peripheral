@@ -65,7 +65,7 @@ def main():
     if args.s or args.y or args.o:
         driver = browser_driver.initialize(
             headless=config.getboolean('General', 'headless'),
-            user_data_dir=config['General']['user_data_directory'],
+            user_data_directory=config['General']['user_data_directory'],
             profile_directory=config['General']['profile_directory'],
             implicitly_wait=float(config['General']['implicitly_wait']))
         if args.s:
