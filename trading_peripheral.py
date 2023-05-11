@@ -53,8 +53,8 @@ def main():
         file_utilities.backup_file(config_file, number_of_backups=8)
         configuration.modify_section(
             config, (args.G or args.O or args.A or args.M), config_file,
-            boolean_keys=['exist'], additional_value_keys=['send_keys'],
-            no_value_keys=['refresh'])
+            keys={'boolean': ('exist',), 'additional_value': ('send_keys',),
+                  'no_value': ('refresh',)})
         return
     else:
         config = configure(config_file)
