@@ -80,8 +80,8 @@ stores these configurations.
 
 ## Known Issues ##
 
-  * It appears that Yahoo Finance does not have stocks listed solely on the
-    Nagoya Stock Exchange.
+  * Yahoo Finance does not seem to have stocks listed solely on the Nagoya
+    Stock Exchange.
   * Extracting order status assumes day trading on margin.
 
 ## License ##

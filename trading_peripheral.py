@@ -195,7 +195,7 @@ def configure(config_file, interpolation=True):
         latest_modified_time = 0.0
         identifier = ''
         for f in os.listdir(HYPERSBI2_PROFILES):
-            if re.match('^[0-9a-z]{32}$', f):
+            if re.fullmatch('[0-9a-z]{32}', f):
                 modified_time = os.path.getmtime(os.path.join(
                     HYPERSBI2_PROFILES, f))
                 if modified_time > latest_modified_time:
@@ -392,18 +392,26 @@ def insert_maintenance_schedules(config, config_file):
     # Assume that all schedules are updated at the same time.
     if pd.Timestamp(last_inserted) \
        < pd.Timestamp(head.headers['last-modified']):
+        now = pd.Timestamp.now(tz=time_zone)
+        section['last_inserted'] = now.isoformat()
+
         try:
             dfs = pd.read_html(url, match='|'.join(services), flavor='lxml',
                                header=0)
         except Exception as e:
             print(e)
-            sys.exit(1)
+            if re.match('No tables found matching regex', str(e)):
+                with open(config_file, 'w', encoding='utf-8') as f:
+                    config.write(f)
 
-        now = pd.Timestamp.now(tz=time_zone)
-        time_frame = 30
+                sys.exit()
+            else:
+                sys.exit(1)
+
         year = now.strftime('%Y')
-
+        time_frame = 30
         credentials = get_credentials(token_json, scopes)
+
         response = requests.get(url)
         response.encoding = response.apparent_encoding
         matched = re.search('<title>(.*)</title>', response.text)
@@ -440,7 +448,7 @@ def insert_maintenance_schedules(config, config_file):
                     year = str(int(year) - 1)
                     start = pd.Timestamp(year + '-' + datetime, tz=time_zone)
 
-                if re.match('^\d{1,2}:\d{2}$', datetime_range[1]):
+                if re.fullmatch('\d{1,2}:\d{2}', datetime_range[1]):
                     end = pd.Timestamp(start.strftime('%Y-%m-%d') + ' '
                                        + datetime_range[1], tz=time_zone)
                 else:
@@ -462,7 +470,6 @@ def insert_maintenance_schedules(config, config_file):
                     print(e)
                     sys.exit(1)
 
-        section['last_inserted'] = now.isoformat()
         with open(config_file, 'w', encoding='utf-8') as f:
             config.write(f)
 
