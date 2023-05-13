@@ -4,7 +4,8 @@
 extracts order status, and inserts maintenance schedules into Google Calendar
 -->
 
-<!-- hypersbi2 python chrome selenium webdrivermanager pandas google-api -->
+<!-- hypersbi2 python chrome selenium webdrivermanager pandas google-api gnupg
+-->
 
 A `trading_peripheral.py` Python script:
 
@@ -17,6 +18,8 @@ A `trading_peripheral.py` Python script:
     the clipboard
   * retrieves SBI Securities maintenance schedules and inserts them into Google
     Calendar
+  * takes a snapshot of the `%APPDATA%\SBI Securities\HYPERSBI2` application
+    data and restores it
 
 > **Warning** This script is currently under heavy development.  Changes in
 > functionality can occur at any time.
@@ -40,6 +43,9 @@ the following web browser and packages:
     and
     [google-auth-oauthlib](https://github.com/googleapis/google-auth-library-python-oauthlib)
     to access Google APIs
+  * [GnuPG](https://gnupg.org/index.html) and
+    [python-gnupg](https://docs.red-dove.com/python-gnupg/) to encrypt and
+    decrypt application data archive
 
 Install each package as needed.  For example:
 
@@ -49,6 +55,8 @@ pip install selenium
 pip install webdriver-manager
 pip install pandas
 pip install google-api-python-client google-auth-httplib2 google-auth-oauthlib
+winget install GnuPG.GnuPG
+pip install python-gnupg
 ```
 
 ## Usage ##
@@ -66,17 +74,19 @@ stores these configurations.
 
 ### Options ###
 
-| Option | Description                                                                          | Chrome & WebDriver | pandas   | google-api |
-|--------|--------------------------------------------------------------------------------------|--------------------|----------|------------|
-| `-p`   | backup Hyper SBI 2 `portfolio.json`                                                  |                    |          |            |
-| `-s`   | replace watchlists on the SBI Securities website with Hyper SBI 2 watchlists         | required           |          |            |
-| `-y`   | export Hyper SBI 2 `portfolio.json` to My Portfolio on Yahoo Finance                 | required           |          |            |
-| `-o`   | extract order status from the SBI Securities web page and copy them to the clipboard | required           | required |            |
-| `-m`   | insert maintenance schedules into Google Calendar                                    |                    | required | required   |
-| `-G`   | configure general options and exit                                                   |                    |          |            |
-| `-O`   | configure order state formats and exit                                               |                    |          |            |
-| `-A`   | configure actions and exit                                                           |                    |          |            |
-| `-M`   | configure maintenance schedules and exit                                             |                    |          |            |
+| Option | Description                                                                          | Chrome & WebDriver | pandas   | google-api | GnuPG    |
+|--------|--------------------------------------------------------------------------------------|--------------------|----------|------------|----------|
+| `-p`   | backup Hyper SBI 2 watchlists                                                        |                    |          |            |          |
+| `-s`   | replace watchlists on the SBI Securities website with Hyper SBI 2 watchlists         | required           |          |            |          |
+| `-y`   | export Hyper SBI 2 watchlists to My Portfolio on Yahoo Finance                       | required           |          |            |          |
+| `-o`   | extract order status from the SBI Securities web page and copy them to the clipboard | required           | required |            |          |
+| `-m`   | insert maintenance schedules into Google Calendar                                    |                    | required | required   |          |
+| `-d`   | take a snapshot of Hyper SBI 2 application data                                      |                    |          |            | required |
+| `-D`   | restore Hyper SBI 2 application data from a snapshot                                 |                    |          |            | required |
+| `-G`   | configure general options and exit                                                   |                    |          |            |          |
+| `-A`   | configure actions and exit                                                           |                    |          |            |          |
+| `-O`   | configure order state formats and exit                                               |                    |          |            |          |
+| `-M`   | configure maintenance schedules and exit                                             |                    |          |            |          |
 
 ## Known Issues ##
 

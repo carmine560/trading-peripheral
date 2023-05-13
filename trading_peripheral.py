@@ -1,27 +1,27 @@
+import argparse
 import ast
+import configparser
 import os
 import re
 import sys
 
+import browser_driver
+import configuration
+import file_utilities
+
 def main():
-    import argparse
-
-    import browser_driver
-    import configuration
-    import file_utilities
-
     parser = argparse.ArgumentParser()
     group = parser.add_mutually_exclusive_group()
     parser.add_argument(
         '-p', action='store_true',
-        help='backup Hyper SBI 2 portfolio.json')
+        help='backup Hyper SBI 2 watchlists')
     parser.add_argument(
         '-s', action='store_true',
         help='replace watchlists on the SBI Securities website '
         'with Hyper SBI 2 watchlists')
     parser.add_argument(
         '-y', action='store_true',
-        help='export Hyper SBI 2 portfolio.json to My Portfolio '
+        help='export Hyper SBI 2 watchlists to My Portfolio '
         'on Yahoo Finance')
     parser.add_argument(
         '-o', action='store_true',
@@ -30,15 +30,21 @@ def main():
     parser.add_argument(
         '-m', action='store_true',
         help='insert maintenance schedules into Google Calendar')
+    parser.add_argument(
+        '-d', action='store_true',
+        help='take a snapshot of Hyper SBI 2 application data')
+    parser.add_argument(
+        '-D', action='store_true',
+        help='restore Hyper SBI 2 application data from a snapshot')
     group.add_argument(
         '-G', action='store_const', const='General',
         help='configure general options and exit')
     group.add_argument(
-        '-O', action='store_const', const='Order Status',
-        help='configure order state formats and exit')
-    group.add_argument(
         '-A', action='store_const', const='Actions',
         help='configure actions and exit')
+    group.add_argument(
+        '-O', action='store_const', const='Order Status',
+        help='configure order state formats and exit')
     group.add_argument(
         '-M', action='store_const', const='Maintenance Schedules',
         help='configure maintenance schedules and exit')
@@ -48,11 +54,11 @@ def main():
         os.path.expandvars('%LOCALAPPDATA%'),
         os.path.basename(os.path.dirname(__file__)),
         os.path.splitext(os.path.basename(__file__))[0] + '.ini')
-    if args.G or args.O or args.A or args.M:
+    if args.G or args.A or args.O or args.M:
         config = configure(config_file, interpolation=False)
         file_utilities.backup_file(config_file, number_of_backups=8)
         configuration.modify_section(
-            config, (args.G or args.O or args.A or args.M), config_file,
+            config, (args.G or args.A or args.O or args.M), config_file,
             keys={'boolean': ('exist',), 'additional_value': ('send_keys',),
                   'no_value': ('refresh',)})
         return
@@ -92,10 +98,22 @@ def main():
         driver.quit()
     if args.m:
         insert_maintenance_schedules(config, config_file)
+    if args.d or args.D:
+        # TODO
+        section = config['General']
+        application_data_directory = section['application_data_directory']
+        snapshot_directory = section['snapshot_directory']
+        if args.d:
+            file_utilities.archive_encrypt_directory(
+                application_data_directory, snapshot_directory)
+        if args.D:
+            snapshot = os.path.join(
+                snapshot_directory,
+                os.path.basename(application_data_directory) + '.tar.xz.gpg')
+            output_directory = os.path.dirname(application_data_directory)
+            file_utilities.decrypt_extract_file(snapshot, output_directory)
 
 def configure(config_file, interpolation=True):
-    import configparser
-
     if interpolation:
         config = configparser.ConfigParser(
             interpolation=configparser.ExtendedInterpolation())
@@ -103,6 +121,8 @@ def configure(config_file, interpolation=True):
         config = configparser.ConfigParser()
 
     config['General'] = {
+        'application_data_directory':
+        os.path.expandvars(r'%APPDATA%\SBI Securities\HYPERSBI2'),
         'portfolio': '',
         'portfolio_backup_directory': '',
         'headless': 'True',
@@ -114,25 +134,9 @@ def configure(config_file, interpolation=True):
         'token_json': os.path.join(
             os.path.expandvars('%LOCALAPPDATA%'),
             os.path.basename(os.path.dirname(__file__)), 'token.json'),
-        'scopes': ['https://www.googleapis.com/auth/calendar']}
-    config['Order Status'] = {
-        'output_columns':
-        ('entry_date', None, None, 'entry_time', 'symbol', 'size',
-         'trade_type', 'trade_style', 'entry_price', None, None, 'exit_date',
-         'exit_time', 'exit_price'),
-        'table_identifier': '注文種別',
-        'symbol_regex': r'^.* (\d{4}) 東証$$',
-        'symbol_replacement': r'\1',
-        'margin_trading': '信新',
-        'buying_on_margin': '信新買',
-        'execution_column': '3',
-        'execution': '約定',
-        'datetime_column': '5',
-        'datetime_pattern': r'^(\d{2}/\d{2}) (\d{2}:\d{2}:\d{2})$$',
-        'date_replacement': r'\1',
-        'time_replacement': r'\2',
-        'size_column': '6',
-        'price_column': '7'}
+        'scopes': ['https://www.googleapis.com/auth/calendar'],
+        'snapshot_directory':
+        os.path.join(os.path.expanduser('~'), 'Downloads')}
     config['Actions'] = {
         'replace_sbi_securities':
         [('get', 'https://www.sbisec.co.jp/ETGate'),
@@ -173,6 +177,24 @@ def configure(config_file, interpolation=True):
          ('sleep', '0.8'),
          ('click', '//input[@name="ACT_login"]'),
          ('click', '//a[text()="注文照会"]')]}
+    config['Order Status'] = {
+        'output_columns':
+        ('entry_date', None, None, 'entry_time', 'symbol', 'size',
+         'trade_type', 'trade_style', 'entry_price', None, None, 'exit_date',
+         'exit_time', 'exit_price'),
+        'table_identifier': '注文種別',
+        'symbol_regex': r'^.* (\d{4}) 東証$$',
+        'symbol_replacement': r'\1',
+        'margin_trading': '信新',
+        'buying_on_margin': '信新買',
+        'execution_column': '3',
+        'execution': '約定',
+        'datetime_column': '5',
+        'datetime_pattern': r'^(\d{2}/\d{2}) (\d{2}:\d{2}:\d{2})$$',
+        'date_replacement': r'\1',
+        'time_replacement': r'\2',
+        'size_column': '6',
+        'price_column': '7'}
     config['Maintenance Schedules'] = {
         'url': 'https://search.sbisec.co.jp/v2/popwin/info/home/pop6040_maintenance.html',
         'services': ('HYPER SBI 2',),
@@ -189,21 +211,21 @@ def configure(config_file, interpolation=True):
         'watchlist': ''}
     config.read(config_file, encoding='utf-8')
 
-    if not config['General']['portfolio']:
-        HYPERSBI2_PROFILES = os.path.expandvars(
-            r'%APPDATA%\SBI Securities\HYPERSBI2')
+    section = config['General']
+    if not section['portfolio']:
+        application_data_directory = section['application_data_directory']
         latest_modified_time = 0.0
         identifier = ''
-        for f in os.listdir(HYPERSBI2_PROFILES):
+        for f in os.listdir(application_data_directory):
             if re.fullmatch('[0-9a-z]{32}', f):
                 modified_time = os.path.getmtime(os.path.join(
-                    HYPERSBI2_PROFILES, f))
+                    application_data_directory, f))
                 if modified_time > latest_modified_time:
                     latest_modified_time = modified_time
                     identifier = f
         if identifier:
-            config['General']['portfolio'] = \
-                os.path.join(HYPERSBI2_PROFILES, identifier, 'portfolio.json')
+            section['portfolio'] = os.path.join(application_data_directory,
+                                                identifier, 'portfolio.json')
         else:
             print('unspecified identifier')
             sys.exit(1)
@@ -257,8 +279,6 @@ def convert_to_yahoo_finance(config):
 
 # TODO
 def extract_order_status(config, driver):
-    import sys
-
     import pandas as pd
 
     section = config['Order Status']
