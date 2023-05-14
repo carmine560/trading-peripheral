@@ -99,13 +99,14 @@ def main():
     if args.m:
         insert_maintenance_schedules(config, config_file)
     if args.d or args.D:
-        # TODO
         section = config['General']
         application_data_directory = section['application_data_directory']
         snapshot_directory = section['snapshot_directory']
+        fingerprint = section['fingerprint']
         if args.d:
             file_utilities.archive_encrypt_directory(
-                application_data_directory, snapshot_directory)
+                application_data_directory, snapshot_directory,
+                fingerprint=fingerprint)
         if args.D:
             snapshot = os.path.join(
                 snapshot_directory,
@@ -136,7 +137,8 @@ def configure(config_file, interpolation=True):
             os.path.basename(os.path.dirname(__file__)), 'token.json'),
         'scopes': ['https://www.googleapis.com/auth/calendar'],
         'snapshot_directory':
-        os.path.join(os.path.expanduser('~'), 'Downloads')}
+        os.path.join(os.path.expanduser('~'), 'Downloads'),
+        'fingerprint': ''}
     config['Actions'] = {
         'replace_sbi_securities':
         [('get', 'https://www.sbisec.co.jp/ETGate'),
