@@ -9,11 +9,29 @@ import browser_driver
 import configuration
 import file_utilities
 
+# TODO
+class Trade:
+    def __init__(self, brokerage, process):
+        self.brokerage = brokerage
+        self.process = process
+        config_directory = os.path.join(
+            os.path.expandvars('%LOCALAPPDATA%'),
+            os.path.basename(os.path.dirname(__file__)))
+        self.script_base = os.path.splitext(os.path.basename(__file__))[0]
+        self.config_file = os.path.join(config_directory,
+                                        self.script_base + '.ini')
+
+        file_utilities.check_directory(config_directory)
+
 def main():
     parser = argparse.ArgumentParser()
     group = parser.add_mutually_exclusive_group()
     parser.add_argument(
-        '-p', action='store_true',
+        '-P', default=('SBI Securities', 'HYPERSBI2'),
+        metavar=('BROKERAGE', 'PROCESS'), nargs=2,
+        help='set a brokerage and a process [defaults: %(default)s]')
+    parser.add_argument(
+        '-w', action='store_true',
         help='backup Hyper SBI 2 watchlists')
     parser.add_argument(
         '-s', action='store_true',
@@ -50,22 +68,19 @@ def main():
         help='configure maintenance schedules and exit')
     args = parser.parse_args(None if sys.argv[1:] else ['-h'])
 
-    config_file = os.path.join(
-        os.path.expandvars('%LOCALAPPDATA%'),
-        os.path.basename(os.path.dirname(__file__)),
-        os.path.splitext(os.path.basename(__file__))[0] + '.ini')
+    trade = Trade(*args.P)
     if args.G or args.A or args.O or args.M:
-        config = configure(config_file, interpolation=False)
-        file_utilities.backup_file(config_file, number_of_backups=8)
+        config = configure(trade, interpolation=False)
+        file_utilities.backup_file(trade.config_file, number_of_backups=8)
         configuration.modify_section(
-            config, (args.G or args.A or args.O or args.M), config_file,
+            config, (args.G or args.A or args.O or args.M), trade.config_file,
             keys={'boolean': ('exist',), 'additional_value': ('send_keys',),
                   'no_value': ('refresh',)})
         return
     else:
-        config = configure(config_file)
+        config = configure(trade)
 
-    if args.p:
+    if args.w:
         file_utilities.backup_file(
             config['General']['portfolio'],
             backup_directory=config['General']['portfolio_backup_directory'])
@@ -97,7 +112,7 @@ def main():
 
         driver.quit()
     if args.m:
-        insert_maintenance_schedules(config, config_file)
+        insert_maintenance_schedules(config, trade.config_file)
     if args.d or args.D:
         section = config['General']
         application_data_directory = section['application_data_directory']
@@ -114,7 +129,7 @@ def main():
             output_directory = os.path.dirname(application_data_directory)
             file_utilities.decrypt_extract_file(snapshot, output_directory)
 
-def configure(config_file, interpolation=True):
+def configure(trade, interpolation=True):
     if interpolation:
         config = configparser.ConfigParser(
             interpolation=configparser.ExtendedInterpolation())
@@ -122,23 +137,30 @@ def configure(config_file, interpolation=True):
         config = configparser.ConfigParser()
 
     config['General'] = {
+        # TODO
+        # HYPERSBI2
         'application_data_directory':
         os.path.expandvars(r'%APPDATA%\SBI Securities\HYPERSBI2'),
         'portfolio': '',
         'portfolio_backup_directory': '',
+
         'headless': 'True',
         'user_data_directory':
         os.path.expandvars(r'%LOCALAPPDATA%\Google\Chrome\User Data'),
         'profile_directory': 'Default',
         'implicitly_wait': '4',
         'csv_directory': os.path.join(os.path.expanduser('~'), 'Downloads'),
+        # TODO
         'token_json': os.path.join(
             os.path.expandvars('%LOCALAPPDATA%'),
             os.path.basename(os.path.dirname(__file__)), 'token.json'),
+
         'scopes': ['https://www.googleapis.com/auth/calendar'],
         'snapshot_directory':
         os.path.join(os.path.expanduser('~'), 'Downloads'),
         'fingerprint': ''}
+    # TODO
+    # config['HYPERSBI2 Actions'] = {
     config['Actions'] = {
         'replace_sbi_securities':
         [('get', 'https://www.sbisec.co.jp/ETGate'),
@@ -179,6 +201,8 @@ def configure(config_file, interpolation=True):
          ('sleep', '0.8'),
          ('click', '//input[@name="ACT_login"]'),
          ('click', '//a[text()="注文照会"]')]}
+    # TODO
+    # config['SBI Securities Order Status'] = {
     config['Order Status'] = {
         'output_columns':
         ('entry_date', None, None, 'entry_time', 'symbol', 'size',
@@ -197,6 +221,8 @@ def configure(config_file, interpolation=True):
         'time_replacement': r'\2',
         'size_column': '6',
         'price_column': '7'}
+    # TODO
+    # config['SBI Securities Maintenance Schedules'] = {
     config['Maintenance Schedules'] = {
         'url': 'https://search.sbisec.co.jp/v2/popwin/info/home/pop6040_maintenance.html',
         'services': ('HYPER SBI 2',),
@@ -211,7 +237,7 @@ def configure(config_file, interpolation=True):
         'last_inserted': '1970-01-01T00:00:00+00:00'}
     config['Variables'] = {
         'watchlist': ''}
-    config.read(config_file, encoding='utf-8')
+    config.read(trade.config_file, encoding='utf-8')
 
     section = config['General']
     if not section['portfolio']:
@@ -242,13 +268,7 @@ def convert_to_yahoo_finance(config):
         dictionary = json.load(f)
 
     csv_directory = config['General']['csv_directory']
-    if not os.path.isdir(csv_directory):
-        try:
-            os.makedirs(csv_directory)
-        except OSError as e:
-            print(e)
-            sys.exit(1)
-
+    file_utilities.check_directory(csv_directory)
     watchlists = []
     HEADER = ['Symbol', 'Current Price', 'Date', 'Time', 'Change', 'Open',
               'High', 'Low', 'Volume', 'Trade Date', 'Purchase Price',

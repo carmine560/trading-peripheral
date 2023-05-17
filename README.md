@@ -74,19 +74,20 @@ stores these configurations.
 
 ### Options ###
 
-| Option | Description                                                                          | Chrome & WebDriver | pandas   | google-api | GnuPG    |
-|--------|--------------------------------------------------------------------------------------|--------------------|----------|------------|----------|
-| `-p`   | backup Hyper SBI 2 watchlists                                                        |                    |          |            |          |
-| `-s`   | replace watchlists on the SBI Securities website with Hyper SBI 2 watchlists         | required           |          |            |          |
-| `-y`   | export Hyper SBI 2 watchlists to My Portfolio on Yahoo Finance                       | required           |          |            |          |
-| `-o`   | extract order status from the SBI Securities web page and copy them to the clipboard | required           | required |            |          |
-| `-m`   | insert maintenance schedules into Google Calendar                                    |                    | required | required   |          |
-| `-d`   | take a snapshot of Hyper SBI 2 application data                                      |                    |          |            | required |
-| `-D`   | restore Hyper SBI 2 application data from a snapshot                                 |                    |          |            | required |
-| `-G`   | configure general options and exit                                                   |                    |          |            |          |
-| `-A`   | configure actions and exit                                                           |                    |          |            |          |
-| `-O`   | configure order state formats and exit                                               |                    |          |            |          |
-| `-M`   | configure maintenance schedules and exit                                             |                    |          |            |          |
+| Option                 | Description                                                                          | Chrome & WebDriver | pandas   | google-api | GnuPG    |
+|------------------------|--------------------------------------------------------------------------------------|--------------------|----------|------------|----------|
+| `-P BROKERAGE PROCESS` | set a brokerage and a process [default: `SBI Securities` and `HYPERSBI2`]            |                    |          |            |          |
+| `-w`                   | backup Hyper SBI 2 watchlists                                                        |                    |          |            |          |
+| `-s`                   | replace watchlists on the SBI Securities website with Hyper SBI 2 watchlists         | required           |          |            |          |
+| `-y`                   | export Hyper SBI 2 watchlists to My Portfolio on Yahoo Finance                       | required           |          |            |          |
+| `-o`                   | extract order status from the SBI Securities web page and copy them to the clipboard | required           | required |            |          |
+| `-m`                   | insert maintenance schedules into Google Calendar                                    |                    | required | required   |          |
+| `-d`                   | take a snapshot of Hyper SBI 2 application data                                      |                    |          |            | required |
+| `-D`                   | restore Hyper SBI 2 application data from a snapshot                                 |                    |          |            | required |
+| `-G`                   | configure general options and exit                                                   |                    |          |            |          |
+| `-A`                   | configure actions and exit                                                           |                    |          |            |          |
+| `-O`                   | configure order state formats and exit                                               |                    |          |            |          |
+| `-M`                   | configure maintenance schedules and exit                                             |                    |          |            |          |
 
 ## Known Issues ##
 
@@ -102,4 +103,4 @@ stores these configurations.
 
   * [*Python Scripting to Export Hyper SBI 2 Watchlists to Yahoo
     Finance*](https://carmine560.blogspot.com/2023/02/python-scripting-to-export-hyper-sbi-2.html):
-    a blog post for more details
+    a blog post for serializing WebDriver commands
