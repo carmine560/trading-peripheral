@@ -85,9 +85,9 @@ stores these configurations.
 | `-d`                   | take a snapshot of Hyper SBI 2 application data                                      |                    |          |            | required |
 | `-D`                   | restore Hyper SBI 2 application data from a snapshot                                 |                    |          |            | required |
 | `-G`                   | configure general options and exit                                                   |                    |          |            |          |
-| `-A`                   | configure actions and exit                                                           |                    |          |            |          |
 | `-O`                   | configure order state formats and exit                                               |                    |          |            |          |
 | `-M`                   | configure maintenance schedules and exit                                             |                    |          |            |          |
+| `-A`                   | configure actions and exit                                                           |                    |          |            |          |
 
 ## Known Issues ##
 

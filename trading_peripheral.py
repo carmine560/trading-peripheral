@@ -9,19 +9,18 @@ import browser_driver
 import configuration
 import file_utilities
 
-# TODO
 class Trade:
     def __init__(self, brokerage, process):
         self.brokerage = brokerage
         self.process = process
-        config_directory = os.path.join(
+        self.config_directory = os.path.join(
             os.path.expandvars('%LOCALAPPDATA%'),
             os.path.basename(os.path.dirname(__file__)))
         self.script_base = os.path.splitext(os.path.basename(__file__))[0]
-        self.config_file = os.path.join(config_directory,
+        self.config_file = os.path.join(self.config_directory,
                                         self.script_base + '.ini')
 
-        file_utilities.check_directory(config_directory)
+        file_utilities.check_directory(self.config_directory)
 
 def main():
     parser = argparse.ArgumentParser()
@@ -58,22 +57,23 @@ def main():
         '-G', action='store_const', const='General',
         help='configure general options and exit')
     group.add_argument(
-        '-A', action='store_const', const='Actions',
-        help='configure actions and exit')
-    group.add_argument(
         '-O', action='store_const', const='Order Status',
         help='configure order state formats and exit')
     group.add_argument(
         '-M', action='store_const', const='Maintenance Schedules',
         help='configure maintenance schedules and exit')
+    group.add_argument(
+        '-A', action='store_const', const='Actions',
+        help='configure actions and exit')
     args = parser.parse_args(None if sys.argv[1:] else ['-h'])
 
     trade = Trade(*args.P)
-    if args.G or args.A or args.O or args.M:
+
+    if args.G or args.O or args.M or args.A:
         config = configure(trade, interpolation=False)
         file_utilities.backup_file(trade.config_file, number_of_backups=8)
         configuration.modify_section(
-            config, (args.G or args.A or args.O or args.M), trade.config_file,
+            config, (args.G or args.O or args.M or args.A), trade.config_file,
             keys={'boolean': ('exist',), 'additional_value': ('send_keys',),
                   'no_value': ('refresh',)})
         return
@@ -81,43 +81,42 @@ def main():
         config = configure(trade)
 
     if args.w:
+        section = config[trade.process]
         file_utilities.backup_file(
-            config['General']['portfolio'],
-            backup_directory=config['General']['portfolio_backup_directory'])
+            section['portfolio'],
+            backup_directory=section['portfolio_backup_directory'])
     if args.s or args.y or args.o:
+        section = config['General']
         driver = browser_driver.initialize(
             headless=config.getboolean('General', 'headless'),
-            user_data_directory=config['General']['user_data_directory'],
-            profile_directory=config['General']['profile_directory'],
-            implicitly_wait=float(config['General']['implicitly_wait']))
+            user_data_directory=section['user_data_directory'],
+            profile_directory=section['profile_directory'],
+            implicitly_wait=float(section['implicitly_wait']))
+        section = config[trade.process + ' Actions']
         if args.s:
             browser_driver.execute_action(
-                driver,
-                ast.literal_eval(config['Actions']['replace_sbi_securities']))
+                driver, ast.literal_eval(section['replace_sbi_securities']))
         if args.y:
-            watchlists = convert_to_yahoo_finance(config)
+            watchlists = convert_to_yahoo_finance(trade, config)
             for watchlist in watchlists:
                 config['Variables']['watchlist'] = watchlist
                 browser_driver.execute_action(
-                    driver,
-                    ast.literal_eval(
-                        config['Actions']['export_to_yahoo_finance']
-                        .replace('\\', '\\\\')
-                        .replace('\\\\\\\\', '\\\\')))
+                    driver, ast.literal_eval(section['export_to_yahoo_finance']
+                                             .replace('\\', '\\\\')
+                                             .replace('\\\\\\\\', '\\\\')))
         if args.o:
             browser_driver.execute_action(
-                driver,
-                ast.literal_eval(config['Actions']['get_order_status']))
-            extract_order_status(config, driver)
+                driver, ast.literal_eval(section['get_order_status']))
+            extract_order_status(trade, config, driver)
 
         driver.quit()
     if args.m:
-        insert_maintenance_schedules(config, trade.config_file)
+        insert_maintenance_schedules(trade, config)
     if args.d or args.D:
-        section = config['General']
+        section = config[trade.process]
         application_data_directory = section['application_data_directory']
         snapshot_directory = section['snapshot_directory']
-        fingerprint = section['fingerprint']
+        fingerprint = config['General']['fingerprint']
         if args.d:
             file_utilities.archive_encrypt_directory(
                 application_data_directory, snapshot_directory,
@@ -137,31 +136,53 @@ def configure(trade, interpolation=True):
         config = configparser.ConfigParser()
 
     config['General'] = {
-        # TODO
-        # HYPERSBI2
-        'application_data_directory':
-        os.path.expandvars(r'%APPDATA%\SBI Securities\HYPERSBI2'),
-        'portfolio': '',
-        'portfolio_backup_directory': '',
-
         'headless': 'True',
         'user_data_directory':
         os.path.expandvars(r'%LOCALAPPDATA%\Google\Chrome\User Data'),
         'profile_directory': 'Default',
         'implicitly_wait': '4',
         'csv_directory': os.path.join(os.path.expanduser('~'), 'Downloads'),
-        # TODO
-        'token_json': os.path.join(
-            os.path.expandvars('%LOCALAPPDATA%'),
-            os.path.basename(os.path.dirname(__file__)), 'token.json'),
-
         'scopes': ['https://www.googleapis.com/auth/calendar'],
-        'snapshot_directory':
-        os.path.join(os.path.expanduser('~'), 'Downloads'),
         'fingerprint': ''}
-    # TODO
-    # config['HYPERSBI2 Actions'] = {
-    config['Actions'] = {
+    config['SBI Securities Order Status'] = {
+        'output_columns':
+        ('entry_date', None, None, 'entry_time', 'symbol', 'size',
+         'trade_type', 'trade_style', 'entry_price', None, None, 'exit_date',
+         'exit_time', 'exit_price'),
+        'table_identifier': '注文種別',
+        'symbol_regex': r'^.* (\d{4}) 東証$$',
+        'symbol_replacement': r'\1',
+        'margin_trading': '信新',
+        'buying_on_margin': '信新買',
+        'execution_column': '3',
+        'execution': '約定',
+        'datetime_column': '5',
+        'datetime_pattern': r'^(\d{2}/\d{2}) (\d{2}:\d{2}:\d{2})$$',
+        'date_replacement': r'\1',
+        'time_replacement': r'\2',
+        'size_column': '6',
+        'price_column': '7'}
+    config['SBI Securities Maintenance Schedules'] = {
+        'url': 'https://search.sbisec.co.jp/v2/popwin/info/home/pop6040_maintenance.html',
+        'services': ('HYPER SBI 2',),
+        'service_header': '対象サービス',
+        'function_header': 'メンテナンス対象機能',
+        'schedule_header': 'メンテナンス予定時間',
+        'time_zone': 'Asia/Tokyo',
+        'range_punctuation': '〜',
+        'datetime_pattern': r'^(\d{1,2})/(\d{1,2})（.）(\d{1,2}:\d{2})$$',
+        'datetime_replacement': r'\1-\2 \3',
+        'calendar_id': 'primary',
+        'last_inserted': '1970-01-01T00:00:00+00:00'}
+    config['HYPERSBI2'] = {
+        'application_data_directory':
+        os.path.join(os.path.expandvars('%APPDATA%'), trade.brokerage,
+                     trade.process),
+        'portfolio': '',
+        'portfolio_backup_directory': '',
+        'snapshot_directory':
+        os.path.join(os.path.expanduser('~'), 'Downloads')}
+    config['HYPERSBI2 Actions'] = {
         'replace_sbi_securities':
         [('get', 'https://www.sbisec.co.jp/ETGate'),
          ('sleep', '0.8'),
@@ -201,70 +222,37 @@ def configure(trade, interpolation=True):
          ('sleep', '0.8'),
          ('click', '//input[@name="ACT_login"]'),
          ('click', '//a[text()="注文照会"]')]}
-    # TODO
-    # config['SBI Securities Order Status'] = {
-    config['Order Status'] = {
-        'output_columns':
-        ('entry_date', None, None, 'entry_time', 'symbol', 'size',
-         'trade_type', 'trade_style', 'entry_price', None, None, 'exit_date',
-         'exit_time', 'exit_price'),
-        'table_identifier': '注文種別',
-        'symbol_regex': r'^.* (\d{4}) 東証$$',
-        'symbol_replacement': r'\1',
-        'margin_trading': '信新',
-        'buying_on_margin': '信新買',
-        'execution_column': '3',
-        'execution': '約定',
-        'datetime_column': '5',
-        'datetime_pattern': r'^(\d{2}/\d{2}) (\d{2}:\d{2}:\d{2})$$',
-        'date_replacement': r'\1',
-        'time_replacement': r'\2',
-        'size_column': '6',
-        'price_column': '7'}
-    # TODO
-    # config['SBI Securities Maintenance Schedules'] = {
-    config['Maintenance Schedules'] = {
-        'url': 'https://search.sbisec.co.jp/v2/popwin/info/home/pop6040_maintenance.html',
-        'services': ('HYPER SBI 2',),
-        'service_header': '対象サービス',
-        'function_header': 'メンテナンス対象機能',
-        'schedule_header': 'メンテナンス予定時間',
-        'time_zone': 'Asia/Tokyo',
-        'range_punctuation': '〜',
-        'datetime_pattern': r'^(\d{1,2})/(\d{1,2})（.）(\d{1,2}:\d{2})$$',
-        'datetime_replacement': r'\1-\2 \3',
-        'calendar_id': 'primary',
-        'last_inserted': '1970-01-01T00:00:00+00:00'}
     config['Variables'] = {
         'watchlist': ''}
     config.read(trade.config_file, encoding='utf-8')
 
-    section = config['General']
-    if not section['portfolio']:
-        application_data_directory = section['application_data_directory']
-        latest_modified_time = 0.0
-        identifier = ''
-        for f in os.listdir(application_data_directory):
-            if re.fullmatch('[0-9a-z]{32}', f):
-                modified_time = os.path.getmtime(os.path.join(
-                    application_data_directory, f))
-                if modified_time > latest_modified_time:
-                    latest_modified_time = modified_time
-                    identifier = f
-        if identifier:
-            section['portfolio'] = os.path.join(application_data_directory,
-                                                identifier, 'portfolio.json')
-        else:
-            print('unspecified identifier')
-            sys.exit(1)
+    if trade.process == 'HYPERSBI2':
+        section = config[trade.process]
+        if not section['portfolio']:
+            application_data_directory = section['application_data_directory']
+            latest_modified_time = 0.0
+            identifier = ''
+            for f in os.listdir(application_data_directory):
+                if re.fullmatch('[0-9a-z]{32}', f):
+                    modified_time = os.path.getmtime(os.path.join(
+                        application_data_directory, f))
+                    if modified_time > latest_modified_time:
+                        latest_modified_time = modified_time
+                        identifier = f
+            if identifier:
+                section['portfolio'] = os.path.join(
+                    application_data_directory, identifier, 'portfolio.json')
+            else:
+                print('unspecified identifier')
+                sys.exit(1)
 
     return config
 
-def convert_to_yahoo_finance(config):
+def convert_to_yahoo_finance(trade, config):
     import csv
     import json
 
-    with open(config['General']['portfolio']) as f:
+    with open(config[trade.process]['portfolio']) as f:
         dictionary = json.load(f)
 
     csv_directory = config['General']['csv_directory']
@@ -300,10 +288,10 @@ def convert_to_yahoo_finance(config):
     return watchlists
 
 # TODO
-def extract_order_status(config, driver):
+def extract_order_status(trade, config, driver):
     import pandas as pd
 
-    section = config['Order Status']
+    section = config[trade.brokerage + ' Order Status']
     output_columns = ast.literal_eval(section['output_columns'])
     table_identifier = section['table_identifier']
     symbol_regex = section['symbol_regex']
@@ -401,17 +389,15 @@ def extract_order_status(config, driver):
 
     results.to_clipboard(index=False, header=False)
 
-def insert_maintenance_schedules(config, config_file):
+def insert_maintenance_schedules(trade, config):
     from googleapiclient.discovery import build
     from googleapiclient.errors import HttpError
     import pandas as pd
     import requests
 
-    section = config['General']
-    token_json = section['token_json']
-    scopes = ast.literal_eval(section['scopes'])
+    scopes = ast.literal_eval(config['General']['scopes'])
 
-    section = config['Maintenance Schedules']
+    section = config[trade.brokerage + ' Maintenance Schedules']
     url = section['url']
     services = ast.literal_eval(section['services'])
     service_header = section['service_header']
@@ -443,7 +429,7 @@ def insert_maintenance_schedules(config, config_file):
         except Exception as e:
             print(e)
             if re.match('No tables found matching regex', str(e)):
-                with open(config_file, 'w', encoding='utf-8') as f:
+                with open(trade.config_file, 'w', encoding='utf-8') as f:
                     config.write(f)
 
                 sys.exit()
@@ -452,7 +438,8 @@ def insert_maintenance_schedules(config, config_file):
 
         year = now.strftime('%Y')
         time_frame = 30
-        credentials = get_credentials(token_json, scopes)
+        credentials = get_credentials(
+            os.path.join(trade.config_directory, 'token.json'), scopes)
 
         response = requests.get(url)
         response.encoding = response.apparent_encoding
@@ -512,7 +499,7 @@ def insert_maintenance_schedules(config, config_file):
                     print(e)
                     sys.exit(1)
 
-        with open(config_file, 'w', encoding='utf-8') as f:
+        with open(trade.config_file, 'w', encoding='utf-8') as f:
             config.write(f)
 
 def get_credentials(token_json, scopes):
