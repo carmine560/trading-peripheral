@@ -83,8 +83,8 @@ def main():
     if args.w:
         section = config[trade.process]
         file_utilities.backup_file(
-            section['portfolio'],
-            backup_directory=section['portfolio_backup_directory'])
+            section['watchlists'],
+            backup_directory=section['watchlist_backup_directory'])
     if args.s or args.y or args.o:
         section = config['General']
         driver = browser_driver.initialize(
@@ -113,20 +113,25 @@ def main():
     if args.m:
         insert_maintenance_schedules(trade, config)
     if args.d or args.D:
-        section = config[trade.process]
-        application_data_directory = section['application_data_directory']
-        snapshot_directory = section['snapshot_directory']
-        fingerprint = config['General']['fingerprint']
-        if args.d:
-            file_utilities.archive_encrypt_directory(
-                application_data_directory, snapshot_directory,
-                fingerprint=fingerprint)
-        if args.D:
-            snapshot = os.path.join(
-                snapshot_directory,
-                os.path.basename(application_data_directory) + '.tar.xz.gpg')
-            output_directory = os.path.dirname(application_data_directory)
-            file_utilities.decrypt_extract_file(snapshot, output_directory)
+        if file_utilities.is_running(trade.process):
+            print(trade.process, 'is running')
+            sys.exit()
+        else:
+            section = config[trade.process]
+            application_data_directory = section['application_data_directory']
+            snapshot_directory = section['snapshot_directory']
+            fingerprint = config['General']['fingerprint']
+            if args.d:
+                file_utilities.archive_encrypt_directory(
+                    application_data_directory, snapshot_directory,
+                    fingerprint=fingerprint)
+            if args.D:
+                snapshot = os.path.join(
+                    snapshot_directory,
+                    os.path.basename(application_data_directory)
+                    + '.tar.xz.gpg')
+                output_directory = os.path.dirname(application_data_directory)
+                file_utilities.decrypt_extract_file(snapshot, output_directory)
 
 def configure(trade, interpolation=True):
     if interpolation:
@@ -178,8 +183,8 @@ def configure(trade, interpolation=True):
         'application_data_directory':
         os.path.join(os.path.expandvars('%APPDATA%'), trade.brokerage,
                      trade.process),
-        'portfolio': '',
-        'portfolio_backup_directory': '',
+        'watchlists': '',
+        'watchlist_backup_directory': '',
         'snapshot_directory':
         os.path.join(os.path.expanduser('~'), 'Downloads')}
     config['HYPERSBI2 Actions'] = {
@@ -228,7 +233,7 @@ def configure(trade, interpolation=True):
 
     if trade.process == 'HYPERSBI2':
         section = config[trade.process]
-        if not section['portfolio']:
+        if not section['watchlists']:
             application_data_directory = section['application_data_directory']
             latest_modified_time = 0.0
             identifier = ''
@@ -240,7 +245,7 @@ def configure(trade, interpolation=True):
                         latest_modified_time = modified_time
                         identifier = f
             if identifier:
-                section['portfolio'] = os.path.join(
+                section['watchlists'] = os.path.join(
                     application_data_directory, identifier, 'portfolio.json')
             else:
                 print('unspecified identifier')
@@ -252,7 +257,7 @@ def convert_to_yahoo_finance(trade, config):
     import csv
     import json
 
-    with open(config[trade.process]['portfolio']) as f:
+    with open(config[trade.process]['watchlists']) as f:
         dictionary = json.load(f)
 
     csv_directory = config['General']['csv_directory']
