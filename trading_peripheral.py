@@ -71,52 +71,78 @@ def main():
 
     if args.G or args.O or args.M or args.A:
         config = configure(trade, interpolation=False)
-        file_utilities.backup_file(trade.config_file, number_of_backups=8)
-        configuration.modify_section(
-            config, (args.G or args.O or args.M or args.A), trade.config_file,
-            keys={'boolean': ('exist',), 'additional_value': ('send_keys',),
-                  'no_value': ('refresh',)})
-        return
+        if args.G:
+            section = args.G
+        elif args.O or args.M:
+            section = trade.brokerage + ' ' + (args.O or args.M)
+        elif args.A:
+            section = trade.process + ' ' + args.A
+        if config.has_section(section):
+            file_utilities.backup_file(trade.config_file, number_of_backups=8)
+            configuration.modify_section(
+                config, section, trade.config_file,
+                keys={'boolean': ('exist',),
+                      'additional_value': ('send_keys',),
+                      'no_value': ('refresh',)})
+            return
+        else:
+            print(section, 'section does not exist')
+            sys.exit(1)
     else:
         config = configure(trade)
 
     if args.w:
-        section = config[trade.process]
-        file_utilities.backup_file(
-            section['watchlists'],
-            backup_directory=section['watchlist_backup_directory'])
+        if config.has_section(trade.process):
+            section = config[trade.process]
+            file_utilities.backup_file(
+                section['watchlists'],
+                backup_directory=section['watchlist_backup_directory'])
+        else:
+            print(trade.process, 'section does not exist')
+            sys.exit(1)
     if args.s or args.y or args.o:
-        section = config['General']
-        driver = browser_driver.initialize(
-            headless=config.getboolean('General', 'headless'),
-            user_data_directory=section['user_data_directory'],
-            profile_directory=section['profile_directory'],
-            implicitly_wait=float(section['implicitly_wait']))
-        section = config[trade.process + ' Actions']
-        if args.s:
-            browser_driver.execute_action(
-                driver, ast.literal_eval(section['replace_sbi_securities']))
-        if args.y:
-            watchlists = convert_to_yahoo_finance(trade, config)
-            for watchlist in watchlists:
-                config['Variables']['watchlist'] = watchlist
+        if config.has_section(trade.process + ' Actions'):
+            section = config['General']
+            driver = browser_driver.initialize(
+                headless=config.getboolean('General', 'headless'),
+                user_data_directory=section['user_data_directory'],
+                profile_directory=section['profile_directory'],
+                implicitly_wait=float(section['implicitly_wait']))
+            section = config[trade.process + ' Actions']
+            if args.s:
                 browser_driver.execute_action(
-                    driver, ast.literal_eval(section['export_to_yahoo_finance']
-                                             .replace('\\', '\\\\')
-                                             .replace('\\\\\\\\', '\\\\')))
-        if args.o:
-            browser_driver.execute_action(
-                driver, ast.literal_eval(section['get_order_status']))
-            extract_order_status(trade, config, driver)
+                    driver,
+                    ast.literal_eval(section['replace_sbi_securities']))
+            if args.y:
+                watchlists = convert_to_yahoo_finance(trade, config)
+                for watchlist in watchlists:
+                    config['Variables']['watchlist'] = watchlist
+                    browser_driver.execute_action(
+                        driver,
+                        ast.literal_eval(section['export_to_yahoo_finance']
+                                         .replace('\\', '\\\\')
+                                         .replace('\\\\\\\\', '\\\\')))
+            if args.o:
+                browser_driver.execute_action(
+                    driver, ast.literal_eval(section['get_order_status']))
+                extract_order_status(trade, config, driver)
 
-        driver.quit()
+            driver.quit()
+        else:
+            print(trade.process, 'Actions section does not exist')
+            sys.exit(1)
     if args.m:
-        insert_maintenance_schedules(trade, config)
+        if config.has_section(trade.brokerage + ' Maintenance Schedules'):
+            insert_maintenance_schedules(trade, config)
+        else:
+            print(trade.brokerage,
+                  'Maintenance Schedules section does not exist')
+            sys.exit(1)
     if args.d or args.D:
         if file_utilities.is_running(trade.process):
             print(trade.process, 'is running')
             sys.exit()
-        else:
+        elif config.has_section(trade.process):
             section = config[trade.process]
             application_data_directory = section['application_data_directory']
             snapshot_directory = section['snapshot_directory']
@@ -132,6 +158,9 @@ def main():
                     + '.tar.xz.gpg')
                 output_directory = os.path.dirname(application_data_directory)
                 file_utilities.decrypt_extract_file(snapshot, output_directory)
+        else:
+            print(trade.process, 'section does not exist')
+            sys.exit(1)
 
 def configure(trade, interpolation=True):
     if interpolation:
