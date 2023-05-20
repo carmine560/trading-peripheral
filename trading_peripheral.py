@@ -245,6 +245,9 @@ def configure(trade, interpolation=True):
         'price_column': '7'}
     config['SBI Securities Maintenance Schedules'] = {
         'url': 'https://search.sbisec.co.jp/v2/popwin/info/home/pop6040_maintenance.html',
+        'delete_events': 'False',
+        # TODO
+        'calendar_id': '',
         'services': ('HYPER SBI 2',),
         'service_header': '対象サービス',
         'function_header': 'メンテナンス対象機能',
@@ -253,7 +256,6 @@ def configure(trade, interpolation=True):
         'range_punctuation': '〜',
         'datetime_pattern': r'^(\d{1,2})/(\d{1,2})（.）(\d{1,2}:\d{2})$$',
         'datetime_replacement': r'\1-\2 \3',
-        'calendar_id': 'primary',
         'last_inserted': '1970-01-01T00:00:00+00:00'}
     config['HYPERSBI2'] = {
         'application_data_directory':
@@ -512,8 +514,8 @@ def insert_maintenance_schedules(trade, config):
 
     Raises:
         HttpError: If there is an error with the Google calendar API
-        Exception: If there is an error with the requests module or
-        pandas module"""
+        Exception: If there is an error with the requests or pandas
+        libraries"""
     from googleapiclient.discovery import build
     from googleapiclient.errors import HttpError
     import pandas as pd
@@ -523,6 +525,9 @@ def insert_maintenance_schedules(trade, config):
 
     section = config[trade.brokerage + ' Maintenance Schedules']
     url = section['url']
+    delete_events = config.getboolean(
+        trade.brokerage + ' Maintenance Schedules', 'delete_events')
+    calendar_id = section['calendar_id']
     services = ast.literal_eval(section['services'])
     service_header = section['service_header']
     function_header = section['function_header']
@@ -531,7 +536,6 @@ def insert_maintenance_schedules(trade, config):
     range_punctuation = section['range_punctuation']
     datetime_pattern = section['datetime_pattern']
     datetime_replacement = section['datetime_replacement']
-    calendar_id = section['calendar_id']
     last_inserted = section['last_inserted']
 
     head = requests.head(url)
@@ -545,7 +549,6 @@ def insert_maintenance_schedules(trade, config):
     if pd.Timestamp(last_inserted) \
        < pd.Timestamp(head.headers['last-modified']):
         now = pd.Timestamp.now(tz=time_zone)
-        section['last_inserted'] = now.isoformat()
 
         try:
             dfs = pd.read_html(url, match='|'.join(services), flavor='lxml',
@@ -560,10 +563,26 @@ def insert_maintenance_schedules(trade, config):
             else:
                 sys.exit(1)
 
-        year = now.strftime('%Y')
-        time_frame = 30
         credentials = get_credentials(
             os.path.join(trade.config_directory, 'token.json'), scopes)
+        resource = build('calendar', 'v3', credentials=credentials)
+
+        if delete_events:
+            page_token = None
+            while True:
+                events = resource.events().list(
+                    calendarId=calendar_id, pageToken=page_token,
+                    updatedMin=last_inserted).execute()
+                for event in events['items']:
+                    if event['status'] == 'confirmed':
+                        resource.events().delete(calendarId=calendar_id,
+                                                 eventId=event['id']).execute()
+                        page_token = events.get('nextPageToken')
+                if not page_token:
+                    break
+
+        year = now.strftime('%Y')
+        time_frame = 30
 
         response = requests.get(url)
         response.encoding = response.apparent_encoding
@@ -609,13 +628,12 @@ def insert_maintenance_schedules(trade, config):
                                       datetime_range[1])
                     end = pd.Timestamp(year + '-' + datetime, tz=time_zone)
 
+                body = {'summary': '🛠️ ' \
+                        + service + ' ' + function,
+                        'start': {'dateTime': start.isoformat()},
+                        'end': {'dateTime': end.isoformat()},
+                        'source': {'title': title, 'url': url}}
                 try:
-                    resource = build('calendar', 'v3', credentials=credentials)
-                    body = {'summary': '🛠️ ' \
-                            + service + ' ' + function,
-                            'start': {'dateTime': start.isoformat()},
-                            'end': {'dateTime': end.isoformat()},
-                            'source': {'title': title, 'url': url}}
                     event = resource.events().insert(calendarId=calendar_id,
                                                      body=body).execute()
                     print(event.get('start')['dateTime'], event.get('summary'))
@@ -623,6 +641,7 @@ def insert_maintenance_schedules(trade, config):
                     print(e)
                     sys.exit(1)
 
+        section['last_inserted'] = now.isoformat()
         with open(trade.config_file, 'w', encoding='utf-8') as f:
             config.write(f)
 
