@@ -577,7 +577,8 @@ def insert_maintenance_schedules(trade, config):
                     if event['status'] == 'confirmed':
                         resource.events().delete(calendarId=calendar_id,
                                                  eventId=event['id']).execute()
-                        page_token = events.get('nextPageToken')
+
+                page_token = events.get('nextPageToken')
                 if not page_token:
                     break
 
