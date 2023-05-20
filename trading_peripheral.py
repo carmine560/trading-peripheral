@@ -10,7 +10,35 @@ import configuration
 import file_utilities
 
 class Trade:
+    """A class to represent a trade.
+
+    Attributes:
+        brokerage : the brokerage used for the trade
+        process : the process used for the trade
+        config_directory : the directory where the configuration file is
+        stored
+        script_base : the base name of the script
+        config_file : the path to the configuration file
+
+    Methods:
+        check_directory(directory) : checks if the given directory
+        exists, and creates it if it does not exist."""
     def __init__(self, brokerage, process):
+        """Initialize a class with brokerage and process.
+
+        Args:
+            brokerage: Name of the brokerage
+            process: Name of the process
+
+        Attributes:
+            brokerage : Name of the brokerage
+            process : Name of the process
+            config_directory : Directory path for the configuration file
+            script_base : Base name of the script
+            config_file : Configuration file path
+
+        Returns:
+            None"""
         self.brokerage = brokerage
         self.process = process
         self.config_directory = os.path.join(
@@ -23,6 +51,14 @@ class Trade:
         file_utilities.check_directory(self.config_directory)
 
 def main():
+    """This is a main function that takes command line arguments and
+    performs various actions based on the arguments.
+
+    Args:
+        None
+
+    Returns:
+        None"""
     parser = argparse.ArgumentParser()
     group = parser.add_mutually_exclusive_group()
     parser.add_argument(
@@ -163,6 +199,17 @@ def main():
             sys.exit(1)
 
 def configure(trade, interpolation=True):
+    """Configures the trade.
+
+    Args:
+        trade: Trade object
+        interpolation: Whether to use extended interpolation or not
+
+    Returns:
+        ConfigParser object with the configuration
+
+    Raises:
+        NotImplementedError: If silent animals are used."""
     if interpolation:
         config = configparser.ConfigParser(
             interpolation=configparser.ExtendedInterpolation())
@@ -223,7 +270,8 @@ def configure(trade, interpolation=True):
          ('click', '//input[@name="ACT_login"]'),
          ('click', '//a[text()="ポートフォリオ"]'),
          ('click', '//a[text()="登録銘柄リストの追加・置き換え"]'),
-         ('click', '//img[@alt="登録銘柄リストの追加・置き換え機能を利用する"]'),
+         ('click',
+          '//img[@alt="登録銘柄リストの追加・置き換え機能を利用する"]'),
          ('click', '//*[@name="tool_from" and @value="3"]'),
          ('click', '//input[@value="次へ"]'),
          ('click', '//*[@name="tool_to_1" and @value="1"]'),
@@ -240,7 +288,8 @@ def configure(trade, interpolation=True):
            ('click', '//span[text()="Delete Portfolio"]'),
            ('click', '//span[text()="Confirm"]')]),
          ('click', '//span[text()="Import"]'),
-         ('send_keys', '//input[@name="ext_pf"]', r'${General:csv_directory}\${Variables:watchlist}.csv'),
+         ('send_keys', '//input[@name="ext_pf"]',
+          r'${General:csv_directory}\${Variables:watchlist}.csv'),
          ('click', '//span[text()="Submit"]'),
          ('refresh',),
          ('sleep', '0.8'),
@@ -248,7 +297,8 @@ def configure(trade, interpolation=True):
          ('click', '//span[text()="Settings"]'),
          ('click', '//span[text()="Rename Portfolio"]'),
          ('clear', '//input[@value="Imported from Yahoo"]'),
-         ('send_keys', '//input[@value="Imported from Yahoo"]', '${Variables:watchlist}'),
+         ('send_keys', '//input[@value="Imported from Yahoo"]',
+          '${Variables:watchlist}'),
          ('click', '//span[text()="Save"]'),
          ('sleep', '0.8')],
         'get_order_status':
@@ -283,6 +333,20 @@ def configure(trade, interpolation=True):
     return config
 
 def convert_to_yahoo_finance(trade, config):
+    """Converts a trade to Yahoo Finance format.
+
+    Args:
+        trade: a trade object
+        config: a configuration object
+
+    Returns:
+        A list of watchlists
+
+    Raises:
+        None
+
+    TODO:
+        The function needs to be implemented."""
     import csv
     import json
 
@@ -323,6 +387,19 @@ def convert_to_yahoo_finance(trade, config):
 
 # TODO
 def extract_order_status(trade, config, driver):
+    """Extract order status from a trade.
+
+    Args:
+        trade : trade object
+        config : configuration object
+        driver : web driver object
+
+    Returns:
+        None
+
+    Raises:
+        Exception: If there is an error while extracting order
+        status."""
     import pandas as pd
 
     section = config[trade.brokerage + ' Order Status']
@@ -424,6 +501,19 @@ def extract_order_status(trade, config, driver):
     results.to_clipboard(index=False, header=False)
 
 def insert_maintenance_schedules(trade, config):
+    """Inserts maintenance schedules into a Google calendar.
+
+    Args:
+        trade: an object representing a trade
+        config: a dictionary containing configuration information
+
+    Returns:
+        None
+
+    Raises:
+        HttpError: If there is an error with the Google calendar API
+        Exception: If there is an error with the requests module or
+        pandas module"""
     from googleapiclient.discovery import build
     from googleapiclient.errors import HttpError
     import pandas as pd
@@ -537,6 +627,17 @@ def insert_maintenance_schedules(trade, config):
             config.write(f)
 
 def get_credentials(token_json, scopes):
+    """Get Google OAuth2 credentials.
+
+    Args:
+        token_json: Path to the token JSON file.
+        scopes: List of scopes to authorize for the token.
+
+    Returns:
+        Credentials object for the authorized token.
+
+    Raises:
+        Exception: If there is an error in getting the credentials."""
     from google.auth.transport.requests import Request
     from google.oauth2.credentials import Credentials
     from google_auth_oauthlib.flow import InstalledAppFlow
