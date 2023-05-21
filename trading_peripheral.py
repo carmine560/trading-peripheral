@@ -13,31 +13,37 @@ class Trade:
     """A class to represent a trade.
 
     Attributes:
-        brokerage : the brokerage used for the trade
-        process : the process used for the trade
-        config_directory : the directory where the configuration file is
-        stored
-        script_base : the base name of the script
-        config_file : the path to the configuration file
-
-    Methods:
-        check_directory(directory) : checks if the given directory
-        exists, and creates it if it does not exist."""
+        brokerage : name of the brokerage
+        process : name of the process
+        config_directory : directory path for the configuration file
+        script_base : base name of the script
+        config_file : configuration file path
+        order_status : order status of the brokerage
+        maintenance_schedules : maintenance schedules of the brokerage
+        actions : actions of the process"""
     def __init__(self, brokerage, process):
-        """Initialize a class with brokerage and process.
+        """Initialize an object of a class.
 
         Args:
-            brokerage: Name of the brokerage
-            process: Name of the process
+            brokerage : name of the brokerage
+            process : name of the process
 
         Attributes:
-            brokerage : Name of the brokerage
-            process : Name of the process
-            config_directory : Directory path for the configuration file
-            script_base : Base name of the script
-            config_file : Configuration file path
+            brokerage : name of the brokerage
+            process : name of the process
+            config_directory : directory where the configuration file is
+            stored
+            script_base : base name of the script
+            config_file : configuration file path
+            order_status : order status of the brokerage
+            maintenance_schedules : maintenance schedules of the
+            brokerage
+            actions : actions of the process
 
         Returns:
+            None
+
+        Raises:
             None"""
         self.brokerage = brokerage
         self.process = process
@@ -47,6 +53,9 @@ class Trade:
         self.script_base = os.path.splitext(os.path.basename(__file__))[0]
         self.config_file = os.path.join(self.config_directory,
                                         self.script_base + '.ini')
+        self.order_status = self.brokerage + ' Order Status'
+        self.maintenance_schedules = self.brokerage + ' Maintenance Schedules'
+        self.actions = self.process + ' Actions'
 
         file_utilities.check_directory(self.config_directory)
 
@@ -137,14 +146,14 @@ def main():
             print(trade.process, 'section does not exist')
             sys.exit(1)
     if args.s or args.y or args.o:
-        if config.has_section(trade.process + ' Actions'):
+        if config.has_section(trade.actions):
             section = config['General']
             driver = browser_driver.initialize(
                 headless=config.getboolean('General', 'headless'),
                 user_data_directory=section['user_data_directory'],
                 profile_directory=section['profile_directory'],
                 implicitly_wait=float(section['implicitly_wait']))
-            section = config[trade.process + ' Actions']
+            section = config[trade.actions]
             if args.s:
                 browser_driver.execute_action(
                     driver,
@@ -168,7 +177,7 @@ def main():
             print(trade.process, 'Actions section does not exist')
             sys.exit(1)
     if args.m:
-        if config.has_section(trade.brokerage + ' Maintenance Schedules'):
+        if config.has_section(trade.maintenance_schedules):
             insert_maintenance_schedules(trade, config)
         else:
             print(trade.brokerage,
@@ -245,8 +254,7 @@ def configure(trade, interpolation=True):
         'price_column': '7'}
     config['SBI Securities Maintenance Schedules'] = {
         'url': 'https://search.sbisec.co.jp/v2/popwin/info/home/pop6040_maintenance.html',
-        'delete_events': 'False',
-        # TODO
+        'delete_events': 'True',
         'calendar_id': '',
         'services': ('HYPER SBI 2',),
         'service_header': '対象サービス',
@@ -256,7 +264,7 @@ def configure(trade, interpolation=True):
         'range_punctuation': '〜',
         'datetime_pattern': r'^(\d{1,2})/(\d{1,2})（.）(\d{1,2}:\d{2})$$',
         'datetime_replacement': r'\1-\2 \3',
-        'last_inserted': '1970-01-01T00:00:00+00:00'}
+        'last_inserted': ''}
     config['HYPERSBI2'] = {
         'application_data_directory':
         os.path.join(os.path.expandvars('%APPDATA%'), trade.brokerage,
@@ -338,17 +346,15 @@ def convert_to_yahoo_finance(trade, config):
     """Converts a trade to Yahoo Finance format.
 
     Args:
-        trade: a trade object
-        config: a configuration object
+        trade: Trade to be converted
+        config: Configuration file for the trade
 
     Returns:
         A list of watchlists
 
     Raises:
-        None
-
-    TODO:
-        The function needs to be implemented."""
+        FileNotFoundError: If the watchlists file is not found
+        NotImplementedError: If the animal is silent"""
     import csv
     import json
 
@@ -404,7 +410,7 @@ def extract_order_status(trade, config, driver):
         status."""
     import pandas as pd
 
-    section = config[trade.brokerage + ' Order Status']
+    section = config[trade.order_status]
     output_columns = ast.literal_eval(section['output_columns'])
     table_identifier = section['table_identifier']
     symbol_regex = section['symbol_regex']
@@ -503,19 +509,18 @@ def extract_order_status(trade, config, driver):
     results.to_clipboard(index=False, header=False)
 
 def insert_maintenance_schedules(trade, config):
-    """Inserts maintenance schedules into a Google calendar.
+    """Insert maintenance schedules into Google Calendar.
 
     Args:
-        trade: an object representing a trade
+        trade: an instance of a class representing a trade
         config: a dictionary containing configuration information
 
-    Returns:
-        None
-
     Raises:
-        HttpError: If there is an error with the Google calendar API
-        Exception: If there is an error with the requests or pandas
-        libraries"""
+        HttpError: If an HTTP error occurs while interacting with the
+        Google Calendar API
+        ValueError: If the provided configuration is invalid
+        Exception: If an unexpected error occurs while executing the
+        function"""
     from googleapiclient.discovery import build
     from googleapiclient.errors import HttpError
     import pandas as pd
@@ -523,10 +528,10 @@ def insert_maintenance_schedules(trade, config):
 
     scopes = ast.literal_eval(config['General']['scopes'])
 
-    section = config[trade.brokerage + ' Maintenance Schedules']
+    section = config[trade.maintenance_schedules]
     url = section['url']
-    delete_events = config.getboolean(
-        trade.brokerage + ' Maintenance Schedules', 'delete_events')
+    delete_events = config.getboolean(trade.maintenance_schedules,
+                                      'delete_events')
     calendar_id = section['calendar_id']
     services = ast.literal_eval(section['services'])
     service_header = section['service_header']
@@ -545,10 +550,17 @@ def insert_maintenance_schedules(trade, config):
         print(e)
         sys.exit(1)
 
+    now = pd.Timestamp.now(tz=time_zone)
+    # TODO
+    lower_bound = now - pd.Timedelta(days=29)
+    if not last_inserted or pd.Timestamp(last_inserted) < lower_bound:
+        last_inserted = lower_bound
+    else:
+        last_inserted = pd.Timestamp(last_inserted)
+
     # Assume that all schedules are updated at the same time.
-    if pd.Timestamp(last_inserted) \
-       < pd.Timestamp(head.headers['last-modified']):
-        now = pd.Timestamp.now(tz=time_zone)
+    if last_inserted < pd.Timestamp(head.headers['last-modified']):
+        section['last_inserted'] = now.isoformat()
 
         try:
             dfs = pd.read_html(url, match='|'.join(services), flavor='lxml',
@@ -567,16 +579,34 @@ def insert_maintenance_schedules(trade, config):
             os.path.join(trade.config_directory, 'token.json'), scopes)
         resource = build('calendar', 'v3', credentials=credentials)
 
-        if delete_events:
+        if not section['calendar_id']:
+            body = {'summary': trade.maintenance_schedules,
+                    'timeZone': time_zone}
+            try:
+                calendar = resource.calendars().insert(body=body).execute()
+                section['calendar_id'] = calendar_id = calendar['id']
+            except HttpError as e:
+                print(e)
+                sys.exit(1)
+        elif delete_events:
             page_token = None
             while True:
-                events = resource.events().list(
-                    calendarId=calendar_id, pageToken=page_token,
-                    updatedMin=last_inserted).execute()
+                try:
+                    events = resource.events().list(
+                        calendarId=calendar_id, pageToken=page_token,
+                        updatedMin=last_inserted.isoformat()).execute()
+                except HttpError as e:
+                    print(e)
+                    sys.exit(1)
                 for event in events['items']:
                     if event['status'] == 'confirmed':
-                        resource.events().delete(calendarId=calendar_id,
-                                                 eventId=event['id']).execute()
+                        try:
+                            resource.events().delete(
+                                calendarId=calendar_id,
+                                eventId=event['id']).execute()
+                        except HttpError as e:
+                            print(e)
+                            sys.exit(1)
 
                 page_token = events.get('nextPageToken')
                 if not page_token:
@@ -642,7 +672,6 @@ def insert_maintenance_schedules(trade, config):
                     print(e)
                     sys.exit(1)
 
-        section['last_inserted'] = now.isoformat()
         with open(trade.config_file, 'w', encoding='utf-8') as f:
             config.write(f)
 
