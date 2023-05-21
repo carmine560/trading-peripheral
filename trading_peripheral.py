@@ -149,7 +149,7 @@ def main():
         if config.has_section(trade.actions):
             section = config['General']
             driver = browser_driver.initialize(
-                headless=config.getboolean('General', 'headless'),
+                headless=section.getboolean('headless'),
                 user_data_directory=section['user_data_directory'],
                 profile_directory=section['profile_directory'],
                 implicitly_wait=float(section['implicitly_wait']))
@@ -530,8 +530,7 @@ def insert_maintenance_schedules(trade, config):
 
     section = config[trade.maintenance_schedules]
     url = section['url']
-    delete_events = config.getboolean(trade.maintenance_schedules,
-                                      'delete_events')
+    delete_events = section.getboolean('delete_events')
     calendar_id = section['calendar_id']
     services = ast.literal_eval(section['services'])
     service_header = section['service_header']
