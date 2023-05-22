@@ -8,6 +8,7 @@ import sys
 import browser_driver
 import configuration
 import file_utilities
+import process_utilities
 
 class Trade:
     """A class to represent a trade.
@@ -60,13 +61,15 @@ class Trade:
         file_utilities.check_directory(self.config_directory)
 
 def main():
-    """This is a main function that takes command line arguments and
-    performs various actions based on the arguments.
+    """Main function to execute various actions related to trading.
 
     Args:
         None
 
     Returns:
+        None
+
+    Raises:
         None"""
     parser = argparse.ArgumentParser()
     group = parser.add_mutually_exclusive_group()
@@ -184,7 +187,7 @@ def main():
                   'Maintenance Schedules section does not exist')
             sys.exit(1)
     if args.d or args.D:
-        if file_utilities.is_running(trade.process):
+        if process_utilities.is_running(trade.process):
             print(trade.process, 'is running')
             sys.exit()
         elif config.has_section(trade.process):
