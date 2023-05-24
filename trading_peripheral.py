@@ -16,14 +16,18 @@ class Trade:
     Attributes:
         brokerage : name of the brokerage
         process : name of the process
-        config_directory : directory path for the configuration file
+        config_directory : directory where the configuration file is
+        stored
         script_base : base name of the script
-        config_file : configuration file path
-        order_status : order status of the brokerage
-        maintenance_schedules : maintenance schedules of the brokerage
-        actions : actions of the process"""
+        config_file : path to the configuration file
+        order_state_section : section in the configuration file for
+        order status
+        maintenance_schedule_section : section in the configuration file
+        for maintenance schedules
+        action_section : section in the configuration file for
+        actions"""
     def __init__(self, brokerage, process):
-        """Initialize an object of a class.
+        """Initialize a class with brokerage and process.
 
         Args:
             brokerage : name of the brokerage
@@ -32,20 +36,14 @@ class Trade:
         Attributes:
             brokerage : name of the brokerage
             process : name of the process
-            config_directory : directory where the configuration file is
-            stored
-            script_base : base name of the script
-            config_file : configuration file path
-            order_status : order status of the brokerage
-            maintenance_schedules : maintenance schedules of the
-            brokerage
-            actions : actions of the process
-
-        Returns:
-            None
-
-        Raises:
-            None"""
+            config_directory : directory where the configuration files
+            are stored
+            script_base : name of the script
+            config_file : path of the configuration file
+            order_state_section : section for order status
+            maintenance_schedule_section : section for maintenance
+            schedules
+            action_section : section for actions"""
         self.brokerage = brokerage
         self.process = process
         self.config_directory = os.path.join(
@@ -54,14 +52,16 @@ class Trade:
         self.script_base = os.path.splitext(os.path.basename(__file__))[0]
         self.config_file = os.path.join(self.config_directory,
                                         self.script_base + '.ini')
-        self.order_status = self.brokerage + ' Order Status'
-        self.maintenance_schedules = self.brokerage + ' Maintenance Schedules'
-        self.actions = self.process + ' Actions'
+
+        self.order_state_section = self.brokerage + ' Order Status'
+        self.maintenance_schedule_section = \
+            self.brokerage + ' Maintenance Schedules'
+        self.action_section = self.process + ' Actions'
 
         file_utilities.check_directory(self.config_directory)
 
 def main():
-    """Main function to execute various actions related to trading.
+    """A function to execute various actions related to trading.
 
     Args:
         None
@@ -149,14 +149,14 @@ def main():
             print(trade.process, 'section does not exist')
             sys.exit(1)
     if args.s or args.y or args.o:
-        if config.has_section(trade.actions):
+        if config.has_section(trade.action_section):
             section = config['General']
             driver = browser_driver.initialize(
                 headless=section.getboolean('headless'),
                 user_data_directory=section['user_data_directory'],
                 profile_directory=section['profile_directory'],
                 implicitly_wait=float(section['implicitly_wait']))
-            section = config[trade.actions]
+            section = config[trade.action_section]
             if args.s:
                 browser_driver.execute_action(
                     driver,
@@ -180,7 +180,7 @@ def main():
             print(trade.process, 'Actions section does not exist')
             sys.exit(1)
     if args.m:
-        if config.has_section(trade.maintenance_schedules):
+        if config.has_section(trade.maintenance_schedule_section):
             insert_maintenance_schedules(trade, config)
         else:
             print(trade.brokerage,
@@ -398,22 +398,23 @@ def convert_to_yahoo_finance(trade, config):
 
 # TODO
 def extract_order_status(trade, config, driver):
-    """Extract order status from a trade.
+    """Extract order status from a webpage table and return the results
+    as a pandas DataFrame.
 
     Args:
         trade : trade object
         config : configuration object
-        driver : web driver object
+        driver : webdriver object
 
     Returns:
-        None
+        A pandas DataFrame containing the extracted order status
 
     Raises:
-        Exception: If there is an error while extracting order
-        status."""
+        Exception: If there is an error while extracting the order
+        status from the webpage table."""
     import pandas as pd
 
-    section = config[trade.order_status]
+    section = config[trade.order_state_section]
     output_columns = ast.literal_eval(section['output_columns'])
     table_identifier = section['table_identifier']
     symbol_regex = section['symbol_regex']
@@ -515,15 +516,16 @@ def insert_maintenance_schedules(trade, config):
     """Insert maintenance schedules into Google Calendar.
 
     Args:
-        trade: an instance of a class representing a trade
-        config: a dictionary containing configuration information
+        trade: A trade object
+        config: A configuration object
+
+    Returns:
+        None
 
     Raises:
-        HttpError: If an HTTP error occurs while interacting with the
-        Google Calendar API
-        ValueError: If the provided configuration is invalid
-        Exception: If an unexpected error occurs while executing the
-        function"""
+        HttpError: If an HTTP error occurs
+        ValueError: If the configuration file is invalid
+        Exception: If an error occurs"""
     from googleapiclient.discovery import build
     from googleapiclient.errors import HttpError
     import pandas as pd
@@ -531,7 +533,7 @@ def insert_maintenance_schedules(trade, config):
 
     scopes = ast.literal_eval(config['General']['scopes'])
 
-    section = config[trade.maintenance_schedules]
+    section = config[trade.maintenance_schedule_section]
     url = section['url']
     delete_events = section.getboolean('delete_events')
     calendar_id = section['calendar_id']
@@ -553,7 +555,6 @@ def insert_maintenance_schedules(trade, config):
         sys.exit(1)
 
     now = pd.Timestamp.now(tz=time_zone)
-    # TODO
     lower_bound = now - pd.Timedelta(days=29)
     if not last_inserted or pd.Timestamp(last_inserted) < lower_bound:
         last_inserted = lower_bound
@@ -582,7 +583,7 @@ def insert_maintenance_schedules(trade, config):
         resource = build('calendar', 'v3', credentials=credentials)
 
         if not section['calendar_id']:
-            body = {'summary': trade.maintenance_schedules,
+            body = {'summary': trade.maintenance_schedule_section,
                     'timeZone': time_zone}
             try:
                 calendar = resource.calendars().insert(body=body).execute()
