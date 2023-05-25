@@ -130,7 +130,7 @@ def main():
                 keys={'boolean': ('exist',),
                       'additional_value': ('send_keys',),
                       'no_value': ('refresh',)}):
-            return
+            sys.exit()
         else:
             sys.exit(1)
     else:
