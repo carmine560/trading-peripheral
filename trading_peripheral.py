@@ -61,15 +61,13 @@ class Trade:
         file_utilities.check_directory(self.config_directory)
 
 def main():
-    """A function to execute various actions related to trading.
+    """This is a main function that takes command line arguments and
+    performs various actions based on the arguments.
 
     Args:
         None
 
     Returns:
-        None
-
-    Raises:
         None"""
     parser = argparse.ArgumentParser()
     group = parser.add_mutually_exclusive_group()
@@ -125,16 +123,15 @@ def main():
             section = trade.brokerage + ' ' + (args.O or args.M)
         elif args.A:
             section = trade.process + ' ' + args.A
-        if config.has_section(section):
-            file_utilities.backup_file(trade.config_file, number_of_backups=8)
-            configuration.modify_section(
+        if configuration.modify_section(
                 config, section, trade.config_file,
+                backup_function=file_utilities.backup_file,
+                backup_parameters={'number_of_backups': 8},
                 keys={'boolean': ('exist',),
                       'additional_value': ('send_keys',),
-                      'no_value': ('refresh',)})
+                      'no_value': ('refresh',)}):
             return
         else:
-            print(section, 'section does not exist')
             sys.exit(1)
     else:
         config = configure(trade)
@@ -177,14 +174,13 @@ def main():
 
             driver.quit()
         else:
-            print(trade.process, 'Actions section does not exist')
+            print(trade.action_section, 'section does not exist')
             sys.exit(1)
     if args.m:
         if config.has_section(trade.maintenance_schedule_section):
             insert_maintenance_schedules(trade, config)
         else:
-            print(trade.brokerage,
-                  'Maintenance Schedules section does not exist')
+            print(trade.maintenance_schedule_section, 'section does not exist')
             sys.exit(1)
     if args.d or args.D:
         if process_utilities.is_running(trade.process):
