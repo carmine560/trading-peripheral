@@ -61,8 +61,7 @@ class Trade:
         file_utilities.check_directory(self.config_directory)
 
 def main():
-    """This is a main function that takes command line arguments and
-    performs various actions based on the arguments.
+    """Runs various actions based on command line arguments.
 
     Args:
         None
@@ -71,10 +70,6 @@ def main():
         None"""
     parser = argparse.ArgumentParser()
     group = parser.add_mutually_exclusive_group()
-    parser.add_argument(
-        '-P', default=('SBI Securities', 'HYPERSBI2'),
-        metavar=('BROKERAGE', 'PROCESS'), nargs=2,
-        help='set a brokerage and a process [defaults: %(default)s]')
     parser.add_argument(
         '-w', action='store_true',
         help='backup Hyper SBI 2 watchlists')
@@ -99,6 +94,10 @@ def main():
     parser.add_argument(
         '-D', action='store_true',
         help='restore Hyper SBI 2 application data from a snapshot')
+    parser.add_argument(
+        '-P', default=('SBI Securities', 'HYPERSBI2'),
+        metavar=('BROKERAGE', 'PROCESS'), nargs=2,
+        help='set a brokerage and a process [defaults: %(default)s]')
     group.add_argument(
         '-G', action='store_const', const='General',
         help='configure general options and exit')
@@ -114,6 +113,8 @@ def main():
     args = parser.parse_args(None if sys.argv[1:] else ['-h'])
 
     trade = Trade(*args.P)
+    backup_file = {'backup_function': file_utilities.backup_file,
+                   'backup_parameters': {'number_of_backups': 8}}
 
     if args.G or args.O or args.M or args.A:
         config = configure(trade, interpolation=False)
@@ -125,11 +126,9 @@ def main():
             section = trade.process + ' ' + args.A
         if configuration.modify_section(
                 config, section, trade.config_file,
-                backup_function=file_utilities.backup_file,
-                backup_parameters={'number_of_backups': 8},
-                keys={'boolean': ('exist',),
-                      'additional_value': ('send_keys',),
-                      'no_value': ('refresh',)}):
+                **backup_file, keys={'boolean': ('exist',),
+                                     'additional_value': ('send_keys',),
+                                     'no_value': ('refresh',)}):
             sys.exit()
         else:
             sys.exit(1)
