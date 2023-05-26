@@ -252,6 +252,7 @@ def configure(trade, interpolation=True):
         'price_column': '7'}
     config['SBI Securities Maintenance Schedules'] = {
         'url': 'https://search.sbisec.co.jp/v2/popwin/info/home/pop6040_maintenance.html',
+        'encoding': 'shift_jis',
         'delete_events': 'True',
         'calendar_id': '',
         'services': ('HYPER SBI 2',),
@@ -530,6 +531,7 @@ def insert_maintenance_schedules(trade, config):
 
     section = config[trade.maintenance_schedule_section]
     url = section['url']
+    encoding = section['encoding']
     delete_events = section.getboolean('delete_events')
     calendar_id = section['calendar_id']
     services = ast.literal_eval(section['services'])
@@ -558,8 +560,6 @@ def insert_maintenance_schedules(trade, config):
 
     # Assume that all schedules are updated at the same time.
     if last_inserted < pd.Timestamp(head.headers['last-modified']):
-        section['last_inserted'] = now.isoformat()
-
         try:
             dfs = pd.read_html(url, match='|'.join(services), flavor='lxml',
                                header=0)
@@ -615,6 +615,9 @@ def insert_maintenance_schedules(trade, config):
 
         response = requests.get(url)
         response.encoding = response.apparent_encoding
+        if response.apparent_encoding == None:
+            response.encoding = encoding
+
         matched = re.search('<title>(.*)</title>', response.text)
         if matched:
             title = matched.group(1)
@@ -670,6 +673,8 @@ def insert_maintenance_schedules(trade, config):
                     print(e)
                     sys.exit(1)
 
+        # TODO
+        section['last_inserted'] = now.isoformat()
         with open(trade.config_file, 'w', encoding='utf-8') as f:
             config.write(f)
 
