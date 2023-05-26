@@ -673,8 +673,7 @@ def insert_maintenance_schedules(trade, config):
                     print(e)
                     sys.exit(1)
 
-        # TODO
-        section['last_inserted'] = now.isoformat()
+        section['last_inserted'] = pd.Timestamp.now(tz=time_zone)
         with open(trade.config_file, 'w', encoding='utf-8') as f:
             config.write(f)
 
