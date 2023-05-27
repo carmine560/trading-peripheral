@@ -46,6 +46,8 @@ the following web browser and packages:
   * [GnuPG](https://gnupg.org/index.html) and
     [python-gnupg](https://docs.red-dove.com/python-gnupg/) to encrypt and
     decrypt application data archive
+  * [prompt_toolkit](https://python-prompt-toolkit.readthedocs.io/en/master/index.html)
+    to complete possible values or a previous value in configuring
 
 Install each package as needed.  For example:
 
@@ -57,6 +59,7 @@ pip install pandas
 pip install google-api-python-client google-auth-httplib2 google-auth-oauthlib
 winget install GnuPG.GnuPG
 pip install python-gnupg
+pip install prompt_toolkit
 ```
 
 ## Usage ##
@@ -74,20 +77,20 @@ stores these configurations.
 
 ### Options ###
 
-| Option                 | Description                                                                          | Chrome & WebDriver | pandas   | google-api | GnuPG    |
-|------------------------|--------------------------------------------------------------------------------------|--------------------|----------|------------|----------|
-| `-w`                   | backup Hyper SBI 2 watchlists                                                        |                    |          |            |          |
-| `-s`                   | replace watchlists on the SBI Securities website with Hyper SBI 2 watchlists         | required           |          |            |          |
-| `-y`                   | export Hyper SBI 2 watchlists to My Portfolio on Yahoo Finance                       | required           |          |            |          |
-| `-o`                   | extract order status from the SBI Securities web page and copy them to the clipboard | required           | required |            |          |
-| `-m`                   | insert maintenance schedules into Google Calendar                                    |                    | required | required   |          |
-| `-d`                   | take a snapshot of Hyper SBI 2 application data                                      |                    |          |            | required |
-| `-D`                   | restore Hyper SBI 2 application data from a snapshot                                 |                    |          |            | required |
-| `-P BROKERAGE PROCESS` | set a brokerage and a process [default: `SBI Securities` and `HYPERSBI2`]            |                    |          |            |          |
-| `-G`                   | configure general options and exit                                                   |                    |          |            |          |
-| `-O`                   | configure order state formats and exit                                               |                    |          |            |          |
-| `-M`                   | configure maintenance schedules and exit                                             |                    |          |            |          |
-| `-A`                   | configure actions and exit                                                           |                    |          |            |          |
+| Option                 | Description                                                                          | Chrome   | pandas   | Google API | GnuPG    | Prompt Toolkit |
+|------------------------|--------------------------------------------------------------------------------------|----------|----------|------------|----------|----------------|
+| `-w`                   | backup Hyper SBI 2 watchlists                                                        |          |          |            |          |                |
+| `-s`                   | replace watchlists on the SBI Securities website with Hyper SBI 2 watchlists         | required |          |            |          |                |
+| `-y`                   | export Hyper SBI 2 watchlists to My Portfolio on Yahoo Finance                       | required |          |            |          |                |
+| `-o`                   | extract order status from the SBI Securities web page and copy them to the clipboard | required | required |            |          |                |
+| `-m`                   | insert maintenance schedules into Google Calendar                                    |          | required | required   |          |                |
+| `-d`                   | take a snapshot of Hyper SBI 2 application data                                      |          |          |            | required |                |
+| `-D`                   | restore Hyper SBI 2 application data from a snapshot                                 |          |          |            | required |                |
+| `-P BROKERAGE PROCESS` | set a brokerage and a process [default: `SBI Securities` and `HYPERSBI2`]            |          |          |            |          |                |
+| `-G`                   | configure general options and exit                                                   |          |          |            |          | required       |
+| `-O`                   | configure order state formats and exit                                               |          |          |            |          | required       |
+| `-M`                   | configure maintenance schedules and exit                                             |          |          |            |          | required       |
+| `-A`                   | configure actions and exit                                                           |          |          |            |          | required       |
 
 ## Known Issues ##
 
