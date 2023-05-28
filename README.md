@@ -106,4 +106,4 @@ stores these configurations.
 
   * [*Python Scripting to Export Hyper SBI 2 Watchlists to Yahoo
     Finance*](https://carmine560.blogspot.com/2023/02/python-scripting-to-export-hyper-sbi-2.html):
-    a blog post for serializing WebDriver commands
+    a blog post about serializing WebDriver commands

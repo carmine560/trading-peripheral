@@ -1,6 +1,7 @@
 import argparse
 import ast
 import configparser
+import inspect
 import os
 import re
 import sys
@@ -15,35 +16,34 @@ class Trade:
 
     Attributes:
         brokerage : name of the brokerage
-        process : name of the process
+        process : process of the trade
         config_directory : directory where the configuration file is
         stored
         script_base : base name of the script
-        config_file : path to the configuration file
-        order_state_section : section in the configuration file for
-        order status
-        maintenance_schedule_section : section in the configuration file
-        for maintenance schedules
-        action_section : section in the configuration file for
-        actions"""
+        config_file : configuration file for the trade
+        order_state_section : section for order status
+        maintenance_schedule_section : section for maintenance schedules
+        action_section : section for actions
+        categorized_keys : categorized keys for the trade"""
     def __init__(self, brokerage, process):
-        """Initialize a class with brokerage and process.
+        """Initialize a class instance.
 
         Args:
-            brokerage : name of the brokerage
-            process : name of the process
+            brokerage: name of the brokerage
+            process: name of the process
 
         Attributes:
             brokerage : name of the brokerage
             process : name of the process
-            config_directory : directory where the configuration files
-            are stored
-            script_base : name of the script
-            config_file : path of the configuration file
-            order_state_section : section for order status
-            maintenance_schedule_section : section for maintenance
+            config_directory : directory where the configuration file is
+            stored
+            script_base : base name of the script
+            config_file : path to the configuration file
+            order_state_section : section name for order status
+            maintenance_schedule_section : section name for maintenance
             schedules
-            action_section : section for actions"""
+            action_section : section name for actions
+            categorized_keys : dictionary containing categorized keys"""
         self.brokerage = brokerage
         self.process = process
         self.config_directory = os.path.join(
@@ -53,12 +53,18 @@ class Trade:
         self.config_file = os.path.join(self.config_directory,
                                         self.script_base + '.ini')
 
+        file_utilities.check_directory(self.config_directory)
+
         self.order_state_section = self.brokerage + ' Order Status'
         self.maintenance_schedule_section = \
             self.brokerage + ' Maintenance Schedules'
         self.action_section = self.process + ' Actions'
-
-        file_utilities.check_directory(self.config_directory)
+        self.categorized_keys = {
+            'all_keys': file_utilities.extract_commands(
+                inspect.getsource(browser_driver.execute_action)),
+            'boolean_keys': ('exist',),
+            'additional_value_keys': ('send_keys',),
+            'no_value_keys': ('refresh',)}
 
 def main():
     """Runs various actions based on command line arguments.
@@ -125,10 +131,8 @@ def main():
         elif args.A:
             section = trade.process + ' ' + args.A
         if configuration.modify_section(
-                config, section, trade.config_file,
-                **backup_file, keys={'boolean': ('exist',),
-                                     'additional_value': ('send_keys',),
-                                     'no_value': ('refresh',)}):
+                config, section, trade.config_file, **backup_file,
+                categorized_keys=trade.categorized_keys):
             sys.exit()
         else:
             sys.exit(1)
