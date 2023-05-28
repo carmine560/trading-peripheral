@@ -237,6 +237,7 @@ def configure(trade, interpolation=True):
         'scopes': ['https://www.googleapis.com/auth/calendar'],
         'fingerprint': ''}
     config['SBI Securities Order Status'] = {
+        # TODO: fix None
         'output_columns':
         ('entry_date', None, None, 'entry_time', 'symbol', 'size',
          'trade_type', 'trade_style', 'entry_price', None, None, 'exit_date',
@@ -677,7 +678,7 @@ def insert_maintenance_schedules(trade, config):
                     print(e)
                     sys.exit(1)
 
-        section['last_inserted'] = pd.Timestamp.now(tz=time_zone)
+        section['last_inserted'] = pd.Timestamp.now(tz=time_zone).isoformat()
         with open(trade.config_file, 'w', encoding='utf-8') as f:
             config.write(f)
 
