@@ -124,18 +124,30 @@ def main():
 
     if args.G or args.O or args.M or args.A:
         config = configure(trade, interpolation=False)
-        if args.G:
-            section = args.G
-        elif args.O or args.M:
-            section = trade.brokerage + ' ' + (args.O or args.M)
-        elif args.A:
-            section = trade.process + ' ' + args.A
-        if configuration.modify_section(
-                config, section, trade.config_file, **backup_file,
+        if args.G and configuration.modify_section(
+                config, args.G, trade.config_file, **backup_file,
                 categorized_keys=trade.categorized_keys):
             sys.exit()
-        else:
-            sys.exit(1)
+        elif args.O and configuration.modify_section(
+                config, trade.brokerage + ' ' + args.O, trade.config_file,
+                **backup_file, categorized_keys=trade.categorized_keys,
+                tuple_info={'element_index': -1,
+                            'possible_values': [
+                                'None', 'entry_date', 'entry_price',
+                                'entry_time', 'exit_date', 'exit_price',
+                                'exit_time', 'size', 'symbol', 'trade_style',
+                                'trade_type']}):
+            sys.exit()
+        elif args.M and configuration.modify_section(
+                config, trade.brokerage + ' ' + args.M, trade.config_file,
+                **backup_file, categorized_keys=trade.categorized_keys):
+            sys.exit()
+        elif args.A and configuration.modify_section(
+                config, trade.process + ' ' + args.A, trade.config_file,
+                **backup_file, categorized_keys=trade.categorized_keys):
+            sys.exit()
+
+        sys.exit(1)
     else:
         config = configure(trade)
 
