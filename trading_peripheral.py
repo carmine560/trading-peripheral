@@ -237,11 +237,10 @@ def configure(trade, interpolation=True):
         'scopes': ['https://www.googleapis.com/auth/calendar'],
         'fingerprint': ''}
     config['SBI Securities Order Status'] = {
-        # TODO: fix None
         'output_columns':
-        ('entry_date', None, None, 'entry_time', 'symbol', 'size',
-         'trade_type', 'trade_style', 'entry_price', None, None, 'exit_date',
-         'exit_time', 'exit_price'),
+        ('entry_date', 'None', 'None', 'entry_time', 'symbol', 'size',
+         'trade_type', 'trade_style', 'entry_price', 'None', 'None',
+         'exit_date', 'exit_time', 'exit_price'),
         'table_identifier': '注文種別',
         'symbol_regex': r'^.* (\d{4}) 東証$$',
         'symbol_replacement': r'\1',
@@ -496,13 +495,10 @@ def extract_order_status(trade, config, driver):
 
                 evaluated_results = []
                 for i in range(len(output_columns)):
-                    if output_columns[i]:
-                        parsed = ast.parse(output_columns[i], mode='eval')
-                        fixed = ast.fix_missing_locations(parsed)
-                        compiled = compile(fixed, '<string>', 'eval')
-                        evaluated_results.append(eval(compiled))
-                    else:
-                        evaluated_results.append(None)
+                    parsed = ast.parse(output_columns[i], mode='eval')
+                    fixed = ast.fix_missing_locations(parsed)
+                    compiled = compile(fixed, '<string>', 'eval')
+                    evaluated_results.append(eval(compiled))
 
                 results.loc[len(results)] = evaluated_results
 
