@@ -77,6 +77,10 @@ def main():
     parser = argparse.ArgumentParser()
     group = parser.add_mutually_exclusive_group()
     parser.add_argument(
+        '-P', default=('SBI Securities', 'HYPERSBI2'),
+        metavar=('BROKERAGE', 'PROCESS'), nargs=2,
+        help='set a brokerage and a process [defaults: %(default)s]')
+    parser.add_argument(
         '-w', action='store_true',
         help='backup Hyper SBI 2 watchlists')
     parser.add_argument(
@@ -100,10 +104,6 @@ def main():
     parser.add_argument(
         '-D', action='store_true',
         help='restore Hyper SBI 2 application data from a snapshot')
-    parser.add_argument(
-        '-P', default=('SBI Securities', 'HYPERSBI2'),
-        metavar=('BROKERAGE', 'PROCESS'), nargs=2,
-        help='set a brokerage and a process [defaults: %(default)s]')
     group.add_argument(
         '-G', action='store_const', const='General',
         help='configure general options and exit')
@@ -127,7 +127,7 @@ def main():
         if args.G and configuration.modify_section(
                 config, args.G, trade.config_file, **backup_file,
                 categorized_keys=trade.categorized_keys):
-            sys.exit()
+            return
         elif args.O and configuration.modify_section(
                 config, trade.brokerage + ' ' + args.O, trade.config_file,
                 **backup_file, categorized_keys=trade.categorized_keys,
@@ -137,15 +137,15 @@ def main():
                                 'entry_time', 'exit_date', 'exit_price',
                                 'exit_time', 'size', 'symbol', 'trade_style',
                                 'trade_type']}):
-            sys.exit()
+            return
         elif args.M and configuration.modify_section(
                 config, trade.brokerage + ' ' + args.M, trade.config_file,
                 **backup_file, categorized_keys=trade.categorized_keys):
-            sys.exit()
+            return
         elif args.A and configuration.modify_section(
                 config, trade.process + ' ' + args.A, trade.config_file,
                 **backup_file, categorized_keys=trade.categorized_keys):
-            sys.exit()
+            return
 
         sys.exit(1)
     else:
@@ -200,7 +200,7 @@ def main():
     if args.d or args.D:
         if process_utilities.is_running(trade.process):
             print(trade.process, 'is running')
-            sys.exit()
+            sys.exit(1)
         elif config.has_section(trade.process):
             section = config[trade.process]
             application_data_directory = section['application_data_directory']
