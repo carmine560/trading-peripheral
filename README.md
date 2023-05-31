@@ -80,6 +80,7 @@ stores these configurations.
 
 | Option                 | Description                                                                          | Chrome   | pandas   | Google API | GnuPG    |
 |------------------------|--------------------------------------------------------------------------------------|----------|----------|------------|----------|
+| `-P BROKERAGE PROCESS` | set a brokerage and a process [default: `SBI Securities` and `HYPERSBI2`]            |          |          |            |          |
 | `-w`                   | backup Hyper SBI 2 watchlists                                                        |          |          |            |          |
 | `-s`                   | replace watchlists on the SBI Securities website with Hyper SBI 2 watchlists         | required |          |            |          |
 | `-y`                   | export Hyper SBI 2 watchlists to My Portfolio on Yahoo Finance                       | required |          |            |          |
@@ -87,7 +88,6 @@ stores these configurations.
 | `-m`                   | insert maintenance schedules into Google Calendar                                    |          | required | required   |          |
 | `-d`                   | take a snapshot of Hyper SBI 2 application data                                      |          |          |            | required |
 | `-D`                   | restore Hyper SBI 2 application data from a snapshot                                 |          |          |            | required |
-| `-P BROKERAGE PROCESS` | set a brokerage and a process [default: `SBI Securities` and `HYPERSBI2`]            |          |          |            |          |
 | `-G`                   | configure general options and exit                                                   |          |          |            |          |
 | `-O`                   | configure order state formats and exit                                               |          |          |            |          |
 | `-M`                   | configure maintenance schedules and exit                                             |          |          |            |          |
