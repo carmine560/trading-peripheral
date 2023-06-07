@@ -268,18 +268,19 @@ def configure(trade, interpolation=True):
         'price_column': '7'}
     config['SBI Securities Maintenance Schedules'] = {
         'url': 'https://search.sbisec.co.jp/v2/popwin/info/home/pop6040_maintenance.html',
+        'time_zone': 'Asia/Tokyo',
+        'last_inserted': '',
         'encoding': 'shift_jis',
-        'delete_events': 'True',
+        'range_list_separator': '<br>',
         'calendar_id': '',
+        'delete_events': 'True',
         'services': ('HYPER SBI 2',),
         'service_header': '対象サービス',
         'function_header': 'メンテナンス対象機能',
         'schedule_header': 'メンテナンス予定時間',
-        'time_zone': 'Asia/Tokyo',
         'range_punctuation': '〜',
         'datetime_pattern': r'^(\d{1,2})/(\d{1,2})（.）(\d{1,2}:\d{2})$$',
-        'datetime_replacement': r'\1-\2 \3',
-        'last_inserted': ''}
+        'datetime_replacement': r'\1-\2 \3'}
     config['HYPERSBI2'] = {
         'application_data_directory':
         os.path.join(os.path.expandvars('%APPDATA%'), trade.brokerage,
@@ -544,18 +545,19 @@ def insert_maintenance_schedules(trade, config):
 
     section = config[trade.maintenance_schedule_section]
     url = section['url']
+    time_zone = section['time_zone']
+    last_inserted = section['last_inserted']
     encoding = section['encoding']
-    delete_events = section.getboolean('delete_events')
+    range_list_separator = section['range_list_separator']
     calendar_id = section['calendar_id']
+    delete_events = section.getboolean('delete_events')
     services = ast.literal_eval(section['services'])
     service_header = section['service_header']
     function_header = section['function_header']
     schedule_header = section['schedule_header']
-    time_zone = section['time_zone']
     range_punctuation = section['range_punctuation']
     datetime_pattern = section['datetime_pattern']
     datetime_replacement = section['datetime_replacement']
-    last_inserted = section['last_inserted']
 
     head = requests.head(url)
     try:
@@ -573,8 +575,21 @@ def insert_maintenance_schedules(trade, config):
 
     # Assume that all schedules are updated at the same time.
     if last_inserted < pd.Timestamp(head.headers['last-modified']):
+        response = requests.get(url)
+        apparent_encoding = response.apparent_encoding
+        if apparent_encoding:
+            response.encoding = apparent_encoding
+        else:
+            response.encoding = encoding
+
+        html = response.text
+        matched = re.search('<title>(.*)</title>', html)
+        if matched:
+            title = matched.group(1)
+
+        html = html.replace(range_list_separator, 'RANGE_LIST_SEPARATOR')
         try:
-            dfs = pd.read_html(url, match='|'.join(services), flavor='lxml',
+            dfs = pd.read_html(html, match='|'.join(services), flavor='lxml',
                                header=0)
         except Exception as e:
             print(e)
@@ -626,27 +641,19 @@ def insert_maintenance_schedules(trade, config):
         year = now.strftime('%Y')
         time_frame = 30
 
-        response = requests.get(url)
-        response.encoding = response.apparent_encoding
-        if response.apparent_encoding == None:
-            response.encoding = encoding
-
-        matched = re.search('<title>(.*)</title>', response.text)
-        if matched:
-            title = matched.group(1)
-
         for service in services:
             for index, df in enumerate(dfs):
                 # Assume the first table is for temporary maintenance.
-                if tuple(df.columns.values) == \
-                   (service_header, function_header, schedule_header):
-                    df = dfs[index].loc[df[service_header].str
-                                        .contains(service)]
+                if (tuple(df.columns.values) ==
+                    (service_header, function_header, schedule_header)):
+                    df = dfs[index].loc[
+                        df[service_header].str.contains(service)]
                     break
 
             function = df.iloc[0][function_header]
-            # TODO
-            schedules = df.iloc[0][schedule_header].split()
+            schedules = df.iloc[0][schedule_header].split(
+                'RANGE_LIST_SEPARATOR')
+            schedules = [schedule.strip() for schedule in schedules]
 
             for i in range(len(schedules)):
                 datetime_range = schedules[i].split(range_punctuation)
