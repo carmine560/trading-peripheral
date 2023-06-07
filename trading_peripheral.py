@@ -594,10 +594,8 @@ def insert_maintenance_schedules(trade, config):
         except Exception as e:
             print(e)
             if re.match('No tables found matching regex', str(e)):
-                with open(trade.config_file, 'w', encoding='utf-8') as f:
-                    config.write(f)
-
-                sys.exit()
+                configuration.write_config(config, trade.config_file)
+                return
             else:
                 sys.exit(1)
 
@@ -694,8 +692,7 @@ def insert_maintenance_schedules(trade, config):
                     sys.exit(1)
 
         section['last_inserted'] = pd.Timestamp.now(tz=time_zone).isoformat()
-        with open(trade.config_file, 'w', encoding='utf-8') as f:
-            config.write(f)
+        configuration.write_config(config, trade.config_file)
 
 def get_credentials(token_json, scopes):
     """Get Google OAuth2 credentials.
