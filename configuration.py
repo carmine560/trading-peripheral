@@ -143,9 +143,10 @@ def modify_option(config, section, option, config_file, backup_function=None,
         print(option, '=', ANSI_DEFAULT + config[section][option] + ANSI_RESET)
         try:
             boolean_value = config[section].getboolean(option)
-            answer = tidy_answer(['modify', 'toggle', 'default', 'quit'])
+            answer = tidy_answer(['modify', 'toggle', 'empty', 'default',
+                                  'quit'])
         except ValueError:
-            answer = tidy_answer(['modify', 'default', 'quit'])
+            answer = tidy_answer(['modify', 'empty', 'default', 'quit'])
 
         if answer == 'modify':
             if re.sub('\s+', '', config[section][option])[:2] == '[(':
@@ -161,6 +162,8 @@ def modify_option(config, section, option, config_file, backup_function=None,
                     data=config[section][option])
         elif answer == 'toggle':
             config[section][option] = str(not boolean_value)
+        elif answer == 'empty':
+            config[section][option] = ''
         elif answer == 'default':
             config.remove_option(section, option)
         elif answer == 'quit':
