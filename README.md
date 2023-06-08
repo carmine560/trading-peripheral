@@ -12,12 +12,13 @@ A `trading_peripheral.py` Python script:
   * replaces watchlists on the SBI Securities website with [Hyper SBI
     2](https://go.sbisec.co.jp/lp/lp_hyper_sbi2_211112.html) watchlists
   * exports them from the `%APPDATA%\SBI
-    Securities\HYPERSBI2\IDENTIFIER\portfolio.json` file to [My
-    Portfolio](https://finance.yahoo.com/portfolios) on Yahoo Finance
+    Securities\HYPERSBI2\IDENTIFIER\portfolio.json` file to [*My
+    Portfolio*](https://finance.yahoo.com/portfolios) on Yahoo Finance
   * extracts order status from the SBI Securities web page and copies them to
     the clipboard
-  * retrieves SBI Securities maintenance schedules and inserts them into Google
-    Calendar
+  * retrieves [*SBI Securities Maintenance
+    Schedules*](https://search.sbisec.co.jp/v2/popwin/info/home/pop6040_maintenance.html)
+    and inserts them into Google Calendar
   * takes a snapshot of the `%APPDATA%\SBI Securities\HYPERSBI2` application
     data and restores it
 
