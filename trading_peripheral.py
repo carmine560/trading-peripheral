@@ -273,7 +273,6 @@ def configure(trade, interpolation=True):
         'encoding': 'shift_jis',
         'range_list_separator': '<br>',
         'calendar_id': '',
-        'delete_events': 'True',
         'services': ('HYPER SBI 2',),
         'service_header': '対象サービス',
         'function_header': 'メンテナンス対象機能',
@@ -550,7 +549,6 @@ def insert_maintenance_schedules(trade, config):
     encoding = section['encoding']
     range_list_separator = section['range_list_separator']
     calendar_id = section['calendar_id']
-    delete_events = section.getboolean('delete_events')
     services = ast.literal_eval(section['services'])
     service_header = section['service_header']
     function_header = section['function_header']
@@ -607,29 +605,6 @@ def insert_maintenance_schedules(trade, config):
             except HttpError as e:
                 print(e)
                 sys.exit(1)
-        elif delete_events:
-            page_token = None
-            while True:
-                try:
-                    events = resource.events().list(
-                        calendarId=calendar_id, pageToken=page_token,
-                        updatedMin=last_inserted.isoformat()).execute()
-                except HttpError as e:
-                    print(e)
-                    sys.exit(1)
-                for event in events['items']:
-                    if event['status'] == 'confirmed':
-                        try:
-                            resource.events().delete(
-                                calendarId=calendar_id,
-                                eventId=event['id']).execute()
-                        except HttpError as e:
-                            print(e)
-                            sys.exit(1)
-
-                page_token = events.get('nextPageToken')
-                if not page_token:
-                    break
 
         year = now.strftime('%Y')
         time_frame = 30
@@ -686,7 +661,7 @@ def insert_maintenance_schedules(trade, config):
                     print(e)
                     sys.exit(1)
 
-        section['last_inserted'] = pd.Timestamp.now(tz=time_zone).isoformat()
+        section['last_inserted'] = now.isoformat()
         configuration.write_config(config, trade.config_file)
 
 def get_credentials(token_json, scopes):
