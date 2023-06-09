@@ -576,12 +576,7 @@ def insert_maintenance_schedules(trade, config):
     # Assume that all schedules are updated at the same time.
     if last_inserted < pd.Timestamp(head.headers['last-modified']):
         response = requests.get(url)
-        apparent_encoding = response.apparent_encoding
-        if apparent_encoding:
-            response.encoding = apparent_encoding
-        else:
-            response.encoding = encoding
-
+        response.encoding = encoding
         html = response.text
         matched = re.search('<title>(.*)</title>', html)
         if matched:

@@ -153,9 +153,9 @@ def modify_option(config, section, option, config_file, backup_function=None,
                 modify_tuple_list(config, section, option, config_file,
                                   categorized_keys=categorized_keys)
             elif re.sub('\s+', '', config[section][option])[:1] == '(':
-                config[section][option] = modify_tuple(config[section][option],
-                                                       False, level=1,
-                                                       tuple_info=tuple_info)
+                config[section][option] = modify_tuple(
+                    config[section][option], False, level=1,
+                    tuple_info=tuple_info)
             else:
                 config[section][option] = modify_data(
                     prompts.get('value', 'value'),
