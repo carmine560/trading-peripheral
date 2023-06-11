@@ -222,13 +222,14 @@ def configure(trade, interpolation=True):
         'time_zone': 'Asia/Tokyo',
         'last_inserted': '',
         'encoding': 'shift_jis',
-        'range_list_separator': '<br>',
+        'date_splitter': '<br>',
         'calendar_id': '',
-        'services': ('HYPER SBI 2',),
+        'services': ('メインサイト（PCサイト）', 'HYPER SBI 2',),
         'service_header': '対象サービス',
         'function_header': 'メンテナンス対象機能',
         'schedule_header': 'メンテナンス予定時間',
-        'range_punctuation': '〜',
+        'intraday_splitter': '、',
+        'range_splitter': '〜',
         'datetime_pattern': r'^(\d{1,2})/(\d{1,2})（.）(\d{1,2}:\d{2})$$',
         'datetime_replacement': r'\1-\2 \3'}
     config['HYPERSBI2'] = {
@@ -459,13 +460,14 @@ def insert_maintenance_schedules(trade, config):
     time_zone = section['time_zone']
     last_inserted = section['last_inserted']
     encoding = section['encoding']
-    range_list_separator = section['range_list_separator']
+    date_splitter = section['date_splitter']
     calendar_id = section['calendar_id']
     services = ast.literal_eval(section['services'])
     service_header = section['service_header']
     function_header = section['function_header']
     schedule_header = section['schedule_header']
-    range_punctuation = section['range_punctuation']
+    intraday_splitter = section['intraday_splitter']
+    range_splitter = section['range_splitter']
     datetime_pattern = section['datetime_pattern']
     datetime_replacement = section['datetime_replacement']
 
@@ -492,7 +494,7 @@ def insert_maintenance_schedules(trade, config):
         if matched:
             title = matched.group(1)
 
-        html = html.replace(range_list_separator, 'RANGE_LIST_SEPARATOR')
+        html = html.replace(date_splitter, 'DATE_SPLITTER')
         try:
             dfs = pd.read_html(html, match='|'.join(services), flavor='lxml',
                                header=0)
@@ -531,16 +533,20 @@ def insert_maintenance_schedules(trade, config):
                     break
 
             function = df.iloc[0][function_header]
-            schedules = df.iloc[0][schedule_header].split(
-                'RANGE_LIST_SEPARATOR')
-            schedules = [schedule.strip() for schedule in schedules]
+            dates = df.iloc[0][schedule_header].split('DATE_SPLITTER')
+            for date in dates:
+                schedules = date.strip().split(intraday_splitter)
 
             for i in range(len(schedules)):
-                datetime_range = schedules[i].split(range_punctuation)
+                datetime_range = schedules[i].split(range_splitter)
 
                 # Assume that the year of the date is omitted.
-                datetime = re.sub(datetime_pattern, datetime_replacement,
-                                  datetime_range[0])
+                if re.fullmatch('\d{1,2}:\d{2}', datetime_range[0]):
+                    datetime = start.strftime('%m-%d ') + datetime_range[0]
+                else:
+                    datetime = re.sub(datetime_pattern, datetime_replacement,
+                                      datetime_range[0])
+
                 start = pd.Timestamp(year + '-' + datetime, tz=time_zone)
 
                 timedelta = pd.Timestamp(start) - now
