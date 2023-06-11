@@ -12,38 +12,7 @@ import file_utilities
 import process_utilities
 
 class Trade:
-    """A class to represent a trade.
-
-    Attributes:
-        brokerage : name of the brokerage
-        process : process of the trade
-        config_directory : directory where the configuration file is
-        stored
-        script_base : base name of the script
-        config_file : configuration file for the trade
-        order_state_section : section for order status
-        maintenance_schedule_section : section for maintenance schedules
-        action_section : section for actions
-        categorized_keys : categorized keys for the trade"""
     def __init__(self, brokerage, process):
-        """Initialize a class instance.
-
-        Args:
-            brokerage: name of the brokerage
-            process: name of the process
-
-        Attributes:
-            brokerage : name of the brokerage
-            process : name of the process
-            config_directory : directory where the configuration file is
-            stored
-            script_base : base name of the script
-            config_file : path to the configuration file
-            order_state_section : section name for order status
-            maintenance_schedule_section : section name for maintenance
-            schedules
-            action_section : section name for actions
-            categorized_keys : dictionary containing categorized keys"""
         self.brokerage = brokerage
         self.process = process
         self.config_directory = os.path.join(
@@ -67,13 +36,6 @@ class Trade:
             'no_value_keys': ('refresh',)}
 
 def main():
-    """Runs various actions based on command line arguments.
-
-    Args:
-        None
-
-    Returns:
-        None"""
     parser = argparse.ArgumentParser()
     group = parser.add_mutually_exclusive_group()
     parser.add_argument(
@@ -222,17 +184,6 @@ def main():
             sys.exit(1)
 
 def configure(trade, interpolation=True):
-    """Configures the trade.
-
-    Args:
-        trade: Trade object
-        interpolation: Whether to use extended interpolation or not
-
-    Returns:
-        ConfigParser object with the configuration
-
-    Raises:
-        NotImplementedError: If silent animals are used."""
     if interpolation:
         config = configparser.ConfigParser(
             interpolation=configparser.ExtendedInterpolation())
@@ -358,18 +309,6 @@ def configure(trade, interpolation=True):
     return config
 
 def convert_to_yahoo_finance(trade, config):
-    """Converts a trade to Yahoo Finance format.
-
-    Args:
-        trade: Trade to be converted
-        config: Configuration file for the trade
-
-    Returns:
-        A list of watchlists
-
-    Raises:
-        FileNotFoundError: If the watchlists file is not found
-        NotImplementedError: If the animal is silent"""
     import csv
     import json
 
@@ -410,20 +349,6 @@ def convert_to_yahoo_finance(trade, config):
 
 # TODO
 def extract_order_status(trade, config, driver):
-    """Extract order status from a webpage table and return the results
-    as a pandas DataFrame.
-
-    Args:
-        trade : trade object
-        config : configuration object
-        driver : webdriver object
-
-    Returns:
-        A pandas DataFrame containing the extracted order status
-
-    Raises:
-        Exception: If there is an error while extracting the order
-        status from the webpage table."""
     import pandas as pd
 
     section = config[trade.order_state_section]
@@ -522,19 +447,6 @@ def extract_order_status(trade, config, driver):
     results.to_clipboard(index=False, header=False)
 
 def insert_maintenance_schedules(trade, config):
-    """Insert maintenance schedules into Google Calendar.
-
-    Args:
-        trade: A trade object
-        config: A configuration object
-
-    Returns:
-        None
-
-    Raises:
-        HttpError: If an HTTP error occurs
-        ValueError: If the configuration file is invalid
-        Exception: If an error occurs"""
     from googleapiclient.discovery import build
     from googleapiclient.errors import HttpError
     import pandas as pd
@@ -665,17 +577,6 @@ def insert_maintenance_schedules(trade, config):
         configuration.write_config(config, trade.config_file)
 
 def get_credentials(token_json, scopes):
-    """Get Google OAuth2 credentials.
-
-    Args:
-        token_json: Path to the token JSON file.
-        scopes: List of scopes to authorize for the token.
-
-    Returns:
-        Credentials object for the authorized token.
-
-    Raises:
-        Exception: If there is an error in getting the credentials."""
     from google.auth.transport.requests import Request
     from google.oauth2.credentials import Credentials
     from google_auth_oauthlib.flow import InstalledAppFlow
