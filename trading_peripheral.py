@@ -531,11 +531,15 @@ def insert_maintenance_schedules(trade, config):
                     df = dfs[index].loc[
                         df[service_header].str.contains(service)]
                     break
+            if df.empty:
+                break
 
-            function = df.iloc[0][function_header]
+            function = re.sub(
+                '\s*DATE_SPLITTER\s*', ' ', df.iloc[0][function_header])
             dates = df.iloc[0][schedule_header].split('DATE_SPLITTER')
+            schedules = []
             for date in dates:
-                schedules = date.strip().split(intraday_splitter)
+                schedules.extend(date.strip().split(intraday_splitter))
 
             for i in range(len(schedules)):
                 datetime_range = schedules[i].split(range_splitter)
