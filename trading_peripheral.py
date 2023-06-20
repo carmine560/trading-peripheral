@@ -41,31 +41,31 @@ def main():
     parser.add_argument(
         '-P', default=('SBI Securities', 'HYPERSBI2'),
         metavar=('BROKERAGE', 'PROCESS'), nargs=2,
-        help='set a brokerage and a process [defaults: %(default)s]')
+        help='set the brokerage and the process [defaults: %(default)s]')
     parser.add_argument(
         '-w', action='store_true',
-        help='backup Hyper SBI 2 watchlists')
+        help='backup the Hyper SBI 2 watchlists')
     parser.add_argument(
         '-s', action='store_true',
-        help='replace watchlists on the SBI Securities website '
-        'with Hyper SBI 2 watchlists')
+        help='replace the watchlists on the SBI Securities website '
+        'with the Hyper SBI 2 watchlists')
     parser.add_argument(
         '-y', action='store_true',
-        help='export Hyper SBI 2 watchlists to My Portfolio '
+        help='export the Hyper SBI 2 watchlists to My Portfolio '
         'on Yahoo Finance')
     parser.add_argument(
         '-o', action='store_true',
-        help='extract order status from the SBI Securities web page '
-        'and copy them to the clipboard')
+        help='extract the order status from the SBI Securities web page '
+        'and copy it to the clipboard')
     parser.add_argument(
         '-m', action='store_true',
         help='insert maintenance schedules into Google Calendar')
     parser.add_argument(
         '-d', action='store_true',
-        help='take a snapshot of Hyper SBI 2 application data')
+        help='take a snapshot of the Hyper SBI 2 application data')
     parser.add_argument(
         '-D', action='store_true',
-        help='restore Hyper SBI 2 application data from a snapshot')
+        help='restore the Hyper SBI 2 application data from a snapshot')
     group.add_argument(
         '-G', action='store_const', const='General',
         help='configure general options and exit')
