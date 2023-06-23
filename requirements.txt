@@ -2,8 +2,12 @@ google_api_python_client
 google_auth_oauthlib
 pandas
 Pillow
+Pillow
 prompt_toolkit
+protobuf
 PyAutoGUI
 python_gnupg
 pywin32
+Requests
+selenium
 webdriver_manager

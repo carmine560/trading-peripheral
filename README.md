@@ -47,8 +47,7 @@ the following web browser and packages:
   * [GnuPG](https://gnupg.org/index.html) and
     [python-gnupg](https://docs.red-dove.com/python-gnupg/) to encrypt and
     decrypt an application data archive
-  * (optional)
-    [prompt_toolkit](https://python-prompt-toolkit.readthedocs.io/en/master/index.html)
+  * [prompt_toolkit](https://python-prompt-toolkit.readthedocs.io/en/master/index.html)
     to complete possible values or a previous value in configuring
 
 Install each package as needed.  For example:
