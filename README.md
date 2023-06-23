@@ -14,7 +14,7 @@ A `trading_peripheral.py` Python script:
   * exports them from the `%APPDATA%\SBI
     Securities\HYPERSBI2\IDENTIFIER\portfolio.json` file to [*My
     Portfolio*](https://finance.yahoo.com/portfolios) on Yahoo Finance
-  * extracts order status from the SBI Securities web page and copies them to
+  * extracts the order status from the SBI Securities web page and copies it to
     the clipboard
   * retrieves [*SBI Securities Maintenance
     Schedules*](https://search.sbisec.co.jp/v2/popwin/info/home/pop6040_maintenance.html)
@@ -46,7 +46,7 @@ the following web browser and packages:
     to access Google APIs
   * [GnuPG](https://gnupg.org/index.html) and
     [python-gnupg](https://docs.red-dove.com/python-gnupg/) to encrypt and
-    decrypt application data archive
+    decrypt an application data archive
   * (optional)
     [prompt_toolkit](https://python-prompt-toolkit.readthedocs.io/en/master/index.html)
     to complete possible values or a previous value in configuring
@@ -55,13 +55,8 @@ Install each package as needed.  For example:
 
 ``` powershell
 winget install Google.Chrome
-pip install selenium
-pip install webdriver-manager
-pip install pandas
-pip install google-api-python-client google-auth-httplib2 google-auth-oauthlib
 winget install GnuPG.GnuPG
-pip install python-gnupg
-pip install prompt_toolkit
+py -m pip install -r requirements.txt -U
 ```
 
 ## Usage ##
