@@ -73,20 +73,21 @@ stores these configurations.
 
 ### Options ###
 
-| Option                 | Description                                                                            | Chrome   | pandas   | Google API | GnuPG    |
-|------------------------|----------------------------------------------------------------------------------------|----------|----------|------------|----------|
-| `-P BROKERAGE PROCESS` | set the brokerage and the process [defaults: `SBI Securities` and `HYPERSBI2`]         |          |          |            |          |
-| `-w`                   | backup the Hyper SBI 2 watchlists                                                      |          |          |            |          |
-| `-s`                   | replace the watchlists on the SBI Securities website with the Hyper SBI 2 watchlists   | required |          |            |          |
-| `-y`                   | export the Hyper SBI 2 watchlists to My Portfolio on Yahoo Finance                     | required |          |            |          |
-| `-o`                   | extract the order status from the SBI Securities web page and copy it to the clipboard | required | required |            |          |
-| `-m`                   | insert maintenance schedules into Google Calendar                                      |          | required | required   |          |
-| `-d`                   | take a snapshot of the Hyper SBI 2 application data                                    |          |          |            | required |
-| `-D`                   | restore the Hyper SBI 2 application data from a snapshot                               |          |          |            | required |
-| `-G`                   | configure general options and exit                                                     |          |          |            |          |
-| `-O`                   | configure order state formats and exit                                                 |          |          |            |          |
-| `-M`                   | configure maintenance schedules and exit                                               |          |          |            |          |
-| `-A`                   | configure actions and exit                                                             |          |          |            |          |
+  * `-P BROKERAGE PROCESS`: set the brokerage and the process [defaults: `SBI
+    Securities` and `HYPERSBI2`]
+  * `-w`: backup the Hyper SBI 2 watchlists
+  * `-s`: replace the watchlists on the SBI Securities website with the Hyper
+    SBI 2 watchlists
+  * `-y`: export the Hyper SBI 2 watchlists to My Portfolio on Yahoo Finance
+  * `-o`: extract the order status from the SBI Securities web page and copy it
+    to the clipboard
+  * `-m`: insert maintenance schedules into Google Calendar
+  * `-d`: take a snapshot of the Hyper SBI 2 application data
+  * `-D`: restore the Hyper SBI 2 application data from a snapshot
+  * `-G`: configure general options and exit
+  * `-O`: configure order state formats and exit
+  * `-M`: configure maintenance schedules and exit
+  * `-A`: configure actions and exit
 
 ## Known Issues ##
 
