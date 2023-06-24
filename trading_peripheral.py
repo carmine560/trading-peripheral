@@ -224,7 +224,7 @@ def configure(trade, interpolation=True):
         'encoding': 'shift_jis',
         'date_splitter': '<br>',
         'calendar_id': '',
-        'services': ('メインサイト（PCサイト）', 'HYPER SBI 2',),
+        'services': ('HYPER SBI 2',),
         'service_header': '対象サービス',
         'function_header': 'メンテナンス対象機能',
         'schedule_header': 'メンテナンス予定時間',

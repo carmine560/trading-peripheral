@@ -22,7 +22,7 @@ A `trading_peripheral.py` Python script:
   * takes a snapshot of the `%APPDATA%\SBI Securities\HYPERSBI2` application
     data and restores it
 
-> **Warning** This script is currently under heavy development.  Changes in
+> **Warning**: This script is currently under heavy development.  Changes in
 > functionality can occur at any time.
 
 ## Prerequisites ##
@@ -93,7 +93,7 @@ stores these configurations.
 
   * Yahoo Finance does not seem to have stocks listed solely on the Nagoya
     Stock Exchange.
-  * Extracting order status assumes day trading on margin.
+  * Extracting the order status assumes day trading on margin.
 
 ## License ##
 
