@@ -19,7 +19,7 @@ class Trade:
             os.path.expandvars('%LOCALAPPDATA%'),
             os.path.basename(os.path.dirname(__file__)))
         self.script_base = os.path.splitext(os.path.basename(__file__))[0]
-        self.config_file = os.path.join(self.config_directory,
+        self.config_path = os.path.join(self.config_directory,
                                         self.script_base + '.ini')
 
         file_utilities.check_directory(self.config_directory)
@@ -87,11 +87,11 @@ def main():
     if args.G or args.O or args.M or args.A:
         config = configure(trade, interpolation=False)
         if args.G and configuration.modify_section(
-                config, args.G, trade.config_file, **backup_file,
+                config, args.G, trade.config_path, **backup_file,
                 categorized_keys=trade.categorized_keys):
             return
         elif args.O and configuration.modify_section(
-                config, trade.brokerage + ' ' + args.O, trade.config_file,
+                config, trade.brokerage + ' ' + args.O, trade.config_path,
                 **backup_file, categorized_keys=trade.categorized_keys,
                 tuple_info={'element_index': -1,
                             'possible_values': [
@@ -101,11 +101,11 @@ def main():
                                 'trade_type']}):
             return
         elif args.M and configuration.modify_section(
-                config, trade.brokerage + ' ' + args.M, trade.config_file,
+                config, trade.brokerage + ' ' + args.M, trade.config_path,
                 **backup_file, categorized_keys=trade.categorized_keys):
             return
         elif args.A and configuration.modify_section(
-                config, trade.process + ' ' + args.A, trade.config_file,
+                config, trade.process + ' ' + args.A, trade.config_path,
                 **backup_file, categorized_keys=trade.categorized_keys):
             return
 
@@ -285,7 +285,7 @@ def configure(trade, interpolation=True):
          ('click', '//a[text()="注文照会"]')]}
     config['Variables'] = {
         'watchlist': ''}
-    config.read(trade.config_file, encoding='utf-8')
+    config.read(trade.config_path, encoding='utf-8')
 
     if trade.process == 'HYPERSBI2':
         section = config[trade.process]
@@ -502,7 +502,7 @@ def insert_maintenance_schedules(trade, config):
         except Exception as e:
             print(e)
             if re.match('No tables found matching regex', str(e)):
-                configuration.write_config(config, trade.config_file)
+                configuration.write_config(config, trade.config_path)
                 return
             else:
                 sys.exit(1)
@@ -584,7 +584,7 @@ def insert_maintenance_schedules(trade, config):
                     print(e)
                     sys.exit(1)
 
-        configuration.write_config(config, trade.config_file)
+        configuration.write_config(config, trade.config_path)
 
 def get_credentials(token_json, scopes):
     from google.auth.transport.requests import Request

@@ -52,7 +52,7 @@ Install each package as needed.  For example:
 ``` powershell
 winget install Google.Chrome
 winget install GnuPG.GnuPG
-py -m pip install -r requirements.txt -U
+python -m pip install -r requirements.txt -U
 ```
 
 ## Usage ##
@@ -62,7 +62,7 @@ that stores your credentials and specify it as the value of the
 `profile_directory` option as follows:
 
 ``` powershell
-py trading_peripheral.py -G
+python trading_peripheral.py -G
 ```
 
 A `%LOCALAPPDATA%\trading-peripheral\trading_peripheral.ini` configuration file
