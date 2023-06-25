@@ -4,9 +4,6 @@
 extracts order status, and inserts maintenance schedules into Google Calendar
 -->
 
-<!-- hypersbi2 python chrome selenium webdrivermanager pandas google-api gnupg
--->
-
 A `trading_peripheral.py` Python script:
 
   * replaces watchlists on the SBI Securities website with [Hyper SBI
@@ -33,21 +30,21 @@ the following web browser and packages:
 
   * [Chrome](https://www.google.com/chrome/) to authenticate to the website and
     load the page
-  * [Selenium WebDriver](https://www.selenium.dev/documentation/webdriver/) to
-    drive a browser
-  * [WebDriver Manager for
-    Python](https://github.com/SergeyPirogov/webdriver_manager) to
-    automatically update the driver
-  * [pandas](https://pandas.pydata.org/) to extract data from the web pages
-  * [google-api-python-client](https://googleapis.github.io/google-api-python-client/docs/),
-    [google-auth-httplib2](https://github.com/googleapis/google-auth-library-python-httplib2),
+  * [`selenium`](https://www.selenium.dev/documentation/webdriver/) to drive a
+    browser
+  * [`webdriver-manager`](https://github.com/SergeyPirogov/webdriver_manager)
+    to automatically update the driver
+  * [`pandas`](https://pandas.pydata.org/) and
+    [`lxml`](https://lxml.de/index.html) to extract data from the web pages
+  * [`google-api-python-client`](https://googleapis.github.io/google-api-python-client/docs/),
+    [`google-auth-httplib2`](https://github.com/googleapis/google-auth-library-python-httplib2),
     and
-    [google-auth-oauthlib](https://github.com/googleapis/google-auth-library-python-oauthlib)
+    [`google-auth-oauthlib`](https://github.com/googleapis/google-auth-library-python-oauthlib)
     to access Google APIs
   * [GnuPG](https://gnupg.org/index.html) and
-    [python-gnupg](https://docs.red-dove.com/python-gnupg/) to encrypt and
+    [`python-gnupg`](https://docs.red-dove.com/python-gnupg/) to encrypt and
     decrypt an application data archive
-  * [prompt_toolkit](https://python-prompt-toolkit.readthedocs.io/en/master/index.html)
+  * [`prompt_toolkit`](https://python-prompt-toolkit.readthedocs.io/en/master/index.html)
     to complete possible values or a previous value in configuring
 
 Install each package as needed.  For example:

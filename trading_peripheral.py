@@ -479,6 +479,7 @@ def insert_maintenance_schedules(trade, config):
         sys.exit(1)
 
     now = pd.Timestamp.now(tz=time_zone)
+    section['last_inserted'] = now.isoformat()
     lower_bound = now - pd.Timedelta(days=29)
     if not last_inserted or pd.Timestamp(last_inserted) < lower_bound:
         last_inserted = lower_bound
@@ -583,7 +584,6 @@ def insert_maintenance_schedules(trade, config):
                     print(e)
                     sys.exit(1)
 
-        section['last_inserted'] = now.isoformat()
         configuration.write_config(config, trade.config_file)
 
 def get_credentials(token_json, scopes):
