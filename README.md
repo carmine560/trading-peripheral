@@ -58,15 +58,15 @@ python -m pip install -r requirements.txt -U
 ## Usage ##
 
 If you are using Chrome as your default web browser, create a separate profile
-that stores your credentials and specify it as the value of the
-`profile_directory` option as follows:
+that stores your credentials.  Then, specify the profile directory as the value
+of the `profile_directory` option, as shown below:
 
 ``` powershell
 python trading_peripheral.py -G
 ```
 
-A `%LOCALAPPDATA%\trading-peripheral\trading_peripheral.ini` configuration file
-stores these configurations.
+These configurations are stored in a
+`%LOCALAPPDATA%\trading-peripheral\trading_peripheral.ini` configuration file.
 
 ### Options ###
 
