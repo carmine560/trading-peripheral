@@ -88,9 +88,10 @@ These configurations are stored in a
 
 ## Known Issues ##
 
-  * Yahoo Finance does not seem to have stocks listed solely on the Nagoya
-    Stock Exchange.
-  * Extracting the order status assumes day trading on margin.
+  * Yahoo Finance does not appear to have stocks that are listed solely on the
+    Nagoya Stock Exchange.
+  * The process of extracting the order status assumes that you are day trading
+    on margin.
 
 ## License ##
 
