@@ -76,6 +76,8 @@ These configurations are stored in a
   * `-s`: replace the watchlists on the SBI Securities website with the Hyper
     SBI 2 watchlists
   * `-y`: export the Hyper SBI 2 watchlists to My Portfolio on Yahoo Finance
+  * `-q`: check the status of the daily sales order quota for general margin
+    trading for the specified Hyper SBI 2 watchlist
   * `-o`: extract the order status from the SBI Securities web page and copy it
     to the clipboard
   * `-m`: insert maintenance schedules into Google Calendar

@@ -54,6 +54,10 @@ def main():
         help='export the Hyper SBI 2 watchlists to My Portfolio '
         'on Yahoo Finance')
     parser.add_argument(
+        '-q', action='store_true',
+        help='check the status of the daily sales order quota '
+        'for general margin trading for the specified Hyper SBI 2 watchlist')
+    parser.add_argument(
         '-o', action='store_true',
         help='extract the order status from the SBI Securities web page '
         'and copy it to the clipboard')
@@ -122,7 +126,7 @@ def main():
         else:
             print(trade.process, 'section does not exist')
             sys.exit(1)
-    if args.s or args.y or args.o:
+    if args.s or args.y or args.q or args.o:
         if config.has_section(trade.action_section):
             section = config['General']
             driver = browser_driver.initialize(
@@ -144,6 +148,9 @@ def main():
                         ast.literal_eval(section['export_to_yahoo_finance']
                                          .replace('\\', '\\\\')
                                          .replace('\\\\\\\\', '\\\\')))
+            if args.q:
+                # TODO
+                check_daily_sales_order_quota(trade, config, driver)
             if args.o:
                 browser_driver.execute_action(
                     driver, ast.literal_eval(section['get_order_status']))
@@ -197,6 +204,7 @@ def configure(trade, interpolation=True):
         'profile_directory': 'Default',
         'implicitly_wait': '4',
         'csv_directory': os.path.join(os.path.expanduser('~'), 'Downloads'),
+        'quota_watchlist': '',
         'scopes': ['https://www.googleapis.com/auth/calendar'],
         'fingerprint': ''}
     config['SBI Securities Order Status'] = {
@@ -278,13 +286,24 @@ def configure(trade, interpolation=True):
           '${Variables:watchlist}'),
          ('click', '//span[text()="Save"]'),
          ('sleep', '0.8')],
+        # TODO
+        'get_daily_sales_order_quota':
+        [('get', 'https://www.sbisec.co.jp/ETGate'),
+         ('sleep', '0.8'),
+         ('click', '//input[@name="ACT_login"]'),
+         ('for', "${Variables:securities_codes}",
+          [('send_keys', '//*[@id="top_stock_sec"]'),
+           ('click', '//*[@id="srchK"]/a/img'),
+           ('click', '//a[text()="信用売"]'),
+           ('text', '//*[@id="normal"]/tbody/tr[3]/td/table/tbody/tr[2]/td')])],
         'get_order_status':
         [('get', 'https://www.sbisec.co.jp/ETGate'),
          ('sleep', '0.8'),
          ('click', '//input[@name="ACT_login"]'),
          ('click', '//a[text()="注文照会"]')]}
     config['Variables'] = {
-        'watchlist': ''}
+        'watchlist': '',
+        'securities_codes': ''}
     config.read(trade.config_path, encoding='utf-8')
 
     if trade.process == 'HYPERSBI2':
@@ -347,6 +366,35 @@ def convert_to_yahoo_finance(trade, config):
         csv_file.close()
         watchlists.append(watchlist)
     return watchlists
+
+# TODO
+def check_daily_sales_order_quota(trade, config, driver):
+    import json
+
+    with open(config[trade.process]['watchlists']) as f:
+        watchlists = json.load(f)
+
+    quota_watchlist = next(watchlist for watchlist in watchlists['list']
+                           if watchlist['listName'] == 'Favorites')
+    securities_codes = [item['secCd'] for item in quota_watchlist['secList']]
+    config['Variables']['securities_codes'] = ', '.join(securities_codes)
+
+    text = []
+    browser_driver.execute_action(
+        driver,
+        ast.literal_eval(
+            config[trade.action_section]['get_daily_sales_order_quota']),
+        text=text)
+
+    # '◎（余裕あり）': '◎ (There is room)'
+    # '▲（残りわずか）': '▲ (Only a few left)'
+    # 'X（受付不可）': 'X (Not accepted)'
+    # '受付停止中': 'Reception suspended'
+    # '受付停止中（19時頃受付再開）': 'Reception suspended (reception resumes around 19:00)'
+
+    for index, df in enumerate(text):
+        if not '◎（余裕あり）' in text[index]:
+            print(securities_codes[index], text[index])
 
 # TODO
 def extract_order_status(trade, config, driver):

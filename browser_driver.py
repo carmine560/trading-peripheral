@@ -17,7 +17,7 @@ def initialize(headless=True, user_data_directory=None, profile_directory=None,
     driver.implicitly_wait(implicitly_wait)
     return driver
 
-def execute_action(driver, action):
+def execute_action(driver, action, key=None, text=None):
     import time
 
     from selenium.webdriver.common.by import By
@@ -38,12 +38,26 @@ def execute_action(driver, action):
         elif command == 'refresh':
             driver.refresh()
         elif command == 'send_keys':
-            driver.find_element(By.XPATH, argument).send_keys(
-                additional_argument)
+            if key:
+                driver.find_element(By.XPATH, argument).send_keys(key)
+            else:
+                driver.find_element(By.XPATH, argument).send_keys(
+                    additional_argument)
         elif command == 'sleep':
             time.sleep(float(argument))
+        elif command == 'text':
+            # TODO
+            text.append(driver.find_element(By.XPATH, argument).text)
 
+        # TODO
         # Boolean Command
         elif command == 'exist':
             if driver.find_elements(By.XPATH, argument):
                 execute_action(driver, additional_argument)
+        elif command == 'for':
+            # TODO
+            elements = argument.split(', ')
+            for element in elements:
+                execute_action(driver, additional_argument, key=element,
+                               text=text)
+                time.sleep(1)
