@@ -374,8 +374,14 @@ def check_daily_sales_order_quota(trade, config, driver):
     with open(config[trade.process]['watchlists']) as f:
         watchlists = json.load(f)
 
-    quota_watchlist = next(watchlist for watchlist in watchlists['list']
-                           if watchlist['listName'] == 'Favorites')
+    quota_watchlist = next(
+        (watchlist for watchlist in watchlists['list']
+         if watchlist['listName'] == config['General']['quota_watchlist']),
+        None)
+    if quota_watchlist is None:
+        print('No matching watchlist was found.')
+        sys.exit(1)
+
     securities_codes = [item['secCd'] for item in quota_watchlist['secList']]
     config['Variables']['securities_codes'] = ', '.join(securities_codes)
 
