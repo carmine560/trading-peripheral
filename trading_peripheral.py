@@ -24,9 +24,11 @@ class Trade:
 
         file_utilities.check_directory(self.config_directory)
 
-        self.order_state_section = self.brokerage + ' Order Status'
-        self.maintenance_schedule_section = \
-            self.brokerage + ' Maintenance Schedules'
+        self.daily_sales_order_quota_section = (
+            self.brokerage + ' Daily Sales Order Quota')
+        self.order_status_section = self.brokerage + ' Order Status'
+        self.maintenance_schedules_section = (
+            self.brokerage + ' Maintenance Schedules')
         self.action_section = self.process + ' Actions'
         self.categorized_keys = {
             'all_keys': file_utilities.extract_commands(
@@ -161,10 +163,11 @@ def main():
             print(trade.action_section, 'section does not exist')
             sys.exit(1)
     if args.m:
-        if config.has_section(trade.maintenance_schedule_section):
+        if config.has_section(trade.maintenance_schedules_section):
             insert_maintenance_schedules(trade, config)
         else:
-            print(trade.maintenance_schedule_section, 'section does not exist')
+            print(trade.maintenance_schedules_section,
+                  'section does not exist')
             sys.exit(1)
     if args.d or args.D:
         if process_utilities.is_running(trade.process):
@@ -204,9 +207,11 @@ def configure(trade, interpolation=True):
         'profile_directory': 'Default',
         'implicitly_wait': '4',
         'csv_directory': os.path.join(os.path.expanduser('~'), 'Downloads'),
-        'quota_watchlist': '',
         'scopes': ['https://www.googleapis.com/auth/calendar'],
         'fingerprint': ''}
+    config['SBI Securities Daily Sales Order Quota'] = {
+        'quota_watchlist': '',
+        'there_is_room': '◎（余裕あり）'}
     config['SBI Securities Order Status'] = {
         'output_columns':
         ('entry_date', 'None', 'None', 'entry_time', 'symbol', 'size',
@@ -357,8 +362,8 @@ def convert_to_yahoo_finance(trade, config):
                 elif item['marketCd'] == 'SPR':
                     writer.writerow([item['secCd'] + '.S'] + row)
                 elif item['marketCd'] == 'NGY':
-                    # Yahoo Finance does not seem to have any stocks
-                    # listed solely on the Nagoya Stock Exchange.
+                    # Yahoo Finance does not seem to have any stocks listed
+                    # solely on the Nagoya Stock Exchange.
                     writer.writerow([item['secCd'] + '.N'] + row)
                 elif item['marketCd'] == 'FKO':
                     writer.writerow([item['secCd'] + '.F'] + row)
@@ -374,10 +379,11 @@ def check_daily_sales_order_quota(trade, config, driver):
     with open(config[trade.process]['watchlists']) as f:
         watchlists = json.load(f)
 
+    section = config[trade.daily_sales_order_quota_section]
+
     quota_watchlist = next(
         (watchlist for watchlist in watchlists['list']
-         if watchlist['listName'] == config['General']['quota_watchlist']),
-        None)
+         if watchlist['listName'] == section['quota_watchlist']), None)
     if quota_watchlist is None:
         print('No matching watchlist was found.')
         sys.exit(1)
@@ -392,21 +398,16 @@ def check_daily_sales_order_quota(trade, config, driver):
             config[trade.action_section]['get_daily_sales_order_quota']),
         text=text)
 
-    # '◎（余裕あり）': '◎ (There is room)'
-    # '▲（残りわずか）': '▲ (Only a few left)'
-    # 'X（受付不可）': 'X (Not accepted)'
-    # '受付停止中': 'Reception suspended'
-    # '受付停止中（19時頃受付再開）': 'Reception suspended (reception resumes around 19:00)'
-
+    there_is_room = section['there_is_room']
     for index, df in enumerate(text):
-        if not '◎（余裕あり）' in text[index]:
+        if not there_is_room in text[index]:
             print(securities_codes[index], text[index])
 
 # TODO
 def extract_order_status(trade, config, driver):
     import pandas as pd
 
-    section = config[trade.order_state_section]
+    section = config[trade.order_status_section]
     output_columns = ast.literal_eval(section['output_columns'])
     table_identifier = section['table_identifier']
     symbol_regex = section['symbol_regex']
@@ -509,7 +510,7 @@ def insert_maintenance_schedules(trade, config):
 
     scopes = ast.literal_eval(config['General']['scopes'])
 
-    section = config[trade.maintenance_schedule_section]
+    section = config[trade.maintenance_schedules_section]
     url = section['url']
     time_zone = section['time_zone']
     last_inserted = section['last_inserted']
@@ -566,7 +567,7 @@ def insert_maintenance_schedules(trade, config):
         resource = build('calendar', 'v3', credentials=credentials)
 
         if not section['calendar_id']:
-            body = {'summary': trade.maintenance_schedule_section,
+            body = {'summary': trade.maintenance_schedules_section,
                     'timeZone': time_zone}
             try:
                 calendar = resource.calendars().insert(body=body).execute()
