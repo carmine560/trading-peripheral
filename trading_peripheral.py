@@ -24,12 +24,12 @@ class Trade:
 
         file_utilities.check_directory(self.config_directory)
 
-        self.daily_sales_order_quota_section = (
-            self.brokerage + ' Daily Sales Order Quota')
-        self.order_status_section = self.brokerage + ' Order Status'
         self.maintenance_schedules_section = (
-            self.brokerage + ' Maintenance Schedules')
-        self.action_section = self.process + ' Actions'
+            f'{self.brokerage} Maintenance Schedules')
+        self.daily_sales_order_quota_section = (
+            f'{self.brokerage} Daily Sales Order Quota')
+        self.order_status_section = f'{self.brokerage} Order Status'
+        self.action_section = f'{self.process} Actions'
         # TODO
         self.categorized_keys = {
             'all_keys': file_utilities.extract_commands(
@@ -73,22 +73,22 @@ def main():
     parser.add_argument(
         '-D', action='store_true',
         help='restore the Hyper SBI 2 application data from a snapshot')
+    # TODO: General
     group.add_argument(
         '-G', action='store_const', const='General',
         help='configure general options and exit')
     group.add_argument(
-        '-M', action='store_const', const='Maintenance Schedules',
+        '-M', action='store_true',
         help='configure maintenance schedules and exit')
-    # TODO: Daily Sales Order Quota
     group.add_argument(
-        '-Q', action='store_const', const='Daily Sales Order Quota',
+        '-Q', action='store_true',
         help='configure checking the status of the daily sales order quota '
         'and exit')
     group.add_argument(
-        '-O', action='store_const', const='Order Status',
+        '-O', action='store_true',
         help='configure order status formats and exit')
     group.add_argument(
-        '-A', action='store_const', const='Actions',
+        '-A', action='store_true',
         help='configure actions and exit')
     args = parser.parse_args(None if sys.argv[1:] else ['-h'])
 
@@ -98,19 +98,20 @@ def main():
 
     if args.G or args.M or args.Q or args.O or args.A:
         config = configure(trade, interpolation=False)
+        # TODO: args.G
         if args.G and configuration.modify_section(
                 config, args.G, trade.config_path, **backup_file):
             return
         elif args.M and configuration.modify_section(
-                config, trade.brokerage + ' ' + args.M, trade.config_path,
+                config, trade.maintenance_schedules_section, trade.config_path,
                 **backup_file):
             return
         elif args.Q and configuration.modify_section(
-                config, trade.brokerage + ' ' + args.Q, trade.config_path,
-                **backup_file):
+                config, trade.daily_sales_order_quota_section,
+                trade.config_path, **backup_file):
             return
         elif args.O and configuration.modify_section(
-                config, trade.brokerage + ' ' + args.O, trade.config_path,
+                config, trade.order_status_section, trade.config_path,
                 **backup_file,
                 tuple_info={'element_index': -1,
                             'possible_values': [
@@ -120,7 +121,7 @@ def main():
                                 'trade_type']}):
             return
         elif args.A and configuration.modify_section(
-                config, trade.process + ' ' + args.A, trade.config_path,
+                config, trade.action_section, trade.config_path,
                 **backup_file, categorized_keys=trade.categorized_keys):
             return
 
@@ -217,7 +218,7 @@ def configure(trade, interpolation=True):
         'csv_directory': os.path.join(os.path.expanduser('~'), 'Downloads'),
         'scopes': ['https://www.googleapis.com/auth/calendar'],
         'fingerprint': ''}
-    config['SBI Securities Maintenance Schedules'] = {
+    config[trade.maintenance_schedules_section] = {
         'url': 'https://search.sbisec.co.jp/v2/popwin/info/home/pop6040_maintenance.html',
         'time_zone': 'Asia/Tokyo',
         'last_inserted': '',
@@ -232,10 +233,10 @@ def configure(trade, interpolation=True):
         'range_splitter': '〜',
         'datetime_pattern': r'^(\d{1,2})/(\d{1,2})（.）(\d{1,2}:\d{2})$$',
         'datetime_replacement': r'\1-\2 \3'}
-    config['SBI Securities Daily Sales Order Quota'] = {
+    config[trade.daily_sales_order_quota_section] = {
         'quota_watchlist': '',
         'sufficient': '◎（余裕あり）'}
-    config['SBI Securities Order Status'] = {
+    config[trade.order_status_section] = {
         'output_columns':
         ('entry_date', 'None', 'None', 'entry_time', 'symbol', 'size',
          'trade_type', 'trade_style', 'entry_price', 'None', 'None',
@@ -253,7 +254,7 @@ def configure(trade, interpolation=True):
         'time_replacement': r'\2',
         'size_column': '6',
         'price_column': '7'}
-    config['HYPERSBI2'] = {
+    config[trade.process] = {
         'application_data_directory':
         os.path.join(os.path.expandvars('%APPDATA%'), trade.brokerage,
                      trade.process),
@@ -261,7 +262,7 @@ def configure(trade, interpolation=True):
         'watchlist_backup_directory': '',
         'snapshot_directory':
         os.path.join(os.path.expanduser('~'), 'Downloads')}
-    config['HYPERSBI2 Actions'] = {
+    config[trade.action_section] = {
         'replace_sbi_securities':
         [('get', 'https://www.sbisec.co.jp/ETGate'),
          ('sleep', '0.8'),
