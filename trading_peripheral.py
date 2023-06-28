@@ -30,11 +30,12 @@ class Trade:
         self.maintenance_schedules_section = (
             self.brokerage + ' Maintenance Schedules')
         self.action_section = self.process + ' Actions'
+        # TODO
         self.categorized_keys = {
             'all_keys': file_utilities.extract_commands(
                 inspect.getsource(browser_driver.execute_action)),
             'boolean_keys': ('exist',),
-            'additional_value_keys': ('send_keys',),
+            'additional_value_keys': ('send_keys', 'for'),
             'no_value_keys': ('refresh',)}
 
 def main():
@@ -45,8 +46,8 @@ def main():
         metavar=('BROKERAGE', 'PROCESS'), nargs=2,
         help='set the brokerage and the process [defaults: %(default)s]')
     parser.add_argument(
-        '-w', action='store_true',
-        help='backup the Hyper SBI 2 watchlists')
+        '-m', action='store_true',
+        help='insert Hyper SBI 2 maintenance schedules into Google Calendar')
     parser.add_argument(
         '-s', action='store_true',
         help='replace the watchlists on the SBI Securities website '
@@ -58,14 +59,14 @@ def main():
     parser.add_argument(
         '-q', action='store_true',
         help='check the status of the daily sales order quota '
-        'for general margin trading for the specified Hyper SBI 2 watchlist')
+        'in general margin trading for the specified Hyper SBI 2 watchlist')
     parser.add_argument(
         '-o', action='store_true',
         help='extract the order status from the SBI Securities web page '
         'and copy it to the clipboard')
     parser.add_argument(
-        '-m', action='store_true',
-        help='insert maintenance schedules into Google Calendar')
+        '-w', action='store_true',
+        help='backup the Hyper SBI 2 watchlists')
     parser.add_argument(
         '-d', action='store_true',
         help='take a snapshot of the Hyper SBI 2 application data')
@@ -76,11 +77,16 @@ def main():
         '-G', action='store_const', const='General',
         help='configure general options and exit')
     group.add_argument(
-        '-O', action='store_const', const='Order Status',
-        help='configure order state formats and exit')
-    group.add_argument(
         '-M', action='store_const', const='Maintenance Schedules',
         help='configure maintenance schedules and exit')
+    # TODO: Daily Sales Order Quota
+    group.add_argument(
+        '-Q', action='store_const', const='Daily Sales Order Quota',
+        help='configure checking the status of the daily sales order quota '
+        'and exit')
+    group.add_argument(
+        '-O', action='store_const', const='Order Status',
+        help='configure order status formats and exit')
     group.add_argument(
         '-A', action='store_const', const='Actions',
         help='configure actions and exit')
@@ -90,25 +96,28 @@ def main():
     backup_file = {'backup_function': file_utilities.backup_file,
                    'backup_parameters': {'number_of_backups': 8}}
 
-    if args.G or args.O or args.M or args.A:
+    if args.G or args.M or args.Q or args.O or args.A:
         config = configure(trade, interpolation=False)
         if args.G and configuration.modify_section(
-                config, args.G, trade.config_path, **backup_file,
-                categorized_keys=trade.categorized_keys):
+                config, args.G, trade.config_path, **backup_file):
+            return
+        elif args.M and configuration.modify_section(
+                config, trade.brokerage + ' ' + args.M, trade.config_path,
+                **backup_file):
+            return
+        elif args.Q and configuration.modify_section(
+                config, trade.brokerage + ' ' + args.Q, trade.config_path,
+                **backup_file):
             return
         elif args.O and configuration.modify_section(
                 config, trade.brokerage + ' ' + args.O, trade.config_path,
-                **backup_file, categorized_keys=trade.categorized_keys,
+                **backup_file,
                 tuple_info={'element_index': -1,
                             'possible_values': [
                                 'None', 'entry_date', 'entry_price',
                                 'entry_time', 'exit_date', 'exit_price',
                                 'exit_time', 'size', 'symbol', 'trade_style',
                                 'trade_type']}):
-            return
-        elif args.M and configuration.modify_section(
-                config, trade.brokerage + ' ' + args.M, trade.config_path,
-                **backup_file, categorized_keys=trade.categorized_keys):
             return
         elif args.A and configuration.modify_section(
                 config, trade.process + ' ' + args.A, trade.config_path,
@@ -119,14 +128,12 @@ def main():
     else:
         config = configure(trade)
 
-    if args.w:
-        if config.has_section(trade.process):
-            section = config[trade.process]
-            file_utilities.backup_file(
-                section['watchlists'],
-                backup_directory=section['watchlist_backup_directory'])
+    if args.m:
+        if config.has_section(trade.maintenance_schedules_section):
+            insert_maintenance_schedules(trade, config)
         else:
-            print(trade.process, 'section does not exist.')
+            print(trade.maintenance_schedules_section,
+                  'section does not exist')
             sys.exit(1)
     if args.s or args.y or args.q or args.o:
         if config.has_section(trade.action_section):
@@ -161,12 +168,14 @@ def main():
         else:
             print(trade.action_section, 'section does not exist.')
             sys.exit(1)
-    if args.m:
-        if config.has_section(trade.maintenance_schedules_section):
-            insert_maintenance_schedules(trade, config)
+    if args.w:
+        if config.has_section(trade.process):
+            section = config[trade.process]
+            file_utilities.backup_file(
+                section['watchlists'],
+                backup_directory=section['watchlist_backup_directory'])
         else:
-            print(trade.maintenance_schedules_section,
-                  'section does not exist')
+            print(trade.process, 'section does not exist.')
             sys.exit(1)
     if args.d or args.D:
         if process_utilities.is_running(trade.process):
@@ -208,6 +217,21 @@ def configure(trade, interpolation=True):
         'csv_directory': os.path.join(os.path.expanduser('~'), 'Downloads'),
         'scopes': ['https://www.googleapis.com/auth/calendar'],
         'fingerprint': ''}
+    config['SBI Securities Maintenance Schedules'] = {
+        'url': 'https://search.sbisec.co.jp/v2/popwin/info/home/pop6040_maintenance.html',
+        'time_zone': 'Asia/Tokyo',
+        'last_inserted': '',
+        'encoding': 'shift_jis',
+        'date_splitter': '<br>',
+        'calendar_id': '',
+        'services': ('HYPER SBI 2',),
+        'service_header': '対象サービス',
+        'function_header': 'メンテナンス対象機能',
+        'schedule_header': 'メンテナンス予定時間',
+        'intraday_splitter': '、',
+        'range_splitter': '〜',
+        'datetime_pattern': r'^(\d{1,2})/(\d{1,2})（.）(\d{1,2}:\d{2})$$',
+        'datetime_replacement': r'\1-\2 \3'}
     config['SBI Securities Daily Sales Order Quota'] = {
         'quota_watchlist': '',
         'sufficient': '◎（余裕あり）'}
@@ -229,21 +253,6 @@ def configure(trade, interpolation=True):
         'time_replacement': r'\2',
         'size_column': '6',
         'price_column': '7'}
-    config['SBI Securities Maintenance Schedules'] = {
-        'url': 'https://search.sbisec.co.jp/v2/popwin/info/home/pop6040_maintenance.html',
-        'time_zone': 'Asia/Tokyo',
-        'last_inserted': '',
-        'encoding': 'shift_jis',
-        'date_splitter': '<br>',
-        'calendar_id': '',
-        'services': ('HYPER SBI 2',),
-        'service_header': '対象サービス',
-        'function_header': 'メンテナンス対象機能',
-        'schedule_header': 'メンテナンス予定時間',
-        'intraday_splitter': '、',
-        'range_splitter': '〜',
-        'datetime_pattern': r'^(\d{1,2})/(\d{1,2})（.）(\d{1,2}:\d{2})$$',
-        'datetime_replacement': r'\1-\2 \3'}
     config['HYPERSBI2'] = {
         'application_data_directory':
         os.path.join(os.path.expandvars('%APPDATA%'), trade.brokerage,

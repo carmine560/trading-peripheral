@@ -1,11 +1,15 @@
 # trading-peripheral #
 
-<!-- Python script that exports Hyper SBI 2 watchlists to Yahoo Finance,
-extracts order status, and inserts maintenance schedules into Google Calendar
+<!-- Python script that inserts Hyper SBI 2 maintenance schedules into Google
+Calendar, exports its watchlists to Yahoo Finance, and extracts order status
 -->
 
 The `trading_peripheral.py` Python script can:
 
+<!-- TODO -->
+  * Retrieve [*SBI Securities Maintenance
+    Schedules*](https://search.sbisec.co.jp/v2/popwin/info/home/pop6040_maintenance.html)
+    and insert them into Google Calendar,
   * Replace watchlists on the SBI Securities website with [Hyper SBI
     2](https://go.sbisec.co.jp/lp/lp_hyper_sbi2_211112.html) watchlists,
   * Export them from the `%APPDATA%\SBI
@@ -13,9 +17,6 @@ The `trading_peripheral.py` Python script can:
     Portfolio*](https://finance.yahoo.com/portfolios) on Yahoo Finance,
   * Extract the order status from the SBI Securities web page and copy it to
     the clipboard,
-  * Retrieve [*SBI Securities Maintenance
-    Schedules*](https://search.sbisec.co.jp/v2/popwin/info/home/pop6040_maintenance.html)
-    and insert them into Google Calendar,
   * Take a snapshot of the `%APPDATA%\SBI Securities\HYPERSBI2` application
     data and restore it.
 
@@ -28,6 +29,11 @@ This script has been tested in [Python for
 Windows](https://www.python.org/downloads/windows/) with Hyper SBI 2 and uses
 the following web browser and packages:
 
+  * [`google-api-python-client`](https://googleapis.github.io/google-api-python-client/docs/),
+    [`google-auth-httplib2`](https://github.com/googleapis/google-auth-library-python-httplib2),
+    and
+    [`google-auth-oauthlib`](https://github.com/googleapis/google-auth-library-python-oauthlib)
+    to access Google APIs
   * [Chrome](https://www.google.com/chrome/) to authenticate to the website and
     load the page
   * [`selenium`](https://www.selenium.dev/documentation/webdriver/) to drive a
@@ -36,11 +42,6 @@ the following web browser and packages:
     to automatically update the driver
   * [`pandas`](https://pandas.pydata.org/) and
     [`lxml`](https://lxml.de/index.html) to extract data from the web pages
-  * [`google-api-python-client`](https://googleapis.github.io/google-api-python-client/docs/),
-    [`google-auth-httplib2`](https://github.com/googleapis/google-auth-library-python-httplib2),
-    and
-    [`google-auth-oauthlib`](https://github.com/googleapis/google-auth-library-python-oauthlib)
-    to access Google APIs
   * [GnuPG](https://gnupg.org/index.html) and
     [`python-gnupg`](https://docs.red-dove.com/python-gnupg/) to encrypt and
     decrypt an application data archive
@@ -70,22 +71,24 @@ These configurations are stored in a
 
 ### Options ###
 
+<!-- TODO -->
   * `-P BROKERAGE PROCESS`: set the brokerage and the process [defaults: `SBI
     Securities` and `HYPERSBI2`]
-  * `-w`: backup the Hyper SBI 2 watchlists
+  * `-m`: insert Hyper SBI 2 maintenance schedules into Google Calendar
   * `-s`: replace the watchlists on the SBI Securities website with the Hyper
     SBI 2 watchlists
   * `-y`: export the Hyper SBI 2 watchlists to My Portfolio on Yahoo Finance
-  * `-q`: check the status of the daily sales order quota for general margin
+  * `-q`: check the status of the daily sales order quota in general margin
     trading for the specified Hyper SBI 2 watchlist
   * `-o`: extract the order status from the SBI Securities web page and copy it
     to the clipboard
-  * `-m`: insert maintenance schedules into Google Calendar
+  * `-w`: backup the Hyper SBI 2 watchlists
   * `-d`: take a snapshot of the Hyper SBI 2 application data
   * `-D`: restore the Hyper SBI 2 application data from a snapshot
   * `-G`: configure general options and exit
-  * `-O`: configure order state formats and exit
   * `-M`: configure maintenance schedules and exit
+  * `-Q`: configure checking the status of the daily sales order quota and exit
+  * `-O`: configure order status formats and exit
   * `-A`: configure actions and exit
 
 ## Known Issues ##
