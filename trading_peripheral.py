@@ -126,7 +126,7 @@ def main():
                 section['watchlists'],
                 backup_directory=section['watchlist_backup_directory'])
         else:
-            print(trade.process, 'section does not exist')
+            print(trade.process, 'section does not exist.')
             sys.exit(1)
     if args.s or args.y or args.q or args.o:
         if config.has_section(trade.action_section):
@@ -151,7 +151,6 @@ def main():
                                          .replace('\\', '\\\\')
                                          .replace('\\\\\\\\', '\\\\')))
             if args.q:
-                # TODO
                 check_daily_sales_order_quota(trade, config, driver)
             if args.o:
                 browser_driver.execute_action(
@@ -160,7 +159,7 @@ def main():
 
             driver.quit()
         else:
-            print(trade.action_section, 'section does not exist')
+            print(trade.action_section, 'section does not exist.')
             sys.exit(1)
     if args.m:
         if config.has_section(trade.maintenance_schedules_section):
@@ -171,7 +170,7 @@ def main():
             sys.exit(1)
     if args.d or args.D:
         if process_utilities.is_running(trade.process):
-            print(trade.process, 'is running')
+            print(trade.process, 'is running.')
             sys.exit(1)
         elif config.has_section(trade.process):
             section = config[trade.process]
@@ -190,7 +189,7 @@ def main():
                 output_directory = os.path.dirname(application_data_directory)
                 file_utilities.decrypt_extract_file(snapshot, output_directory)
         else:
-            print(trade.process, 'section does not exist')
+            print(trade.process, 'section does not exist.')
             sys.exit(1)
 
 def configure(trade, interpolation=True):
@@ -211,7 +210,7 @@ def configure(trade, interpolation=True):
         'fingerprint': ''}
     config['SBI Securities Daily Sales Order Quota'] = {
         'quota_watchlist': '',
-        'there_is_room': '◎（余裕あり）'}
+        'sufficient': '◎（余裕あり）'}
     config['SBI Securities Order Status'] = {
         'output_columns':
         ('entry_date', 'None', 'None', 'entry_time', 'symbol', 'size',
@@ -291,16 +290,15 @@ def configure(trade, interpolation=True):
           '${Variables:watchlist}'),
          ('click', '//span[text()="Save"]'),
          ('sleep', '0.8')],
-        # TODO
         'get_daily_sales_order_quota':
         [('get', 'https://www.sbisec.co.jp/ETGate'),
          ('sleep', '0.8'),
          ('click', '//input[@name="ACT_login"]'),
          ('for', "${Variables:securities_codes}",
-          [('send_keys', '//*[@id="top_stock_sec"]'),
-           ('click', '//*[@id="srchK"]/a/img'),
+          [('send_keys', '//*[@id="top_stock_sec"]', 'element'),
+           ('send_keys', '//*[@id="top_stock_sec"]', 'enter'),
            ('click', '//a[text()="信用売"]'),
-           ('text', '//*[@id="normal"]/tbody/tr[3]/td/table/tbody/tr[2]/td')])],
+           ('text', '//td[contains(text(), "一般/日計り売建受注枠：")]')])],
         'get_order_status':
         [('get', 'https://www.sbisec.co.jp/ETGate'),
          ('sleep', '0.8'),
@@ -328,7 +326,7 @@ def configure(trade, interpolation=True):
                 section['watchlists'] = os.path.join(
                     application_data_directory, identifier, 'portfolio.json')
             else:
-                print('unspecified identifier')
+                print('Unspecified identifier.')
                 sys.exit(1)
 
     return config
@@ -372,7 +370,6 @@ def convert_to_yahoo_finance(trade, config):
         watchlists.append(watchlist)
     return watchlists
 
-# TODO
 def check_daily_sales_order_quota(trade, config, driver):
     import json
 
@@ -398,10 +395,10 @@ def check_daily_sales_order_quota(trade, config, driver):
             config[trade.action_section]['get_daily_sales_order_quota']),
         text=text)
 
-    there_is_room = section['there_is_room']
     for index, df in enumerate(text):
-        if not there_is_room in text[index]:
-            print(securities_codes[index], text[index])
+        if not section['sufficient'] in text[index]:
+            # TODO
+            print(f'{securities_codes[index]}: {text[index]}')
 
 # TODO
 def extract_order_status(trade, config, driver):
