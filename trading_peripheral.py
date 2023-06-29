@@ -29,13 +29,12 @@ class Trade:
         self.daily_sales_order_quota_section = (
             f'{self.brokerage} Daily Sales Order Quota')
         self.order_status_section = f'{self.brokerage} Order Status'
-        self.action_section = f'{self.process} Actions'
-        # TODO
+        self.actions_section = f'{self.process} Actions'
         self.categorized_keys = {
             'all_keys': file_utilities.extract_commands(
                 inspect.getsource(browser_driver.execute_action)),
-            'boolean_keys': ('exist',),
-            'additional_value_keys': ('send_keys', 'for'),
+            'control_flow_keys': ('exist', 'for'),
+            'additional_value_keys': ('send_keys',),
             'no_value_keys': ('refresh',)}
 
 def main():
@@ -121,7 +120,7 @@ def main():
                                 'trade_type']}):
             return
         elif args.A and configuration.modify_section(
-                config, trade.action_section, trade.config_path,
+                config, trade.actions_section, trade.config_path,
                 **backup_file, categorized_keys=trade.categorized_keys):
             return
 
@@ -137,14 +136,14 @@ def main():
                   'section does not exist')
             sys.exit(1)
     if args.s or args.y or args.q or args.o:
-        if config.has_section(trade.action_section):
+        if config.has_section(trade.actions_section):
             section = config['General']
             driver = browser_driver.initialize(
                 headless=section.getboolean('headless'),
                 user_data_directory=section['user_data_directory'],
                 profile_directory=section['profile_directory'],
                 implicitly_wait=float(section['implicitly_wait']))
-            section = config[trade.action_section]
+            section = config[trade.actions_section]
             if args.s:
                 browser_driver.execute_action(
                     driver,
@@ -167,7 +166,7 @@ def main():
 
             driver.quit()
         else:
-            print(trade.action_section, 'section does not exist.')
+            print(trade.actions_section, 'section does not exist.')
             sys.exit(1)
     if args.w:
         if config.has_section(trade.process):
@@ -262,7 +261,7 @@ def configure(trade, interpolation=True):
         'watchlist_backup_directory': '',
         'snapshot_directory':
         os.path.join(os.path.expanduser('~'), 'Downloads')}
-    config[trade.action_section] = {
+    config[trade.actions_section] = {
         'replace_sbi_securities':
         [('get', 'https://www.sbisec.co.jp/ETGate'),
          ('sleep', '0.8'),
@@ -402,7 +401,7 @@ def check_daily_sales_order_quota(trade, config, driver):
     browser_driver.execute_action(
         driver,
         ast.literal_eval(
-            config[trade.action_section]['get_daily_sales_order_quota']),
+            config[trade.actions_section]['get_daily_sales_order_quota']),
         text=text)
 
     for index, df in enumerate(text):
