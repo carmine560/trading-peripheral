@@ -224,12 +224,12 @@ def configure(trade, interpolation=True):
         'date_splitter': '<br>',
         'calendar_id': '',
         'services': ('HYPER SBI 2',),
+        'schedule_header': '予定日時',
         'service_header': '対象サービス',
-        'function_header': 'メンテナンス対象機能',
-        'schedule_header': 'メンテナンス予定時間',
         'intraday_splitter': '、',
         'range_splitter': '〜',
-        'datetime_pattern': r'^(\d{1,2})/(\d{1,2})（.）(\d{1,2}:\d{2})$$',
+        'datetime_pattern':
+        r'(\d{1,2})月(\d{1,2})日（[^）]+）(\d{1,2}:\d{2})$$',
         'datetime_replacement': r'\1-\2 \3'}
     config[trade.daily_sales_order_quota_section] = {
         'quota_watchlist': '',
@@ -357,7 +357,6 @@ def insert_maintenance_schedules(trade, config):
     calendar_id = section['calendar_id']
     services = ast.literal_eval(section['services'])
     service_header = section['service_header']
-    function_header = section['function_header']
     schedule_header = section['schedule_header']
     intraday_splitter = section['intraday_splitter']
     range_splitter = section['range_splitter']
@@ -421,15 +420,16 @@ def insert_maintenance_schedules(trade, config):
             for index, df in enumerate(dfs):
                 # Assume the first table is for temporary maintenance.
                 if (tuple(df.columns.values) ==
-                    (service_header, function_header, schedule_header)):
+                    (schedule_header, service_header)):
+                    # Ignore NaN.
                     df = dfs[index].loc[
-                        df[service_header].str.contains(service)]
+                        df[service_header].str.contains(service, na=False)]
                     break
             if df.empty:
                 break
 
-            function = re.sub(
-                '\s*DATE_SPLITTER\s*', ' ', df.iloc[0][function_header])
+            # TODO: BeautifulSoup
+            function = df.iloc[0][service_header].split(' ', 1)[0]
             dates = df.iloc[0][schedule_header].split('DATE_SPLITTER')
             schedules = []
             for date in dates:
@@ -456,6 +456,7 @@ def insert_maintenance_schedules(trade, config):
                     year = str(int(year) - 1)
                     start = pd.Timestamp(year + '-' + datetime, tz=time_zone)
 
+                # TODO: next year
                 if re.fullmatch('\d{1,2}:\d{2}', datetime_range[1]):
                     end = pd.Timestamp(start.strftime('%Y-%m-%d') + ' '
                                        + datetime_range[1], tz=time_zone)
@@ -464,8 +465,7 @@ def insert_maintenance_schedules(trade, config):
                                       datetime_range[1])
                     end = pd.Timestamp(year + '-' + datetime, tz=time_zone)
 
-                body = {'summary': '🛠️ ' \
-                        + service + ' ' + function,
+                body = {'summary': f'🛠️ {service} {function}',
                         'start': {'dateTime': start.isoformat()},
                         'end': {'dateTime': end.isoformat()},
                         'source': {'title': title, 'url': url}}
