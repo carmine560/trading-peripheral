@@ -57,8 +57,9 @@ def main():
         'on Yahoo Finance')
     parser.add_argument(
         '-q', action='store_true',
-        help='check the status of the daily sales order quota '
-        'in general margin trading for the specified Hyper SBI 2 watchlist')
+        help='check the daily sales order quota in general margin trading '
+        'for the specified Hyper SBI 2 watchlist '
+        'and send a notification via Gmail if insufficient')
     parser.add_argument(
         '-o', action='store_true',
         help='extract the order status from the SBI Securities web page '
@@ -80,8 +81,7 @@ def main():
         help='configure maintenance schedules and exit')
     group.add_argument(
         '-Q', action='store_true',
-        help='configure checking the status of the daily sales order quota '
-        'and exit')
+        help='configure checking the daily sales order quota and exit')
     group.add_argument(
         '-O', action='store_true',
         help='configure order status formats and exit')
@@ -213,7 +213,8 @@ def configure(trade, interpolation=True):
         'profile_directory': 'Default',
         'implicitly_wait': '4',
         'csv_directory': os.path.join(os.path.expanduser('~'), 'Downloads'),
-        'scopes': ['https://www.googleapis.com/auth/calendar'],
+        'email_message_from': '',
+        'email_message_to': '',
         'fingerprint': ''}
     config[trade.maintenance_schedules_section] = {
         'url': 'https://search.sbisec.co.jp/v2/popwin/info/home/pop6040_maintenance.html',
@@ -305,6 +306,9 @@ def configure(trade, interpolation=True):
           [('send_keys', '//*[@id="top_stock_sec"]', 'element'),
            ('send_keys', '//*[@id="top_stock_sec"]', 'enter'),
            ('click', '//a[text()="信用売"]'),
+           # TODO: Unable to locate element:
+           # {"method":"xpath","selector":"//td[contains(text(), "一般/日計り売
+           # 建受注枠：")]"}
            ('text', '//td[contains(text(), "一般/日計り売建受注枠：")]')])],
         'get_order_status':
         [('get', 'https://www.sbisec.co.jp/ETGate'),
@@ -337,6 +341,143 @@ def configure(trade, interpolation=True):
                 sys.exit(1)
 
     return config
+
+def insert_maintenance_schedules(trade, config):
+    from googleapiclient.discovery import build
+    from googleapiclient.errors import HttpError
+    import pandas as pd
+    import requests
+
+    section = config[trade.maintenance_schedules_section]
+    url = section['url']
+    time_zone = section['time_zone']
+    last_inserted = section['last_inserted']
+    encoding = section['encoding']
+    date_splitter = section['date_splitter']
+    calendar_id = section['calendar_id']
+    services = ast.literal_eval(section['services'])
+    service_header = section['service_header']
+    function_header = section['function_header']
+    schedule_header = section['schedule_header']
+    intraday_splitter = section['intraday_splitter']
+    range_splitter = section['range_splitter']
+    datetime_pattern = section['datetime_pattern']
+    datetime_replacement = section['datetime_replacement']
+
+    head = requests.head(url)
+    try:
+        head.raise_for_status()
+    except Exception as e:
+        print(e)
+        sys.exit(1)
+
+    now = pd.Timestamp.now(tz=time_zone)
+    section['last_inserted'] = now.isoformat()
+    lower_bound = now - pd.Timedelta(days=29)
+    if not last_inserted or pd.Timestamp(last_inserted) < lower_bound:
+        last_inserted = lower_bound
+    else:
+        last_inserted = pd.Timestamp(last_inserted)
+
+    # Assume that all schedules are updated at the same time.
+    if last_inserted < pd.Timestamp(head.headers['last-modified']):
+        response = requests.get(url)
+        response.encoding = encoding
+        html = response.text
+        matched = re.search('<title>(.*)</title>', html)
+        if matched:
+            title = matched.group(1)
+
+        html = html.replace(date_splitter, 'DATE_SPLITTER')
+        try:
+            dfs = pd.read_html(html, match='|'.join(services), flavor='lxml',
+                               header=0)
+        except Exception as e:
+            print(e)
+            if re.match('No tables found matching regex', str(e)):
+                configuration.write_config(config, trade.config_path)
+                return
+            else:
+                sys.exit(1)
+
+        credentials = get_credentials(os.path.join(trade.config_directory,
+                                                   'token.json'))
+        resource = build('calendar', 'v3', credentials=credentials)
+
+        if not section['calendar_id']:
+            body = {'summary': trade.maintenance_schedules_section,
+                    'timeZone': time_zone}
+            try:
+                calendar = resource.calendars().insert(body=body).execute()
+                section['calendar_id'] = calendar_id = calendar['id']
+            except HttpError as e:
+                print(e)
+                sys.exit(1)
+
+        year = now.strftime('%Y')
+        time_frame = 30
+
+        for service in services:
+            for index, df in enumerate(dfs):
+                # Assume the first table is for temporary maintenance.
+                if (tuple(df.columns.values) ==
+                    (service_header, function_header, schedule_header)):
+                    df = dfs[index].loc[
+                        df[service_header].str.contains(service)]
+                    break
+            if df.empty:
+                break
+
+            function = re.sub(
+                '\s*DATE_SPLITTER\s*', ' ', df.iloc[0][function_header])
+            dates = df.iloc[0][schedule_header].split('DATE_SPLITTER')
+            schedules = []
+            for date in dates:
+                schedules.extend(date.strip().split(intraday_splitter))
+
+            for i in range(len(schedules)):
+                datetime_range = schedules[i].split(range_splitter)
+
+                # Assume that the year of the date is omitted.
+                if re.fullmatch('\d{1,2}:\d{2}', datetime_range[0]):
+                    datetime = start.strftime('%m-%d ') + datetime_range[0]
+                else:
+                    datetime = re.sub(datetime_pattern, datetime_replacement,
+                                      datetime_range[0])
+
+                start = pd.Timestamp(year + '-' + datetime, tz=time_zone)
+
+                timedelta = pd.Timestamp(start) - now
+                threshold = pd.Timedelta(days=365 - time_frame)
+                if timedelta < -threshold:
+                    year = str(int(year) + 1)
+                    start = pd.Timestamp(year + '-' + datetime, tz=time_zone)
+                elif timedelta > threshold:
+                    year = str(int(year) - 1)
+                    start = pd.Timestamp(year + '-' + datetime, tz=time_zone)
+
+                if re.fullmatch('\d{1,2}:\d{2}', datetime_range[1]):
+                    end = pd.Timestamp(start.strftime('%Y-%m-%d') + ' '
+                                       + datetime_range[1], tz=time_zone)
+                else:
+                    datetime = re.sub(datetime_pattern, datetime_replacement,
+                                      datetime_range[1])
+                    end = pd.Timestamp(year + '-' + datetime, tz=time_zone)
+
+                body = {'summary': '🛠️ ' \
+                        + service + ' ' + function,
+                        'start': {'dateTime': start.isoformat()},
+                        'end': {'dateTime': end.isoformat()},
+                        'source': {'title': title, 'url': url}}
+                try:
+                    event = resource.events().insert(calendarId=calendar_id,
+                                                     body=body).execute()
+                    print(event.get('start')['dateTime'], event.get('summary'))
+                except HttpError as e:
+                    print(e)
+                    sys.exit(1)
+
+        configuration.write_config(config, trade.config_path)
 
 def convert_to_yahoo_finance(trade, config):
     import csv
@@ -378,16 +519,20 @@ def convert_to_yahoo_finance(trade, config):
     return watchlists
 
 def check_daily_sales_order_quota(trade, config, driver):
+    from email.message import EmailMessage
+    import base64
     import json
+
+    from googleapiclient.discovery import build
+    from googleapiclient.errors import HttpError
 
     with open(config[trade.process]['watchlists']) as f:
         watchlists = json.load(f)
 
-    section = config[trade.daily_sales_order_quota_section]
-
+    quota_section = config[trade.daily_sales_order_quota_section]
     quota_watchlist = next(
         (watchlist for watchlist in watchlists['list']
-         if watchlist['listName'] == section['quota_watchlist']), None)
+         if watchlist['listName'] == quota_section['quota_watchlist']), None)
     if quota_watchlist is None:
         print('No matching watchlist was found.')
         sys.exit(1)
@@ -402,10 +547,35 @@ def check_daily_sales_order_quota(trade, config, driver):
             config[trade.actions_section]['get_daily_sales_order_quota']),
         text=text)
 
+    status = ''
     for index, df in enumerate(text):
-        if not section['sufficient'] in text[index]:
-            # TODO
-            print(f'{securities_codes[index]}: {text[index]}')
+        if not quota_section['sufficient'] in text[index]:
+            status += f'{securities_codes[index]}: {text[index]}\n'
+
+    print(status)
+
+    general_section = config['General']
+    email_message_from = general_section['email_message_from']
+    email_message_to = general_section['email_message_to']
+
+    if email_message_from and email_message_to:
+        credentials = get_credentials(os.path.join(trade.config_directory,
+                                                   'token.json'))
+        resource = build('gmail', 'v1', credentials=credentials)
+
+        email_message = EmailMessage()
+        email_message['Subject'] = trade.daily_sales_order_quota_section
+        email_message['From'] = email_message_from
+        email_message['To'] = email_message_to
+        email_message.set_content(status)
+
+        body = {'raw': base64.urlsafe_b64encode(
+            email_message.as_bytes()).decode()}
+        try:
+            resource.users().messages().send(userId='me', body=body).execute()
+        except HttpError as e:
+            print(e)
+            sys.exit(1)
 
 # TODO
 def extract_order_status(trade, config, driver):
@@ -506,150 +676,13 @@ def extract_order_status(trade, config, driver):
 
     results.to_clipboard(index=False, header=False)
 
-def insert_maintenance_schedules(trade, config):
-    from googleapiclient.discovery import build
-    from googleapiclient.errors import HttpError
-    import pandas as pd
-    import requests
-
-    scopes = ast.literal_eval(config['General']['scopes'])
-
-    section = config[trade.maintenance_schedules_section]
-    url = section['url']
-    time_zone = section['time_zone']
-    last_inserted = section['last_inserted']
-    encoding = section['encoding']
-    date_splitter = section['date_splitter']
-    calendar_id = section['calendar_id']
-    services = ast.literal_eval(section['services'])
-    service_header = section['service_header']
-    function_header = section['function_header']
-    schedule_header = section['schedule_header']
-    intraday_splitter = section['intraday_splitter']
-    range_splitter = section['range_splitter']
-    datetime_pattern = section['datetime_pattern']
-    datetime_replacement = section['datetime_replacement']
-
-    head = requests.head(url)
-    try:
-        head.raise_for_status()
-    except Exception as e:
-        print(e)
-        sys.exit(1)
-
-    now = pd.Timestamp.now(tz=time_zone)
-    section['last_inserted'] = now.isoformat()
-    lower_bound = now - pd.Timedelta(days=29)
-    if not last_inserted or pd.Timestamp(last_inserted) < lower_bound:
-        last_inserted = lower_bound
-    else:
-        last_inserted = pd.Timestamp(last_inserted)
-
-    # Assume that all schedules are updated at the same time.
-    if last_inserted < pd.Timestamp(head.headers['last-modified']):
-        response = requests.get(url)
-        response.encoding = encoding
-        html = response.text
-        matched = re.search('<title>(.*)</title>', html)
-        if matched:
-            title = matched.group(1)
-
-        html = html.replace(date_splitter, 'DATE_SPLITTER')
-        try:
-            dfs = pd.read_html(html, match='|'.join(services), flavor='lxml',
-                               header=0)
-        except Exception as e:
-            print(e)
-            if re.match('No tables found matching regex', str(e)):
-                configuration.write_config(config, trade.config_path)
-                return
-            else:
-                sys.exit(1)
-
-        credentials = get_credentials(
-            os.path.join(trade.config_directory, 'token.json'), scopes)
-        resource = build('calendar', 'v3', credentials=credentials)
-
-        if not section['calendar_id']:
-            body = {'summary': trade.maintenance_schedules_section,
-                    'timeZone': time_zone}
-            try:
-                calendar = resource.calendars().insert(body=body).execute()
-                section['calendar_id'] = calendar_id = calendar['id']
-            except HttpError as e:
-                print(e)
-                sys.exit(1)
-
-        year = now.strftime('%Y')
-        time_frame = 30
-
-        for service in services:
-            for index, df in enumerate(dfs):
-                # Assume the first table is for temporary maintenance.
-                if (tuple(df.columns.values) ==
-                    (service_header, function_header, schedule_header)):
-                    df = dfs[index].loc[
-                        df[service_header].str.contains(service)]
-                    break
-            if df.empty:
-                break
-
-            function = re.sub(
-                '\s*DATE_SPLITTER\s*', ' ', df.iloc[0][function_header])
-            dates = df.iloc[0][schedule_header].split('DATE_SPLITTER')
-            schedules = []
-            for date in dates:
-                schedules.extend(date.strip().split(intraday_splitter))
-
-            for i in range(len(schedules)):
-                datetime_range = schedules[i].split(range_splitter)
-
-                # Assume that the year of the date is omitted.
-                if re.fullmatch('\d{1,2}:\d{2}', datetime_range[0]):
-                    datetime = start.strftime('%m-%d ') + datetime_range[0]
-                else:
-                    datetime = re.sub(datetime_pattern, datetime_replacement,
-                                      datetime_range[0])
-
-                start = pd.Timestamp(year + '-' + datetime, tz=time_zone)
-
-                timedelta = pd.Timestamp(start) - now
-                threshold = pd.Timedelta(days=365 - time_frame)
-                if timedelta < -threshold:
-                    year = str(int(year) + 1)
-                    start = pd.Timestamp(year + '-' + datetime, tz=time_zone)
-                elif timedelta > threshold:
-                    year = str(int(year) - 1)
-                    start = pd.Timestamp(year + '-' + datetime, tz=time_zone)
-
-                if re.fullmatch('\d{1,2}:\d{2}', datetime_range[1]):
-                    end = pd.Timestamp(start.strftime('%Y-%m-%d') + ' '
-                                       + datetime_range[1], tz=time_zone)
-                else:
-                    datetime = re.sub(datetime_pattern, datetime_replacement,
-                                      datetime_range[1])
-                    end = pd.Timestamp(year + '-' + datetime, tz=time_zone)
-
-                body = {'summary': '🛠️ ' \
-                        + service + ' ' + function,
-                        'start': {'dateTime': start.isoformat()},
-                        'end': {'dateTime': end.isoformat()},
-                        'source': {'title': title, 'url': url}}
-                try:
-                    event = resource.events().insert(calendarId=calendar_id,
-                                                     body=body).execute()
-                    print(event.get('start')['dateTime'], event.get('summary'))
-                except HttpError as e:
-                    print(e)
-                    sys.exit(1)
-
-        configuration.write_config(config, trade.config_path)
-
-def get_credentials(token_json, scopes):
+def get_credentials(token_json):
     from google.auth.transport.requests import Request
     from google.oauth2.credentials import Credentials
     from google_auth_oauthlib.flow import InstalledAppFlow
 
+    scopes = ['https://www.googleapis.com/auth/calendar',
+              'https://www.googleapis.com/auth/gmail.send']
     credentials = None
     if os.path.exists(token_json):
         credentials = Credentials.from_authorized_user_file(token_json, scopes)
@@ -666,7 +699,6 @@ def get_credentials(token_json, scopes):
                 sys.exit(1)
         with open(token_json, 'w') as token:
             token.write(credentials.to_json())
-
     return credentials
 
 if __name__ == '__main__':

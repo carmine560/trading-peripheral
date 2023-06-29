@@ -78,8 +78,9 @@ These configurations are stored in a
   * `-s`: replace the watchlists on the SBI Securities website with the Hyper
     SBI 2 watchlists
   * `-y`: export the Hyper SBI 2 watchlists to My Portfolio on Yahoo Finance
-  * `-q`: check the status of the daily sales order quota in general margin
-    trading for the specified Hyper SBI 2 watchlist
+  * `-q`: check the daily sales order quota in general margin trading for the
+    specified Hyper SBI 2 watchlist and send a notification via Gmail if
+    insufficient
   * `-o`: extract the order status from the SBI Securities web page and copy it
     to the clipboard
   * `-w`: backup the Hyper SBI 2 watchlists
@@ -87,7 +88,7 @@ These configurations are stored in a
   * `-D`: restore the Hyper SBI 2 application data from a snapshot
   * `-G`: configure general options and exit
   * `-M`: configure maintenance schedules and exit
-  * `-Q`: configure checking the status of the daily sales order quota and exit
+  * `-Q`: configure checking the daily sales order quota and exit
   * `-O`: configure order status formats and exit
   * `-A`: configure actions and exit
 
