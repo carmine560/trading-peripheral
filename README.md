@@ -6,12 +6,13 @@ Calendar, exports its watchlists to Yahoo Finance, and extracts order status
 
 The `trading_peripheral.py` Python script can:
 
-<!-- TODO -->
   * Retrieve [*SBI Securities Maintenance
     Schedules*](https://search.sbisec.co.jp/v2/popwin/info/home/pop6040_maintenance.html)
-    and insert them into Google Calendar,
-  * Replace watchlists on the SBI Securities website with [Hyper SBI
-    2](https://go.sbisec.co.jp/lp/lp_hyper_sbi2_211112.html) watchlists,
+    and insert [Hyper SBI
+    2](https://go.sbisec.co.jp/lp/lp_hyper_sbi2_211112.html) maintenance
+    schedules into Google Calendar,
+  * Replace watchlists on the SBI Securities website with Hyper SBI 2
+    watchlists,
   * Export them from the `%APPDATA%\SBI
     Securities\HYPERSBI2\IDENTIFIER\portfolio.json` file to [*My
     Portfolio*](https://finance.yahoo.com/portfolios) on Yahoo Finance,
@@ -71,7 +72,6 @@ These configurations are stored in a
 
 ### Options ###
 
-<!-- TODO -->
   * `-P BROKERAGE PROCESS`: set the brokerage and the process [defaults: `SBI
     Securities` and `HYPERSBI2`]
   * `-m`: insert Hyper SBI 2 maintenance schedules into Google Calendar

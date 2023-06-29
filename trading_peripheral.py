@@ -72,9 +72,8 @@ def main():
     parser.add_argument(
         '-D', action='store_true',
         help='restore the Hyper SBI 2 application data from a snapshot')
-    # TODO: General
     group.add_argument(
-        '-G', action='store_const', const='General',
+        '-G', action='store_true',
         help='configure general options and exit')
     group.add_argument(
         '-M', action='store_true',
@@ -97,9 +96,8 @@ def main():
 
     if args.G or args.M or args.Q or args.O or args.A:
         config = configure(trade, interpolation=False)
-        # TODO: args.G
         if args.G and configuration.modify_section(
-                config, args.G, trade.config_path, **backup_file):
+                config, 'General', trade.config_path, **backup_file):
             return
         elif args.M and configuration.modify_section(
                 config, trade.maintenance_schedules_section, trade.config_path,
