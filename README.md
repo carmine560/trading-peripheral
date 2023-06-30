@@ -60,15 +60,15 @@ python -m pip install -r requirements.txt -U
 ## Usage ##
 
 The `-m` and `-q` options use the Google Calendar and Gmail APIs.  Follow the
-instructions in the [*Google Calendar API
+[*Google Calendar API
 Quickstart*](https://developers.google.com/calendar/api/quickstart/python) and
 [*Gmail API
 Quickstart*](https://developers.google.com/gmail/api/quickstart/python) to
 obtain a `client_secret_*.json` file.
 
-If you are using Chrome as your default web browser, create a separate profile
-that stores your credentials.  Then, specify the profile directory as the value
-of the `profile_directory` option, as shown below:
+If you use Chrome as your default web browser, create a separate profile that
+stores your credentials.  Then, specify the profile directory as the value of
+the `profile_directory` option, as shown below:
 
 ``` powershell
 python trading_peripheral.py -G
@@ -76,10 +76,11 @@ python trading_peripheral.py -G
 
 The `-d` option encrypts a snapshot of the Hyper SBI 2 application data using
 GnuPG.  By default, it uses the default key of GnuPG, but you can also specify
-a fingerprint as the value of the `fingerprint` option using the `-G` option.
+a key fingerprint as the value of the `fingerprint` option using the `-G`
+option.
 
-These configurations are stored in a
-`%LOCALAPPDATA%\trading-peripheral\trading_peripheral.ini` configuration file.
+The `%LOCALAPPDATA%\trading-peripheral\trading_peripheral.ini` configuration
+file stores these configurations.
 
 ### Options ###
 
@@ -105,10 +106,9 @@ These configurations are stored in a
 
 ## Known Issues ##
 
-  * Yahoo Finance does not appear to have stocks that are listed solely on the
-    Nagoya Stock Exchange.
-  * The process of extracting the order status assumes that you are day trading
-    on margin.
+  * Yahoo Finance does not appear to have stocks listed solely on the Nagoya
+    Stock Exchange.
+  * Extracting the order status assumes that you are day trading on margin.
 
 ## License ##
 
