@@ -345,6 +345,7 @@ def configure(trade, interpolation=True):
 def insert_maintenance_schedules(trade, config):
     from googleapiclient.discovery import build
     from googleapiclient.errors import HttpError
+    from lxml import html
     import pandas as pd
     import requests
 
@@ -382,14 +383,15 @@ def insert_maintenance_schedules(trade, config):
     if last_inserted < pd.Timestamp(head.headers['last-modified']):
         response = requests.get(url)
         response.encoding = encoding
-        html = response.text
-        matched = re.search('<title>(.*)</title>', html)
+        text = response.text
+        matched = re.search('<title>(.*)</title>', text)
         if matched:
             title = matched.group(1)
 
-        html = html.replace(date_splitter, 'DATE_SPLITTER')
+        text = text.replace(date_splitter, 'DATE_SPLITTER')
         try:
-            dfs = pd.read_html(html, match='|'.join(services), flavor='lxml',
+            # TODO: replace pandas with lxml
+            dfs = pd.read_html(text, match='|'.join(services), flavor='lxml',
                                header=0)
         except Exception as e:
             print(e)
@@ -428,8 +430,14 @@ def insert_maintenance_schedules(trade, config):
             if df.empty:
                 break
 
-            # TODO: BeautifulSoup
-            function = df.iloc[0][service_header].split(' ', 1)[0]
+            tree = html.fromstring(text)
+            element = tree.xpath(
+                f'//div[contains(text(), "{service}")]/ancestor::td[1]')[0]
+            for div in element.xpath('.//div'):
+                div.getparent().remove(div)
+
+            function = element.text_content().strip()
+
             dates = df.iloc[0][schedule_header].split('DATE_SPLITTER')
             schedules = []
             for date in dates:
