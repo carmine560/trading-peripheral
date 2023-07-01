@@ -38,8 +38,8 @@ the following web browser and packages:
   * [Chrome](https://www.google.com/chrome/) to authenticate to the website and
     load the page
   * [`selenium`](https://www.selenium.dev/documentation/webdriver/) to drive a
-    browser
-  * [`webdriver-manager`](https://github.com/SergeyPirogov/webdriver_manager)
+    browser and
+    [`webdriver-manager`](https://github.com/SergeyPirogov/webdriver_manager)
     to automatically update the driver
   * [`pandas`](https://pandas.pydata.org/) and
     [`lxml`](https://lxml.de/index.html) to extract data from the web pages

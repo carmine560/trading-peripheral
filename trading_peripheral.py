@@ -306,10 +306,10 @@ def configure(trade, interpolation=True):
           [('send_keys', '//*[@id="top_stock_sec"]', 'element'),
            ('send_keys', '//*[@id="top_stock_sec"]', 'enter'),
            ('click', '//a[text()="信用売"]'),
-           # TODO: Unable to locate element:
-           # {"method":"xpath","selector":"//td[contains(text(), "一般/日計り売
-           # 建受注枠：")]"}
-           ('text', '//td[contains(text(), "一般/日計り売建受注枠：")]')])],
+           # TODO: else
+           ('exist', '//td[contains(text(), "一般/日計り売建受注枠：")]',
+            [('text',
+              '//td[contains(text(), "一般/日計り売建受注枠：")]')])])],
         'get_order_status':
         [('get', 'https://www.sbisec.co.jp/ETGate'),
          ('sleep', '0.8'),
@@ -558,7 +558,7 @@ def check_daily_sales_order_quota(trade, config, driver):
     email_message_from = general_section['email_message_from']
     email_message_to = general_section['email_message_to']
 
-    if email_message_from and email_message_to:
+    if email_message_from and email_message_to and status:
         credentials = get_credentials(os.path.join(trade.config_directory,
                                                    'token.json'))
         resource = build('gmail', 'v1', credentials=credentials)

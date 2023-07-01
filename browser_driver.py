@@ -54,7 +54,7 @@ def execute_action(driver, action, element=None, text=None):
         # Control Flow Commands
         elif command == 'exist':
             if driver.find_elements(By.XPATH, argument):
-                execute_action(driver, additional_argument)
+                execute_action(driver, additional_argument, text=text)
         elif command == 'for':
             for element in argument.split(', '):
                 execute_action(driver, additional_argument, element=element,
