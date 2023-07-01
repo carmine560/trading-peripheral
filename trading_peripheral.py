@@ -224,8 +224,12 @@ def configure(trade, interpolation=True):
         'date_splitter': '<br>',
         'calendar_id': '',
         'services': ('HYPER SBI 2',),
-        'schedule_header': '予定日時',
-        'service_header': '対象サービス',
+        'services_xpath_prefix': '//div[@class="cards" and (',
+        'service_xpath':
+        '//div[contains(@class, "card") and contains(text(), "{0}")]',
+        'services_xpath_suffix': ')]',
+        'schedule_xpath': 'ancestor::tr[1]/td[1]',
+        'function_xpath': '//div[contains(@class, "card") and contains(text(), "{0}")]/ancestor::td[1]',
         'intraday_splitter': '、',
         'range_splitter': '〜',
         'datetime_pattern':
@@ -357,8 +361,11 @@ def insert_maintenance_schedules(trade, config):
     date_splitter = section['date_splitter']
     calendar_id = section['calendar_id']
     services = ast.literal_eval(section['services'])
-    service_header = section['service_header']
-    schedule_header = section['schedule_header']
+    services_xpath_prefix = section['services_xpath_prefix']
+    service_xpath = section['service_xpath']
+    services_xpath_suffix = section['services_xpath_suffix']
+    schedule_xpath = section['schedule_xpath']
+    function_xpath = section['function_xpath']
     intraday_splitter = section['intraday_splitter']
     range_splitter = section['range_splitter']
     datetime_pattern = section['datetime_pattern']
@@ -389,101 +396,93 @@ def insert_maintenance_schedules(trade, config):
             title = matched.group(1)
 
         text = text.replace(date_splitter, 'DATE_SPLITTER')
-        try:
-            # TODO: replace pandas with lxml
-            dfs = pd.read_html(text, match='|'.join(services), flavor='lxml',
-                               header=0)
-        except Exception as e:
-            print(e)
-            if re.match('No tables found matching regex', str(e)):
-                configuration.write_config(config, trade.config_path)
-                return
-            else:
-                sys.exit(1)
+        root = html.fromstring(text)
 
-        credentials = get_credentials(os.path.join(trade.config_directory,
-                                                   'token.json'))
-        resource = build('calendar', 'v3', credentials=credentials)
-
-        if not section['calendar_id']:
-            body = {'summary': trade.maintenance_schedules_section,
-                    'timeZone': time_zone}
-            try:
-                calendar = resource.calendars().insert(body=body).execute()
-                section['calendar_id'] = calendar_id = calendar['id']
-            except HttpError as e:
-                print(e)
-                sys.exit(1)
-
-        year = now.strftime('%Y')
-        time_frame = 30
-
+        services_xpath = services_xpath_prefix
+        conditions = []
         for service in services:
-            for index, df in enumerate(dfs):
-                # Assume the first table is for temporary maintenance.
-                if (tuple(df.columns.values) ==
-                    (schedule_header, service_header)):
-                    # Ignore NaN.
-                    df = dfs[index].loc[
-                        df[service_header].str.contains(service, na=False)]
-                    break
-            if df.empty:
-                break
+            condition = '.' + service_xpath.format(service)
+            conditions.append(condition)
 
-            tree = html.fromstring(text)
-            element = tree.xpath(
-                f'//div[contains(text(), "{service}")]/ancestor::td[1]')[0]
-            for div in element.xpath('.//div'):
-                div.getparent().remove(div)
+        services_xpath += ' or '.join(conditions) + services_xpath_suffix
+        services_elements = root.xpath(services_xpath)
 
-            function = element.text_content().strip()
+        if services_elements:
+            credentials = get_credentials(os.path.join(trade.config_directory,
+                                                       'token.json'))
+            resource = build('calendar', 'v3', credentials=credentials)
 
-            dates = df.iloc[0][schedule_header].split('DATE_SPLITTER')
-            schedules = []
-            for date in dates:
-                schedules.extend(date.strip().split(intraday_splitter))
-
-            for i in range(len(schedules)):
-                datetime_range = schedules[i].split(range_splitter)
-
-                # Assume that the year of the date is omitted.
-                if re.fullmatch('\d{1,2}:\d{2}', datetime_range[0]):
-                    datetime = start.strftime('%m-%d ') + datetime_range[0]
-                else:
-                    datetime = re.sub(datetime_pattern, datetime_replacement,
-                                      datetime_range[0])
-
-                start = pd.Timestamp(year + '-' + datetime, tz=time_zone)
-
-                timedelta = pd.Timestamp(start) - now
-                threshold = pd.Timedelta(days=365 - time_frame)
-                if timedelta < -threshold:
-                    year = str(int(year) + 1)
-                    start = pd.Timestamp(year + '-' + datetime, tz=time_zone)
-                elif timedelta > threshold:
-                    year = str(int(year) - 1)
-                    start = pd.Timestamp(year + '-' + datetime, tz=time_zone)
-
-                # TODO: next year
-                if re.fullmatch('\d{1,2}:\d{2}', datetime_range[1]):
-                    end = pd.Timestamp(start.strftime('%Y-%m-%d') + ' '
-                                       + datetime_range[1], tz=time_zone)
-                else:
-                    datetime = re.sub(datetime_pattern, datetime_replacement,
-                                      datetime_range[1])
-                    end = pd.Timestamp(year + '-' + datetime, tz=time_zone)
-
-                body = {'summary': f'🛠️ {service} {function}',
-                        'start': {'dateTime': start.isoformat()},
-                        'end': {'dateTime': end.isoformat()},
-                        'source': {'title': title, 'url': url}}
+            if not section['calendar_id']:
+                body = {'summary': trade.maintenance_schedules_section,
+                        'timeZone': time_zone}
                 try:
-                    event = resource.events().insert(calendarId=calendar_id,
-                                                     body=body).execute()
-                    print(event.get('start')['dateTime'], event.get('summary'))
+                    calendar = resource.calendars().insert(body=body).execute()
+                    section['calendar_id'] = calendar_id = calendar['id']
                 except HttpError as e:
                     print(e)
                     sys.exit(1)
+
+            year = now.strftime('%Y')
+            time_frame = 30
+
+            for service in services:
+                dates = services_elements[0].xpath(
+                    schedule_xpath)[0].text_content().split('DATE_SPLITTER')
+                schedules = []
+                for date in dates:
+                    schedules.extend(date.strip().split(intraday_splitter))
+
+                function = services_elements[0].xpath(
+                    function_xpath.format(service))[0].xpath(
+                        'normalize-space(text())')
+
+                for i in range(len(schedules)):
+                    datetime_range = schedules[i].split(range_splitter)
+
+                    # Assume that the year of the date is omitted.
+                    if re.fullmatch('\d{1,2}:\d{2}', datetime_range[0]):
+                        datetime = start.strftime('%m-%d ') + datetime_range[0]
+                    else:
+                        datetime = re.sub(datetime_pattern,
+                                          datetime_replacement,
+                                          datetime_range[0])
+
+                    start = pd.Timestamp(year + '-' + datetime, tz=time_zone)
+
+                    timedelta = pd.Timestamp(start) - now
+                    threshold = pd.Timedelta(days=365 - time_frame)
+                    if timedelta < -threshold:
+                        year = str(int(year) + 1)
+                        start = pd.Timestamp(year + '-' + datetime,
+                                             tz=time_zone)
+                    elif timedelta > threshold:
+                        year = str(int(year) - 1)
+                        start = pd.Timestamp(year + '-' + datetime,
+                                             tz=time_zone)
+
+                    # TODO: next year
+                    if re.fullmatch('\d{1,2}:\d{2}', datetime_range[1]):
+                        end = pd.Timestamp(start.strftime('%Y-%m-%d') + ' '
+                                           + datetime_range[1], tz=time_zone)
+                    else:
+                        datetime = re.sub(datetime_pattern,
+                                          datetime_replacement,
+                                          datetime_range[1])
+                        end = pd.Timestamp(year + '-' + datetime, tz=time_zone)
+
+                    body = {'summary':
+                            f'🛠️ {service} {function}',
+                            'start': {'dateTime': start.isoformat()},
+                            'end': {'dateTime': end.isoformat()},
+                            'source': {'title': title, 'url': url}}
+                    try:
+                        event = resource.events().insert(
+                            calendarId=calendar_id, body=body).execute()
+                        print(event.get('start')['dateTime'],
+                              event.get('summary'))
+                    except HttpError as e:
+                        print(e)
+                        sys.exit(1)
 
         configuration.write_config(config, trade.config_path)
 
