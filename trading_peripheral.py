@@ -90,7 +90,7 @@ def main():
         help='configure actions and exit')
     group.add_argument(
         '-C', action='store_true',
-        help='check configuration changes')
+        help='check configuration changes and exit')
     args = parser.parse_args(None if sys.argv[1:] else ['-h'])
 
     trade = Trade(*args.P)
@@ -132,7 +132,8 @@ def main():
                                    can_override=False)
         user_config = configparser.ConfigParser()
         user_config.read(trade.config_path, encoding='utf-8')
-        configuration.check_config_changes(default_config, user_config)
+        configuration.check_config_changes(default_config, user_config,
+                                           excluded_sections=('Variables',))
         return
     else:
         config = configure(trade)
@@ -166,8 +167,6 @@ def main():
                         ast.literal_eval(section['export_to_yahoo_finance']
                                          .replace('\\', '\\\\')
                                          .replace('\\\\\\\\', '\\\\')))
-                    # TODO
-                    config['Variables']['watchlist'] = ''
             if args.q:
                 check_daily_sales_order_quota(trade, config, driver)
             if args.o:

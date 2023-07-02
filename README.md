@@ -103,7 +103,7 @@ file stores these configurations.
   * `-Q`: configure checking the daily sales order quota and exit
   * `-O`: configure order status formats and exit
   * `-A`: configure actions and exit
-  * `-C`: check configuration changes
+  * `-C`: check configuration changes and exit
 
 ## Known Issues ##
 

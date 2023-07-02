@@ -415,19 +415,21 @@ def write_config(config, config_path):
         config.write(f)
 
 # TODO
-def check_config_changes(default_config, user_config):
+def check_config_changes(default_config, user_config, excluded_sections=()):
     changes = []
     for section in default_config.sections():
-        for option in default_config[section]:
-            if (user_config.has_option(section, option)):
-                if (default_config[section][option]
-                    != user_config[section][option]):
+        if not section in excluded_sections:
+            for option in default_config[section]:
+                if (user_config.has_option(section, option)):
+                    if (default_config[section][option]
+                        != user_config[section][option]):
+                        changes.append((section, option,
+                                        default_config[section][option],
+                                        user_config[section][option]))
+                else:
                     changes.append((section, option,
                                     default_config[section][option],
-                                    user_config[section][option]))
-            else:
-                changes.append((section, option,
-                                default_config[section][option], '(missing)'))
+                                    '(missing)'))
 
     changes_by_section = {}
     for change in changes:
