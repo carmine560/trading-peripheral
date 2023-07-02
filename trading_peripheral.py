@@ -229,7 +229,7 @@ def configure(trade, interpolation=True):
         '//div[contains(@class, "card") and contains(text(), "{0}")]',
         'services_xpath_suffix': ')]',
         'schedule_xpath': 'ancestor::tr[1]/td[1]',
-        'function_xpath': '//div[contains(@class, "card") and contains(text(), "{0}")]/ancestor::td[1]',
+        'function_xpath': '${service_xpath}/ancestor::td[1]',
         'intraday_splitter': '、',
         'range_splitter': '〜',
         'datetime_pattern':
@@ -347,10 +347,13 @@ def configure(trade, interpolation=True):
     return config
 
 def insert_maintenance_schedules(trade, config):
+    from datetime import datetime, timedelta, timezone
+    from email.utils import parsedate_to_datetime
+
     from googleapiclient.discovery import build
     from googleapiclient.errors import HttpError
     from lxml import html
-    import pandas as pd
+    import pytz
     import requests
 
     section = config[trade.maintenance_schedules_section]
@@ -378,16 +381,17 @@ def insert_maintenance_schedules(trade, config):
         print(e)
         sys.exit(1)
 
-    now = pd.Timestamp.now(tz=time_zone)
+    tzinfo = pytz.timezone(time_zone)
+    now = datetime.now(tzinfo)
     section['last_inserted'] = now.isoformat()
-    lower_bound = now - pd.Timedelta(days=29)
-    if not last_inserted or pd.Timestamp(last_inserted) < lower_bound:
+    lower_bound = now - timedelta(days=29)
+    if (not last_inserted
+        or datetime.fromisoformat(last_inserted) < lower_bound):
         last_inserted = lower_bound
     else:
-        last_inserted = pd.Timestamp(last_inserted)
+        last_inserted = datetime.fromisoformat(last_inserted)
 
-    # Assume that all schedules are updated at the same time.
-    if last_inserted < pd.Timestamp(head.headers['last-modified']):
+    if last_inserted < parsedate_to_datetime(head.headers['last-modified']):
         response = requests.get(url)
         response.encoding = encoding
         text = response.text
@@ -441,40 +445,45 @@ def insert_maintenance_schedules(trade, config):
 
                     # Assume that the year of the date is omitted.
                     if re.fullmatch('\d{1,2}:\d{2}', datetime_range[0]):
-                        datetime = start.strftime('%m-%d ') + datetime_range[0]
+                        datetime_str = (start.strftime('%m-%d ')
+                                        + datetime_range[0])
                     else:
-                        datetime = re.sub(datetime_pattern,
-                                          datetime_replacement,
-                                          datetime_range[0])
+                        datetime_str = re.sub(datetime_pattern,
+                                              datetime_replacement,
+                                              datetime_range[0])
 
-                    start = pd.Timestamp(year + '-' + datetime, tz=time_zone)
-
-                    timedelta = pd.Timestamp(start) - now
-                    threshold = pd.Timedelta(days=365 - time_frame)
-                    if timedelta < -threshold:
+                    start = tzinfo.localize(datetime.strptime(
+                        year + '-' + datetime_str, '%Y-%m-%d %H:%M'))
+                    timedelta_obj = start - now
+                    threshold = timedelta(days=365 - time_frame)
+                    if timedelta_obj < -threshold:
                         year = str(int(year) + 1)
-                        start = pd.Timestamp(year + '-' + datetime,
-                                             tz=time_zone)
-                    elif timedelta > threshold:
+                    elif timedelta_obj > threshold:
                         year = str(int(year) - 1)
-                        start = pd.Timestamp(year + '-' + datetime,
-                                             tz=time_zone)
+
+                    start = tzinfo.localize(datetime.strptime(
+                        year + '-' + datetime_str, '%Y-%m-%d %H:%M'))
 
                     # TODO: next year
                     if re.fullmatch('\d{1,2}:\d{2}', datetime_range[1]):
-                        end = pd.Timestamp(start.strftime('%Y-%m-%d') + ' '
-                                           + datetime_range[1], tz=time_zone)
+                        end = datetime.strptime(
+                            start.strftime('%Y-%m-%d ') + datetime_range[1],
+                            '%Y-%m-%d %H:%M')
                     else:
-                        datetime = re.sub(datetime_pattern,
-                                          datetime_replacement,
-                                          datetime_range[1])
-                        end = pd.Timestamp(year + '-' + datetime, tz=time_zone)
+                        datetime_str = re.sub(datetime_pattern,
+                                              datetime_replacement,
+                                              datetime_range[1])
+                        end = datetime.strptime(year + '-' + datetime_str,
+                                                '%Y-%m-%d %H:%M')
+
+                    end = tzinfo.localize(end)
 
                     body = {'summary':
                             f'🛠️ {service} {function}',
                             'start': {'dateTime': start.isoformat()},
                             'end': {'dateTime': end.isoformat()},
                             'source': {'title': title, 'url': url}}
+
                     try:
                         event = resource.events().insert(
                             calendarId=calendar_id, body=body).execute()
