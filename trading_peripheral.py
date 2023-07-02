@@ -88,6 +88,9 @@ def main():
     group.add_argument(
         '-A', action='store_true',
         help='configure actions and exit')
+    group.add_argument(
+        '-C', action='store_true',
+        help='check configuration changes')
     args = parser.parse_args(None if sys.argv[1:] else ['-h'])
 
     trade = Trade(*args.P)
@@ -95,7 +98,7 @@ def main():
                    'backup_parameters': {'number_of_backups': 8}}
 
     if args.G or args.M or args.Q or args.O or args.A:
-        config = configure(trade, interpolation=False)
+        config = configure(trade, can_interpolate=False)
         if args.G and configuration.modify_section(
                 config, 'General', trade.config_path, **backup_file):
             return
@@ -123,6 +126,14 @@ def main():
             return
 
         sys.exit(1)
+    elif args.C:
+        # TODO
+        default_config = configure(trade, can_interpolate=False,
+                                   can_override=False)
+        user_config = configparser.ConfigParser()
+        user_config.read(trade.config_path, encoding='utf-8')
+        configuration.check_config_changes(default_config, user_config)
+        return
     else:
         config = configure(trade)
 
@@ -155,6 +166,8 @@ def main():
                         ast.literal_eval(section['export_to_yahoo_finance']
                                          .replace('\\', '\\\\')
                                          .replace('\\\\\\\\', '\\\\')))
+                    # TODO
+                    config['Variables']['watchlist'] = ''
             if args.q:
                 check_daily_sales_order_quota(trade, config, driver)
             if args.o:
@@ -199,8 +212,8 @@ def main():
             print(trade.process, 'section does not exist.')
             sys.exit(1)
 
-def configure(trade, interpolation=True):
-    if interpolation:
+def configure(trade, can_interpolate=True, can_override=True):
+    if can_interpolate:
         config = configparser.ConfigParser(
             interpolation=configparser.ExtendedInterpolation())
     else:
@@ -322,8 +335,11 @@ def configure(trade, interpolation=True):
     config['Variables'] = {
         'watchlist': '',
         'securities_codes': ''}
-    config.read(trade.config_path, encoding='utf-8')
 
+    if can_override:
+        config.read(trade.config_path, encoding='utf-8')
+
+    # TODO
     if trade.process == 'HYPERSBI2':
         section = config[trade.process]
         if not section['watchlists']:
@@ -391,6 +407,7 @@ def insert_maintenance_schedules(trade, config):
     else:
         last_inserted = datetime.fromisoformat(last_inserted)
 
+    # Assume that all schedules are updated at the same time.
     if last_inserted < parsedate_to_datetime(head.headers['last-modified']):
         response = requests.get(url)
         response.encoding = encoding
@@ -399,6 +416,7 @@ def insert_maintenance_schedules(trade, config):
         if matched:
             title = matched.group(1)
 
+        # TODO: remove date_splitter
         text = text.replace(date_splitter, 'DATE_SPLITTER')
         root = html.fromstring(text)
 

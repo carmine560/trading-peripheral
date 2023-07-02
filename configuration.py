@@ -413,3 +413,35 @@ def delete_option(config, section, option, config_path, backup_function=None,
 def write_config(config, config_path):
     with open(config_path, 'w', encoding='utf-8') as f:
         config.write(f)
+
+# TODO
+def check_config_changes(default_config, user_config):
+    changes = []
+    for section in default_config.sections():
+        for option in default_config[section]:
+            if (user_config.has_option(section, option)):
+                if (default_config[section][option]
+                    != user_config[section][option]):
+                    changes.append((section, option,
+                                    default_config[section][option],
+                                    user_config[section][option]))
+            else:
+                changes.append((section, option,
+                                default_config[section][option], '(missing)'))
+
+    changes_by_section = {}
+    for change in changes:
+        section, option, default_value, user_value = change
+        default_value = default_value if default_value else '(empty)'
+        user_value = user_value if user_value else '(empty)'
+        if section not in changes_by_section:
+            changes_by_section[section] = []
+
+        changes_by_section[section].append(
+            f'{option}: {ANSI_ANNOTATION}{default_value}{ANSI_RESET}'
+            f' → {ANSI_DEFAULT}{user_value}{ANSI_RESET}')
+
+    for section, section_changes in changes_by_section.items():
+        print(f'[{section}]')
+        for change in section_changes:
+            print(f'{change}')
