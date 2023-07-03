@@ -242,8 +242,11 @@ def configure(trade, can_interpolate=True, can_override=True):
         'intraday_splitter': '、',
         'range_splitter': '〜',
         'datetime_pattern':
-        r'(\d{1,2})月(\d{1,2})日（[^）]+）(\d{1,2}:\d{2})$$',
-        'datetime_replacement': r'\1-\2 \3'}
+        r'^(\d{4}年)?(\d{1,2})月(\d{1,2})日（[^）]+）(\d{1,2}:\d{2})$$',
+        'year_group': '1',
+        'month_group': '2',
+        'day_group': '3',
+        'time_group': '4'}
     config[trade.daily_sales_order_quota_section] = {
         'quota_watchlist': '',
         'sufficient': '◎（余裕あり）'}
@@ -335,7 +338,6 @@ def configure(trade, can_interpolate=True, can_override=True):
     if can_override:
         config.read(trade.config_path, encoding='utf-8')
 
-    # TODO
     if trade.process == 'HYPERSBI2':
         section = config[trade.process]
         if not section['watchlists']:
@@ -368,6 +370,26 @@ def insert_maintenance_schedules(trade, config):
     import pytz
     import requests
 
+    def replace_datetime(match):
+        matched_year = match.group(year_group)
+        matched_month = match.group(month_group)
+        matched_day = match.group(day_group)
+        matched_time = match.group(time_group)
+        if matched_year:
+            return (f'{matched_year}-{matched_month}-{matched_day} '
+                    f'{matched_time}')
+        else:
+            # TODO: current_year
+            # Assume that the year of the date is omitted.
+            # timedelta_obj = start - now
+            # threshold = timedelta(days=365 - time_frame)
+            # if timedelta_obj < -threshold:
+            #     current_year = str(int(current_year) + 1)
+            # elif timedelta_obj > threshold:
+            #     current_year = str(int(current_year) - 1)
+            return (f'{current_year}-{matched_month}-{matched_day} '
+                    f'{matched_time}')
+
     section = config[trade.maintenance_schedules_section]
     url = section['url']
     time_zone = section['time_zone']
@@ -384,7 +406,10 @@ def insert_maintenance_schedules(trade, config):
     intraday_splitter = section['intraday_splitter']
     range_splitter = section['range_splitter']
     datetime_pattern = section['datetime_pattern']
-    datetime_replacement = section['datetime_replacement']
+    year_group = int(section['year_group'])
+    month_group = int(section['month_group'])
+    day_group = int(section['day_group'])
+    time_group = int(section['time_group'])
 
     head = requests.head(url)
     try:
@@ -440,7 +465,7 @@ def insert_maintenance_schedules(trade, config):
                     print(e)
                     sys.exit(1)
 
-            year = now.strftime('%Y')
+            current_year = now.strftime('%Y')
             time_frame = 30
 
             for service in services:
@@ -457,40 +482,27 @@ def insert_maintenance_schedules(trade, config):
                 for i in range(len(schedules)):
                     datetime_range = schedules[i].split(range_splitter)
 
-                    # Assume that the year of the date is omitted.
                     if re.fullmatch('\d{1,2}:\d{2}', datetime_range[0]):
-                        datetime_str = (start.strftime('%m-%d ')
+                        datetime_str = (start.strftime('%Y-%m-%d ')
                                         + datetime_range[0])
                     else:
                         datetime_str = re.sub(datetime_pattern,
-                                              datetime_replacement,
+                                              replace_datetime,
                                               datetime_range[0])
 
-                    start = tzinfo.localize(datetime.strptime(
-                        year + '-' + datetime_str, '%Y-%m-%d %H:%M'))
-                    timedelta_obj = start - now
-                    threshold = timedelta(days=365 - time_frame)
-                    if timedelta_obj < -threshold:
-                        year = str(int(year) + 1)
-                    elif timedelta_obj > threshold:
-                        year = str(int(year) - 1)
+                    start = tzinfo.localize(
+                        datetime.strptime(datetime_str, '%Y-%m-%d %H:%M'))
 
-                    start = tzinfo.localize(datetime.strptime(
-                        year + '-' + datetime_str, '%Y-%m-%d %H:%M'))
-
-                    # TODO: next year
                     if re.fullmatch('\d{1,2}:\d{2}', datetime_range[1]):
-                        end = datetime.strptime(
-                            start.strftime('%Y-%m-%d ') + datetime_range[1],
-                            '%Y-%m-%d %H:%M')
+                        datetime_str = (start.strftime('%Y-%m-%d ')
+                                        + datetime_range[1])
                     else:
                         datetime_str = re.sub(datetime_pattern,
-                                              datetime_replacement,
+                                              replace_datetime,
                                               datetime_range[1])
-                        end = datetime.strptime(year + '-' + datetime_str,
-                                                '%Y-%m-%d %H:%M')
 
-                    end = tzinfo.localize(end)
+                    end = tzinfo.localize(
+                        datetime.strptime(datetime_str, '%Y-%m-%d %H:%M'))
 
                     body = {'summary':
                             f'🛠️ {service} {function}',
