@@ -246,7 +246,8 @@ def configure(trade, can_interpolate=True, can_override=True):
         'year_group': '1',
         'month_group': '2',
         'day_group': '3',
-        'time_group': '4'}
+        'time_group': '4',
+        'previous_body_tuple': ()}
     config[trade.daily_sales_order_quota_section] = {
         'quota_watchlist': '',
         'sufficient': '◎（余裕あり）'}
@@ -392,6 +393,15 @@ def insert_maintenance_schedules(trade, config):
             return (f'{assumed_year}-{matched_month}-{matched_day} '
                     f'{matched_time}')
 
+    def dict_to_tuple(d):
+        if isinstance(d, dict):
+            items = []
+            for key, value in sorted(d.items()):
+                items.append((key, dict_to_tuple(value)))
+            return tuple(items)
+        else:
+            return d
+
     section = config[trade.maintenance_schedules_section]
     url = section['url']
     time_zone = section['time_zone']
@@ -412,6 +422,7 @@ def insert_maintenance_schedules(trade, config):
     month_group = int(section['month_group'])
     day_group = int(section['day_group'])
     time_group = int(section['time_group'])
+    previous_body_tuple = ast.literal_eval(section['previous_body_tuple'])
 
     head = requests.head(url)
     try:
@@ -513,14 +524,19 @@ def insert_maintenance_schedules(trade, config):
                             'end': {'dateTime': end.isoformat()},
                             'source': {'title': title, 'url': url}}
 
-                    try:
-                        event = resource.events().insert(
-                            calendarId=calendar_id, body=body).execute()
-                        print(event.get('start')['dateTime'],
-                              event.get('summary'))
-                    except HttpError as e:
-                        print(e)
-                        sys.exit(1)
+                    # TODO: multiple bodies
+                    body_tuple = dict_to_tuple(body)
+                    if body_tuple != previous_body_tuple:
+                        try:
+                            event = resource.events().insert(
+                                calendarId=calendar_id, body=body).execute()
+                            print(event.get('start')['dateTime'],
+                                  event.get('summary'))
+                        except HttpError as e:
+                            print(e)
+                            sys.exit(1)
+
+                        section['previous_body_tuple'] = str(body_tuple)
 
         configuration.write_config(config, trade.config_path)
 
