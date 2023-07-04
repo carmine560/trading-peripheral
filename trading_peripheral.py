@@ -379,15 +379,17 @@ def insert_maintenance_schedules(trade, config):
             return (f'{matched_year}-{matched_month}-{matched_day} '
                     f'{matched_time}')
         else:
-            # TODO: current_year
-            # Assume that the year of the date is omitted.
-            # timedelta_obj = start - now
-            # threshold = timedelta(days=365 - time_frame)
-            # if timedelta_obj < -threshold:
-            #     current_year = str(int(current_year) + 1)
-            # elif timedelta_obj > threshold:
-            #     current_year = str(int(current_year) - 1)
-            return (f'{current_year}-{matched_month}-{matched_day} '
+            event_datetime = tzinfo.localize(datetime.strptime(
+                f'{current_year}-{matched_month}-{matched_day} '
+                f'{matched_time}', '%Y-%m-%d %H:%M'))
+            timedelta_obj = event_datetime - now
+            threshold = timedelta(days=365 - time_frame)
+            assumed_year = current_year
+            if timedelta_obj < -threshold:
+                assumed_year = str(int(current_year) + 1)
+            elif timedelta_obj > threshold:
+                assumed_year = str(int(current_year) - 1)
+            return (f'{assumed_year}-{matched_month}-{matched_day} '
                     f'{matched_time}')
 
     section = config[trade.maintenance_schedules_section]
@@ -421,6 +423,7 @@ def insert_maintenance_schedules(trade, config):
     tzinfo = pytz.timezone(time_zone)
     now = datetime.now(tzinfo)
     section['last_inserted'] = now.isoformat()
+
     lower_bound = now - timedelta(days=29)
     if (not last_inserted
         or datetime.fromisoformat(last_inserted) < lower_bound):
