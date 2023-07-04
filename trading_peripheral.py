@@ -129,6 +129,7 @@ def main():
     elif args.C:
         default_config = configure(trade, can_interpolate=False,
                                    can_override=False)
+        # TODO: backup_file
         configuration.check_config_changes(default_config, trade.config_path,
                                            excluded_sections=('Variables',))
         return
@@ -230,16 +231,12 @@ def configure(trade, can_interpolate=True, can_override=True):
         'time_zone': 'Asia/Tokyo',
         'last_inserted': '',
         'encoding': 'shift_jis',
-        'date_splitter': '<br>',
         'calendar_id': '',
         'services': ('HYPER SBI 2',),
-        'services_xpath_prefix': '//div[@class="cards" and (',
         'service_xpath':
         '//div[contains(@class, "card") and contains(text(), "{0}")]',
-        'services_xpath_suffix': ')]',
-        'schedule_xpath': 'ancestor::tr[1]/td[1]',
-        'function_xpath': '${service_xpath}/ancestor::td[1]',
-        'intraday_splitter': '、',
+        'datetime_xpath': 'ancestor::tr[1]/td[1]',
+        'function_xpath': 'ancestor::td[1]',
         'range_splitter': '〜',
         'datetime_pattern':
         r'^(\d{4}年)?(\d{1,2})月(\d{1,2})日（[^）]+）(\d{1,2}:\d{2})$$',
@@ -247,7 +244,8 @@ def configure(trade, can_interpolate=True, can_override=True):
         'month_group': '2',
         'day_group': '3',
         'time_group': '4',
-        'previous_body_tuple': ()}
+        # TODO: move to Variables
+        'previous_bodies': {}}
     config[trade.daily_sales_order_quota_section] = {
         'quota_watchlist': '',
         'sufficient': '◎（余裕あり）'}
@@ -381,8 +379,8 @@ def insert_maintenance_schedules(trade, config):
                     f'{matched_time}')
         else:
             event_datetime = tzinfo.localize(datetime.strptime(
-                f'{current_year}-{matched_month}-{matched_day} '
-                f'{matched_time}', '%Y-%m-%d %H:%M'))
+                f'{current_year}-{matched_month}-{matched_day} {matched_time}',
+                '%Y-%m-%d %H:%M'))
             timedelta_obj = event_datetime - now
             threshold = timedelta(days=365 - time_frame)
             assumed_year = current_year
@@ -407,22 +405,18 @@ def insert_maintenance_schedules(trade, config):
     time_zone = section['time_zone']
     last_inserted = section['last_inserted']
     encoding = section['encoding']
-    date_splitter = section['date_splitter']
     calendar_id = section['calendar_id']
     services = ast.literal_eval(section['services'])
-    services_xpath_prefix = section['services_xpath_prefix']
     service_xpath = section['service_xpath']
-    services_xpath_suffix = section['services_xpath_suffix']
-    schedule_xpath = section['schedule_xpath']
+    datetime_xpath = section['datetime_xpath']
     function_xpath = section['function_xpath']
-    intraday_splitter = section['intraday_splitter']
     range_splitter = section['range_splitter']
     datetime_pattern = section['datetime_pattern']
     year_group = int(section['year_group'])
     month_group = int(section['month_group'])
     day_group = int(section['day_group'])
     time_group = int(section['time_group'])
-    previous_body_tuple = ast.literal_eval(section['previous_body_tuple'])
+    previous_bodies = ast.literal_eval(section['previous_bodies'])
 
     head = requests.head(url)
     try:
@@ -442,101 +436,82 @@ def insert_maintenance_schedules(trade, config):
     else:
         last_inserted = datetime.fromisoformat(last_inserted)
 
-    # Assume that all schedules are updated at the same time.
     if last_inserted < parsedate_to_datetime(head.headers['last-modified']):
         response = requests.get(url)
         response.encoding = encoding
         text = response.text
+        root = html.fromstring(text)
         matched = re.search('<title>(.*)</title>', text)
         if matched:
             title = matched.group(1)
 
-        # TODO: remove date_splitter
-        text = text.replace(date_splitter, 'DATE_SPLITTER')
-        root = html.fromstring(text)
+        credentials = get_credentials(os.path.join(trade.config_directory,
+                                                   'token.json'))
+        resource = build('calendar', 'v3', credentials=credentials)
 
-        services_xpath = services_xpath_prefix
-        conditions = []
+        if not section['calendar_id']:
+            body = {'summary': trade.maintenance_schedules_section,
+                    'timeZone': time_zone}
+            try:
+                calendar = resource.calendars().insert(body=body).execute()
+                section['calendar_id'] = calendar_id = calendar['id']
+            except HttpError as e:
+                print(e)
+                sys.exit(1)
+
+        current_year = now.strftime('%Y')
+        time_frame = 30
+
         for service in services:
-            condition = '.' + service_xpath.format(service)
-            conditions.append(condition)
+            for schedule in root.xpath(service_xpath.format(service)):
+                function = schedule.xpath(
+                    function_xpath)[0].xpath('normalize-space(text())')
+                datetime_range = schedule.xpath(
+                    datetime_xpath)[0].text_content().split(range_splitter)
 
-        services_xpath += ' or '.join(conditions) + services_xpath_suffix
-        services_elements = root.xpath(services_xpath)
+                if re.fullmatch('\d{1,2}:\d{2}', datetime_range[0]):
+                    datetime_str = (start.strftime('%Y-%m-%d ')
+                                    + datetime_range[0])
+                else:
+                    datetime_str = re.sub(datetime_pattern, replace_datetime,
+                                          datetime_range[0])
 
-        if services_elements:
-            credentials = get_credentials(os.path.join(trade.config_directory,
-                                                       'token.json'))
-            resource = build('calendar', 'v3', credentials=credentials)
+                start = tzinfo.localize(
+                    datetime.strptime(datetime_str, '%Y-%m-%d %H:%M'))
 
-            if not section['calendar_id']:
-                body = {'summary': trade.maintenance_schedules_section,
-                        'timeZone': time_zone}
-                try:
-                    calendar = resource.calendars().insert(body=body).execute()
-                    section['calendar_id'] = calendar_id = calendar['id']
-                except HttpError as e:
-                    print(e)
-                    sys.exit(1)
+                if re.fullmatch('\d{1,2}:\d{2}', datetime_range[1]):
+                    datetime_str = (start.strftime('%Y-%m-%d ')
+                                    + datetime_range[1])
+                else:
+                    datetime_str = re.sub(datetime_pattern, replace_datetime,
+                                          datetime_range[1])
 
-            current_year = now.strftime('%Y')
-            time_frame = 30
+                end = tzinfo.localize(
+                    datetime.strptime(datetime_str, '%Y-%m-%d %H:%M'))
 
-            for service in services:
-                dates = services_elements[0].xpath(
-                    schedule_xpath)[0].text_content().split('DATE_SPLITTER')
-                schedules = []
-                for date in dates:
-                    schedules.extend(date.strip().split(intraday_splitter))
+                body = {'summary':
+                        f'🛠️ {service} {function}',
+                        'start': {'dateTime': start.isoformat()},
+                        'end': {'dateTime': end.isoformat()},
+                        'source': {'title': title, 'url': url}}
 
-                function = services_elements[0].xpath(
-                    function_xpath.format(service))[0].xpath(
-                        'normalize-space(text())')
+                body_tuple = dict_to_tuple(body)
+                if body_tuple not in previous_bodies.get(service, []):
+                    try:
+                        event = resource.events().insert(
+                            calendarId=calendar_id, body=body).execute()
+                        print(event.get('start')['dateTime'],
+                              event.get('summary'))
+                    except HttpError as e:
+                        print(e)
+                        sys.exit(1)
 
-                for i in range(len(schedules)):
-                    datetime_range = schedules[i].split(range_splitter)
+                    previous_bodies.setdefault(service, []).append(body_tuple)
+                    if len(previous_bodies[service]) > 8:
+                        previous_bodies[service] = previous_bodies[service][
+                            len(previous_bodies[service]) - 8:]
 
-                    if re.fullmatch('\d{1,2}:\d{2}', datetime_range[0]):
-                        datetime_str = (start.strftime('%Y-%m-%d ')
-                                        + datetime_range[0])
-                    else:
-                        datetime_str = re.sub(datetime_pattern,
-                                              replace_datetime,
-                                              datetime_range[0])
-
-                    start = tzinfo.localize(
-                        datetime.strptime(datetime_str, '%Y-%m-%d %H:%M'))
-
-                    if re.fullmatch('\d{1,2}:\d{2}', datetime_range[1]):
-                        datetime_str = (start.strftime('%Y-%m-%d ')
-                                        + datetime_range[1])
-                    else:
-                        datetime_str = re.sub(datetime_pattern,
-                                              replace_datetime,
-                                              datetime_range[1])
-
-                    end = tzinfo.localize(
-                        datetime.strptime(datetime_str, '%Y-%m-%d %H:%M'))
-
-                    body = {'summary':
-                            f'🛠️ {service} {function}',
-                            'start': {'dateTime': start.isoformat()},
-                            'end': {'dateTime': end.isoformat()},
-                            'source': {'title': title, 'url': url}}
-
-                    # TODO: multiple bodies
-                    body_tuple = dict_to_tuple(body)
-                    if body_tuple != previous_body_tuple:
-                        try:
-                            event = resource.events().insert(
-                                calendarId=calendar_id, body=body).execute()
-                            print(event.get('start')['dateTime'],
-                                  event.get('summary'))
-                        except HttpError as e:
-                            print(e)
-                            sys.exit(1)
-
-                        section['previous_body_tuple'] = str(body_tuple)
+                    section['previous_bodies'] = str(previous_bodies)
 
         configuration.write_config(config, trade.config_path)
 
@@ -609,7 +584,7 @@ def check_daily_sales_order_quota(trade, config, driver):
         text=text)
 
     status = ''
-    for index, df in enumerate(text):
+    for index, _ in enumerate(text):
         if not quota_section['sufficient'] in text[index]:
             status += f'{securities_codes[index]}: {text[index]}\n'
 
