@@ -235,8 +235,8 @@ def configure(trade, can_interpolate=True, can_override=True):
         'services': ('HYPER SBI 2',),
         'service_xpath':
         '//div[contains(@class, "card") and contains(text(), "{0}")]',
-        'datetime_xpath': 'ancestor::tr[1]/td[1]',
         'function_xpath': 'ancestor::td[1]',
+        'datetime_xpath': 'ancestor::tr[1]/td[1]',
         'range_splitter': '〜',
         'datetime_pattern':
         r'^(\d{4}年)?(\d{1,2})月(\d{1,2})日（[^）]+）(\d{1,2}:\d{2})$$',
@@ -244,7 +244,6 @@ def configure(trade, can_interpolate=True, can_override=True):
         'month_group': '2',
         'day_group': '3',
         'time_group': '4',
-        # TODO: move to Variables
         'previous_bodies': {}}
     config[trade.daily_sales_order_quota_section] = {
         'quota_watchlist': '',
@@ -408,8 +407,8 @@ def insert_maintenance_schedules(trade, config):
     calendar_id = section['calendar_id']
     services = ast.literal_eval(section['services'])
     service_xpath = section['service_xpath']
-    datetime_xpath = section['datetime_xpath']
     function_xpath = section['function_xpath']
+    datetime_xpath = section['datetime_xpath']
     range_splitter = section['range_splitter']
     datetime_pattern = section['datetime_pattern']
     year_group = int(section['year_group'])
