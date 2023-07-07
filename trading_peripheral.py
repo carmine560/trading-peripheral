@@ -489,7 +489,7 @@ def insert_maintenance_schedules(trade, config):
                     datetime.strptime(datetime_str, '%Y-%m-%d %H:%M'))
 
                 body = {'summary':
-                        f'🛠️ {service} {function}',
+                        f'🛠️ {service}: {function}',
                         'start': {'dateTime': start.isoformat()},
                         'end': {'dateTime': end.isoformat()},
                         'source': {'title': title, 'url': url}}
