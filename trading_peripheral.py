@@ -232,7 +232,7 @@ def configure(trade, can_interpolate=True, can_override=True):
         'last_inserted': '',
         'encoding': 'shift_jis',
         'calendar_id': '',
-        'services': ('HYPER SBI 2',),
+        'services': ('HYPER SBI 2', 'メインサイト'),
         'service_xpath':
         '//div[contains(@class, "card") and contains(text(), "{0}")]',
         'function_xpath': 'ancestor::td[1]',
@@ -320,10 +320,9 @@ def configure(trade, can_interpolate=True, can_override=True):
           [('send_keys', '//*[@id="top_stock_sec"]', 'element'),
            ('send_keys', '//*[@id="top_stock_sec"]', 'enter'),
            ('click', '//a[text()="信用売"]'),
-           # TODO: else
-           ('exist', '//td[contains(text(), "一般/日計り売建受注枠：")]',
+           ('exist', '//td[contains(text(), "一般/日計り売建受注枠")]',
             [('text',
-              '//td[contains(text(), "一般/日計り売建受注枠：")]')])])],
+              '//td[contains(text(), "一般/日計り売建受注枠")]')])])],
         'get_order_status':
         [('get', 'https://www.sbisec.co.jp/ETGate'),
          ('sleep', '0.8'),

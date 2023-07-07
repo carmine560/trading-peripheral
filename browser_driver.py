@@ -56,6 +56,14 @@ def execute_action(driver, action, element=None, text=None):
             if driver.find_elements(By.XPATH, argument):
                 execute_action(driver, additional_argument, element=element,
                                text=text)
+            elif text is not None:
+                # TODO
+                import re
+
+                match = re.search(r'//.*\[contains\(text\(\), "(.+)"\)\]',
+                                  argument)
+                if match:
+                    text.append(f'{match.group(1)} does not exist.')
         elif command == 'for':
             for element in argument.split(', '):
                 execute_action(driver, additional_argument, element=element,
