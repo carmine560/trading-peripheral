@@ -234,7 +234,8 @@ def configure(trade, can_interpolate=True, can_override=True):
         'date_splitter': '<br>',
         'calendar_id': '',
         'services': ('HYPER SBI 2', 'メインサイト'),
-        'service_xpath': '//span[contains(@class, "font-xs font-bold") and contains(text(), "{0}")]',
+        'service_xpath':
+        '//span[contains(@class, "font-xs font-bold") and text()="{0}"]',
         'function_xpath': 'ancestor::div[1]/p[1]',
         'datetime_xpath': 'ancestor::li[1]/div[1]',
         'range_splitter': '〜',
