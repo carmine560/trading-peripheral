@@ -622,6 +622,7 @@ def check_daily_sales_order_quota(trade, config, driver):
 
 # TODO
 def extract_order_status(trade, config, driver):
+    from io import StringIO
     import pandas as pd
 
     section = config[trade.order_status_section]
@@ -641,8 +642,8 @@ def extract_order_status(trade, config, driver):
     price_column = int(section['price_column'])
 
     try:
-        dfs = pd.read_html(driver.page_source, match=table_identifier,
-                           flavor='lxml')
+        dfs = pd.read_html(StringIO(driver.page_source),
+                           match=table_identifier, flavor='lxml')
     except Exception as e:
         print(e)
         sys.exit(1)
