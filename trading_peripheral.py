@@ -437,8 +437,7 @@ def insert_maintenance_schedules(trade, config):
 
     if last_inserted < parsedate_to_datetime(head.headers['last-modified']):
         response = requests.get(url)
-        encoding = chardet.detect(response.content)['encoding']
-        response.encoding = encoding
+        response.encoding = chardet.detect(response.content)['encoding']
         text = response.text
         text = text.replace(date_splitter, 'DATE_SPLITTER')
         root = html.fromstring(text)
