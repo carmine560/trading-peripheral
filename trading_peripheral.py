@@ -230,7 +230,6 @@ def configure(trade, can_interpolate=True, can_override=True):
         'url': 'https://search.sbisec.co.jp/v2/popwin/info/home/pop6040_maintenance.html',
         'time_zone': 'Asia/Tokyo',
         'last_inserted': '',
-        'encoding': 'shift_jis',
         'date_splitter': '<br>',
         'calendar_id': '',
         'services': ('HYPER SBI 2', 'メインサイト'),
@@ -365,6 +364,7 @@ def insert_maintenance_schedules(trade, config):
     from googleapiclient.discovery import build
     from googleapiclient.errors import HttpError
     from lxml import html
+    import chardet
     import pytz
     import requests
 
@@ -403,7 +403,6 @@ def insert_maintenance_schedules(trade, config):
     url = section['url']
     time_zone = section['time_zone']
     last_inserted = section['last_inserted']
-    encoding = section['encoding']
     date_splitter = section['date_splitter']
     calendar_id = section['calendar_id']
     services = ast.literal_eval(section['services'])
@@ -438,6 +437,7 @@ def insert_maintenance_schedules(trade, config):
 
     if last_inserted < parsedate_to_datetime(head.headers['last-modified']):
         response = requests.get(url)
+        encoding = chardet.detect(response.content)['encoding']
         response.encoding = encoding
         text = response.text
         text = text.replace(date_splitter, 'DATE_SPLITTER')

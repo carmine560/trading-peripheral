@@ -41,7 +41,8 @@ the following web browser and packages:
     browser and
     [`webdriver-manager`](https://github.com/SergeyPirogov/webdriver_manager)
     to automatically update the driver
-  * [`pandas`](https://pandas.pydata.org/) and
+  * [`chardet`](https://github.com/chardet/chardet),
+    [`pandas`](https://pandas.pydata.org/), and
     [`lxml`](https://lxml.de/index.html) to extract data from the web pages
   * [GnuPG](https://gnupg.org/index.html) and
     [`python-gnupg`](https://docs.red-dove.com/python-gnupg/) to encrypt and
