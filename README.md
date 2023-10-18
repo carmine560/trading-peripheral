@@ -78,9 +78,9 @@ python trading_peripheral.py -G
 ```
 
 The `-d` option encrypts a snapshot of the Hyper SBI 2 application data using
-GnuPG.  By default, it uses the default key pair of GnuPG, but you can also
-specify a key fingerprint as the value of the `fingerprint` option using the
-`-G` option.
+GnuPG.  By default, it uses the default key pair of GnuPG.  However, you can
+also specify a key fingerprint as the value of the `fingerprint` option using
+the `-G` option.
 
 The `%LOCALAPPDATA%\trading-peripheral\trading_peripheral.ini` configuration
 file stores these configurations.
