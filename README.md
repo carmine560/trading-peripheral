@@ -44,9 +44,9 @@ the following web browser and packages:
   * [`chardet`](https://github.com/chardet/chardet),
     [`pandas`](https://pandas.pydata.org/), and
     [`lxml`](https://lxml.de/index.html) to extract data from the web pages
-  * [GnuPG](https://gnupg.org/index.html) and
-    [`python-gnupg`](https://docs.red-dove.com/python-gnupg/) to encrypt and
-    decrypt an application data archive
+  * [`python-gnupg`](https://docs.red-dove.com/python-gnupg/) to invoke
+    [GnuPG](https://gnupg.org/index.html) to encrypt and decrypt the
+    configuration file
   * [`prompt_toolkit`](https://python-prompt-toolkit.readthedocs.io/en/master/index.html)
     to complete possible values or a previous value in configuring
 
