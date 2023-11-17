@@ -21,12 +21,12 @@ The `trading_peripheral.py` Python script can:
   * Take a snapshot of the `%APPDATA%\SBI Securities\HYPERSBI2` application
     data and restore it.
 
-> **Warning**: This script is currently under heavy development.  Changes in
-> functionality may occur at any time.
+> **Warning**: `trading_peripheral.py` is currently under heavy development.
+> Changes in functionality may occur at any time.
 
 ## Prerequisites ##
 
-This script has been tested in [Python for
+`trading_peripheral.py` has been tested in [Python for
 Windows](https://www.python.org/downloads/windows/) with Hyper SBI 2 and uses
 the following web browser and packages:
 
