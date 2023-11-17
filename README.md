@@ -38,7 +38,7 @@ the following web browser and packages:
   * [Chrome](https://www.google.com/chrome/) to authenticate to the website and
     load the page
   * [`selenium`](https://www.selenium.dev/documentation/webdriver/) to drive a
-    browser and
+    browser, and
     [`webdriver-manager`](https://github.com/SergeyPirogov/webdriver_manager)
     to automatically update the driver
   * [`chardet`](https://github.com/chardet/chardet),
