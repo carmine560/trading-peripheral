@@ -214,7 +214,6 @@ def configure(trade, can_interpolate=True, can_override=True):
         'url': 'https://search.sbisec.co.jp/v2/popwin/info/home/pop6040_maintenance.html',
         'time_zone': 'Asia/Tokyo',
         'last_inserted': '',
-        'date_splitter': '<br>',
         'calendar_id': '',
         'services': ('HYPER SBI 2', 'HYPER SBI2', 'メインサイト'),
         'service_xpath':
@@ -387,7 +386,6 @@ def insert_maintenance_schedules(trade, config):
     url = section['url']
     time_zone = section['time_zone']
     last_inserted = section['last_inserted']
-    date_splitter = section['date_splitter']
     calendar_id = section['calendar_id']
     services = ast.literal_eval(section['services'])
     service_xpath = section['service_xpath']
@@ -423,7 +421,6 @@ def insert_maintenance_schedules(trade, config):
         response = requests.get(url)
         response.encoding = chardet.detect(response.content)['encoding']
         text = response.text
-        text = text.replace(date_splitter, 'DATE_SPLITTER')
         root = html.fromstring(text)
         matched = re.search('<title>(.*)</title>', text)
         if matched:
@@ -451,57 +448,59 @@ def insert_maintenance_schedules(trade, config):
                 function = schedule.xpath(
                     function_xpath)[0].xpath('normalize-space(text())')
                 datetimes = schedule.xpath(
-                    datetime_xpath)[0].text_content().split('DATE_SPLITTER')
+                    datetime_xpath)[0].text_content().split('\n')
 
                 for i in range(len(datetimes)):
                     datetime_range = datetimes[i].strip().split(range_splitter)
 
-                    if re.fullmatch(r'\d{1,2}:\d{2}', datetime_range[0]):
-                        datetime_str = (start.strftime('%Y-%m-%d ')
-                                        + datetime_range[0])
-                    else:
-                        datetime_str = re.sub(datetime_pattern,
-                                              replace_datetime,
-                                              datetime_range[0])
+                    if len(datetime_range) == 2:
+                        if re.fullmatch(r'\d{1,2}:\d{2}', datetime_range[0]):
+                            datetime_str = (start.strftime('%Y-%m-%d ')
+                                            + datetime_range[0])
+                        else:
+                            datetime_str = re.sub(datetime_pattern,
+                                                  replace_datetime,
+                                                  datetime_range[0])
 
-                    start = tzinfo.localize(
-                        datetime.strptime(datetime_str, '%Y-%m-%d %H:%M'))
+                        start = tzinfo.localize(
+                            datetime.strptime(datetime_str, '%Y-%m-%d %H:%M'))
 
-                    if re.fullmatch(r'\d{1,2}:\d{2}', datetime_range[1]):
-                        datetime_str = (start.strftime('%Y-%m-%d ')
-                                        + datetime_range[1])
-                    else:
-                        datetime_str = re.sub(datetime_pattern,
-                                              replace_datetime,
-                                              datetime_range[1])
+                        if re.fullmatch(r'\d{1,2}:\d{2}', datetime_range[1]):
+                            datetime_str = (start.strftime('%Y-%m-%d ')
+                                            + datetime_range[1])
+                        else:
+                            datetime_str = re.sub(datetime_pattern,
+                                                  replace_datetime,
+                                                  datetime_range[1])
 
-                    end = tzinfo.localize(
-                        datetime.strptime(datetime_str, '%Y-%m-%d %H:%M'))
+                        end = tzinfo.localize(
+                            datetime.strptime(datetime_str, '%Y-%m-%d %H:%M'))
 
-                    body = {'summary':
-                            f'🛠️ {service}: {function}',
-                            'start': {'dateTime': start.isoformat()},
-                            'end': {'dateTime': end.isoformat()},
-                            'source': {'title': title, 'url': url}}
+                        body = {'summary':
+                                f'🛠️ {service}: {function}',
+                                'start': {'dateTime': start.isoformat()},
+                                'end': {'dateTime': end.isoformat()},
+                                'source': {'title': title, 'url': url}}
+                        body_tuple = dict_to_tuple(body)
 
-                    body_tuple = dict_to_tuple(body)
-                    if body_tuple not in previous_bodies.get(service, []):
-                        try:
-                            event = resource.events().insert(
-                                calendarId=calendar_id, body=body).execute()
-                            print(event.get('start')['dateTime'],
-                                  event.get('summary'))
-                        except HttpError as e:
-                            print(e)
-                            sys.exit(1)
+                        if body_tuple not in previous_bodies.get(service, []):
+                            try:
+                                event = resource.events().insert(
+                                    calendarId=calendar_id, body=body
+                                ).execute()
+                                print(event.get('start')['dateTime'],
+                                      event.get('summary'))
+                            except HttpError as e:
+                                print(e)
+                                sys.exit(1)
 
-                        previous_bodies.setdefault(service, []).append(
-                            body_tuple)
-                        if len(previous_bodies[service]) > 8:
-                            previous_bodies[service] = previous_bodies[
-                                service][len(previous_bodies[service]) - 8:]
+                            previous_bodies.setdefault(service, []).append(
+                                body_tuple)
+                            if len(previous_bodies[service]) > 8:
+                                previous_bodies[service] = previous_bodies[
+                                    service][-8:]
 
-                        section['previous_bodies'] = str(previous_bodies)
+                            section['previous_bodies'] = str(previous_bodies)
 
         configuration.write_config(config, trade.config_path)
 
