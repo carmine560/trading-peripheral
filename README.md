@@ -6,9 +6,9 @@ Calendar, exports its watchlists to Yahoo Finance, and extracts order status
 
 The `trading_peripheral.py` Python script can:
 
-  * Retrieve [*SBI Securities Maintenance
+  * Retrieve the [*SBI Securities Maintenance
     Schedules*](https://search.sbisec.co.jp/v2/popwin/info/home/pop6040_maintenance.html)
-    and insert [Hyper SBI
+    page and insert [Hyper SBI
     2](https://go.sbisec.co.jp/lp/lp_hyper_sbi2_211112.html) maintenance
     schedules into Google Calendar,
   * Replace watchlists on the SBI Securities website with Hyper SBI 2
@@ -66,8 +66,8 @@ The `-m` and `-q` options use the Google Calendar and Gmail APIs.  Follow the
 [*Google Calendar API
 Quickstart*](https://developers.google.com/calendar/api/quickstart/python) and
 [*Gmail API
-Quickstart*](https://developers.google.com/gmail/api/quickstart/python) to
-obtain a `client_secret_*.json` file.
+Quickstart*](https://developers.google.com/gmail/api/quickstart/python) pages
+to obtain a `client_secret_*.json` file.
 
 If you use Chrome as your default web browser, create a separate profile that
 stores your credentials.  Then, specify the profile directory as the value of
