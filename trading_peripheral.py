@@ -533,7 +533,7 @@ def convert_to_yahoo_finance(trade, config):
                 elif item['marketCd'] == 'SPR':
                     writer.writerow([item['secCd'] + '.S'] + row)
                 elif item['marketCd'] == 'NGY':
-                    # Yahoo Finance does not seem to have any stocks listed
+                    # Yahoo Finance does not appear to have stocks listed
                     # solely on the Nagoya Stock Exchange.
                     writer.writerow([item['secCd'] + '.N'] + row)
                 elif item['marketCd'] == 'FKO':
