@@ -231,7 +231,7 @@ def configure(trade, can_interpolate=True, can_override=True):
         'services': ('HYPER SBI 2', 'HYPER SBI2', 'メインサイト'),
         'service_xpath':
         '//span[contains(@class, "font-xs font-bold") and text()="{0}"]',
-        'function_xpath': 'ancestor::div[1]/p[1]',
+        'function_xpath': 'following::p[1]',
         'datetime_xpath': 'ancestor::li[1]/div[1]',
         'range_splitter': '〜',
         'datetime_pattern':
