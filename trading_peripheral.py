@@ -202,10 +202,8 @@ def main():
             sys.exit(1)
         else:
             section = config[trade.process]
-            file_utilities.backup_file(
-                section['settings'],
-                backup_directory=section['backup_directory'],
-                number_of_backups=8)
+            file_utilities.backup_file(section['settings'],
+                                       number_of_backups=8)
             remove_watchlists(section['settings'])
 
 def configure(trade, can_interpolate=True, can_override=True):
