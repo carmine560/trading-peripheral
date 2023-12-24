@@ -112,9 +112,11 @@ file stores these configurations.
 
 ## Known Issues ##
 
-  * Yahoo Finance does not appear to have stocks listed solely on the Nagoya
-    Stock Exchange.
-  * Extracting the order status assumes that you are day trading on margin.
+  * Stocks listed solely on the Nagoya Stock Exchange do not seem to be
+    available on Yahoo Finance.
+  * For the extraction of the order status, I assume there are 1 to 10 pairs of
+    orders (a pair consists of a position and repayment order) for day trading
+    on margin.
 
 ## License ##
 
