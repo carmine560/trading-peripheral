@@ -74,7 +74,7 @@ def main():
         '-D', action='store_true',
         help='restore the Hyper SBI 2 application data from a snapshot')
     parser.add_argument(
-        '-R', action='store_true',
+        '-W', action='store_true',
         help='remove the Watchlists window from the current set of windows '
         'in Hyper SBI 2 to reduce load')
     group.add_argument(
@@ -196,7 +196,7 @@ def main():
                     + '.tar.xz.gpg')
                 output_directory = os.path.dirname(application_data_directory)
                 file_utilities.decrypt_extract_file(snapshot, output_directory)
-    if args.R:
+    if args.W:
         if process_utilities.is_running(trade.process):
             print(trade.process, 'is running.')
             sys.exit(1)
