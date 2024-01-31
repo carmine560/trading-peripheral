@@ -42,8 +42,10 @@ the following web browser and packages:
     [`webdriver-manager`](https://github.com/SergeyPirogov/webdriver_manager)
     to automatically update the driver
   * [`chardet`](https://github.com/chardet/chardet),
+    [`lxml`](https://lxml.de/index.html),
     [`pandas`](https://pandas.pydata.org/), and
-    [`lxml`](https://lxml.de/index.html) to extract data from the web pages
+    [`pyarrow`](https://arrow.apache.org/docs/python/) to extract data from the
+    web pages
   * [`python-gnupg`](https://docs.red-dove.com/python-gnupg/) to invoke
     [GnuPG](https://gnupg.org/index.html) to encrypt and decrypt the
     configuration file

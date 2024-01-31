@@ -5,6 +5,7 @@ google-auth-oauthlib
 lxml
 pandas
 prompt_toolkit
+pyarrow
 python-gnupg
 selenium
 webdriver-manager
