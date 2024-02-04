@@ -237,7 +237,7 @@ def configure(trade, can_interpolate=True, can_override=True):
         '//span[contains(@class, "font-xs font-bold") and text()="{0}"]',
         'function_xpath': 'following::p[1]',
         'datetime_xpath': 'ancestor::li[1]/div[1]',
-        'range_splitter': '〜|～',
+        'range_splitter_pattern': '〜|～',
         'datetime_pattern':
         r'^(\d{4}年)?(\d{1,2})月(\d{1,2})日（[^）]+）(\d{1,2}:\d{2})$$',
         'year_group': '1',
@@ -254,7 +254,7 @@ def configure(trade, can_interpolate=True, can_override=True):
          'trade_type', 'trade_style', 'entry_price', 'None', 'None',
          'exit_date', 'exit_time', 'exit_price'),
         'table_identifier': '注文種別',
-        'symbol_regex': r'^.* (\d{4}) 東証$$',
+        'symbol_pattern': r'^.* (\d{4}) 東証$$',
         'symbol_replacement': r'\1',
         'margin_trading': '信新',
         'buying_on_margin': '信新買',
@@ -414,7 +414,7 @@ def insert_maintenance_schedules(trade, config):
     service_xpath = section['service_xpath']
     function_xpath = section['function_xpath']
     datetime_xpath = section['datetime_xpath']
-    range_splitter = section['range_splitter']
+    range_splitter_pattern = section['range_splitter_pattern']
     datetime_pattern = section['datetime_pattern']
     year_group = int(section['year_group'])
     month_group = int(section['month_group'])
@@ -487,8 +487,9 @@ def insert_maintenance_schedules(trade, config):
                     datetime_xpath)[0].text_content().split('\n')
 
                 for i in range(len(datetimes)):
-                    datetime_range = re.split(re.compile('〜|～'),
-                                              datetimes[i].strip())
+                    datetime_range = re.split(
+                        re.compile(range_splitter_pattern),
+                        datetimes[i].strip())
 
                     if len(datetime_range) == 2:
                         if re.fullmatch(r'\d{1,2}:\d{2}', datetime_range[0]):
@@ -647,7 +648,7 @@ def extract_order_status(trade, config, driver):
     section = config[trade.order_status_section]
     output_columns = ast.literal_eval(section['output_columns'])
     table_identifier = section['table_identifier']
-    symbol_regex = section['symbol_regex']
+    symbol_pattern = section['symbol_pattern']
     symbol_replacement = section['symbol_replacement']
     margin_trading = section['margin_trading']
     buying_on_margin = section['buying_on_margin']
@@ -701,7 +702,7 @@ def extract_order_status(trade, config, driver):
 
             index += 1
         else:
-            symbol = re.sub(symbol_regex, symbol_replacement,
+            symbol = re.sub(symbol_pattern, symbol_replacement,
                             df.iloc[index, execution_column])
             size = df.iloc[index + 1, size_column]
             trade_style = 'day'
