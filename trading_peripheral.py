@@ -233,7 +233,7 @@ def configure(trade, can_interpolate=True, can_override=True):
         '//span[contains(@class, "font-xs font-bold") and text()="{0}"]',
         'function_xpath': 'following::p[1]',
         'datetime_xpath': 'ancestor::li[1]/div[1]',
-        'range_splitter': '〜',
+        'range_splitter': '～',
         'datetime_pattern':
         r'^(\d{4}年)?(\d{1,2})月(\d{1,2})日（[^）]+）(\d{1,2}:\d{2})$$',
         'year_group': '1',
