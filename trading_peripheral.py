@@ -223,12 +223,16 @@ def configure(trade, can_interpolate=True, can_override=True):
         'email_message_from': '',
         'email_message_to': '',
         'fingerprint': ''}
+    all_services_name = 'すべてのサービス'
     config[trade.maintenance_schedules_section] = {
         'url': 'https://search.sbisec.co.jp/v2/popwin/info/home/pop6040_maintenance.html',
         'time_zone': 'Asia/Tokyo',
         'last_inserted': '',
         'calendar_id': '',
-        'services': ('HYPER SBI 2', 'HYPER SBI2', 'メインサイト'),
+        'all_services_xpath': '//p[contains(@class, "mt-x-2") and text()="ログイン後のすべてのサービスをご利用いただけません。"]',
+        'all_services_name': all_services_name,
+        'services': (all_services_name, 'HYPER SBI 2', 'HYPER SBI2',
+                     'メインサイト'),
         'service_xpath':
         '//span[contains(@class, "font-xs font-bold") and text()="{0}"]',
         'function_xpath': 'following::p[1]',
@@ -363,6 +367,7 @@ def insert_maintenance_schedules(trade, config):
     from googleapiclient.discovery import build
     from googleapiclient.errors import HttpError
     from lxml import html
+    from lxml.etree import Element
     import chardet
     import pytz
     import requests
@@ -403,6 +408,8 @@ def insert_maintenance_schedules(trade, config):
     time_zone = section['time_zone']
     last_inserted = section['last_inserted']
     calendar_id = section['calendar_id']
+    all_services_xpath = section['all_services_xpath']
+    all_services_name = section['all_services_name']
     services = ast.literal_eval(section['services'])
     service_xpath = section['service_xpath']
     function_xpath = section['function_xpath']
@@ -459,6 +466,20 @@ def insert_maintenance_schedules(trade, config):
         current_year = now.strftime('%Y')
         time_frame = 30
 
+        try:
+            all_services_element = root.xpath(all_services_xpath)[0]
+            match = re.search(r'//(\w+)', service_xpath)
+            if match:
+                pre_element = Element(match.group(1))
+                # The '?' is used for non-greedy or lazy matching.
+                match = re.search(r'@class, +\"(.+?)\"', service_xpath)
+                if match:
+                    pre_element.set('class', match.group(1))
+                    pre_element.text = all_services_name
+                    all_services_element.addprevious(pre_element)
+        except IndexError:
+            pass
+
         for service in services:
             for schedule in root.xpath(service_xpath.format(service)):
                 function = schedule.xpath(
@@ -467,6 +488,7 @@ def insert_maintenance_schedules(trade, config):
                     datetime_xpath)[0].text_content().split('\n')
 
                 for i in range(len(datetimes)):
+                    # TODO
                     datetime_range = datetimes[i].strip().split(range_splitter)
 
                     if len(datetime_range) == 2:
