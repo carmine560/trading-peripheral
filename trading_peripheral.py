@@ -237,7 +237,7 @@ def configure(trade, can_interpolate=True, can_override=True):
         '//span[contains(@class, "font-xs font-bold") and text()="{0}"]',
         'function_xpath': 'following::p[1]',
         'datetime_xpath': 'ancestor::li[1]/div[1]',
-        'range_splitter': '～',
+        'range_splitter': '〜|～',
         'datetime_pattern':
         r'^(\d{4}年)?(\d{1,2})月(\d{1,2})日（[^）]+）(\d{1,2}:\d{2})$$',
         'year_group': '1',
@@ -471,7 +471,6 @@ def insert_maintenance_schedules(trade, config):
             match = re.search(r'//(\w+)', service_xpath)
             if match:
                 pre_element = Element(match.group(1))
-                # The '?' is used for non-greedy or lazy matching.
                 match = re.search(r'@class, +\"(.+?)\"', service_xpath)
                 if match:
                     pre_element.set('class', match.group(1))
@@ -488,8 +487,8 @@ def insert_maintenance_schedules(trade, config):
                     datetime_xpath)[0].text_content().split('\n')
 
                 for i in range(len(datetimes)):
-                    # TODO
-                    datetime_range = datetimes[i].strip().split(range_splitter)
+                    datetime_range = re.split(re.compile('〜|～'),
+                                              datetimes[i].strip())
 
                     if len(datetime_range) == 2:
                         if re.fullmatch(r'\d{1,2}:\d{2}', datetime_range[0]):
