@@ -223,15 +223,15 @@ def configure(trade, can_interpolate=True, can_override=True):
         'email_message_from': '',
         'email_message_to': '',
         'fingerprint': ''}
-    all_services_name = 'すべてのサービス'
+    all_service_name = 'すべてのサービス'
     config[trade.maintenance_schedules_section] = {
         'url': 'https://search.sbisec.co.jp/v2/popwin/info/home/pop6040_maintenance.html',
         'time_zone': 'Asia/Tokyo',
         'last_inserted': '',
         'calendar_id': '',
-        'all_services_xpath': '//p[contains(@class, "mt-x-2") and text()="ログイン後のすべてのサービスをご利用いただけません。"]',
-        'all_services_name': all_services_name,
-        'services': (all_services_name, 'HYPER SBI 2', 'HYPER SBI2',
+        'all_service_xpath': '//p[contains(@class, "mt-x-2") and text()="ログイン後のすべてのサービスをご利用いただけません。"]',
+        'all_service_name': all_service_name,
+        'services': (all_service_name, 'HYPER SBI 2', 'HYPER SBI2',
                      'メインサイト'),
         'service_xpath':
         '//span[contains(@class, "font-xs font-bold") and text()="{0}"]',
@@ -408,8 +408,8 @@ def insert_maintenance_schedules(trade, config):
     time_zone = section['time_zone']
     last_inserted = section['last_inserted']
     calendar_id = section['calendar_id']
-    all_services_xpath = section['all_services_xpath']
-    all_services_name = section['all_services_name']
+    all_service_xpath = section['all_service_xpath']
+    all_service_name = section['all_service_name']
     services = ast.literal_eval(section['services'])
     service_xpath = section['service_xpath']
     function_xpath = section['function_xpath']
@@ -467,15 +467,15 @@ def insert_maintenance_schedules(trade, config):
         time_frame = 30
 
         try:
-            all_services_element = root.xpath(all_services_xpath)[0]
+            all_service_element = root.xpath(all_service_xpath)[0]
             match = re.search(r'//(\w+)', service_xpath)
             if match:
                 pre_element = Element(match.group(1))
                 match = re.search(r'@class, +\"(.+?)\"', service_xpath)
                 if match:
                     pre_element.set('class', match.group(1))
-                    pre_element.text = all_services_name
-                    all_services_element.addprevious(pre_element)
+                    pre_element.text = all_service_name
+                    all_service_element.addprevious(pre_element)
         except IndexError:
             pass
 
