@@ -49,7 +49,7 @@ def main():
         help='insert Hyper SBI 2 maintenance schedules into Google Calendar')
     parser.add_argument(
         '-s', action='store_true',
-        help='replace the watchlists on the SBI Securities website '
+        help='replace watchlists on the SBI Securities website '
         'with the Hyper SBI 2 watchlists')
     parser.add_argument(
         '-y', action='store_true',

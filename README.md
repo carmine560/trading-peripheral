@@ -69,7 +69,7 @@ The `-m` and `-q` options use the Google Calendar and Gmail APIs.  Follow the
 Quickstart*](https://developers.google.com/calendar/api/quickstart/python) and
 [*Gmail API
 Quickstart*](https://developers.google.com/gmail/api/quickstart/python) pages
-to obtain a `client_secret_*.json` file.
+to obtain your `client_secret_*.json` file.
 
 If you use Chrome as your default web browser, create a separate profile that
 stores your credentials.  Then, specify the profile directory as the value of
@@ -92,8 +92,8 @@ file stores these configurations.
   * `-P BROKERAGE PROCESS`: set the brokerage and the process [defaults: `SBI
     Securities` and `HYPERSBI2`]
   * `-m`: insert Hyper SBI 2 maintenance schedules into Google Calendar
-  * `-s`: replace the watchlists on the SBI Securities website with the Hyper
-    SBI 2 watchlists
+  * `-s`: replace watchlists on the SBI Securities website with the Hyper SBI 2
+    watchlists
   * `-y`: export the Hyper SBI 2 watchlists to My Portfolio on Yahoo Finance
   * `-q`: check the daily sales order quota in general margin trading for the
     specified Hyper SBI 2 watchlist and send a notification via Gmail if
