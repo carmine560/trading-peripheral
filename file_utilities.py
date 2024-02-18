@@ -96,9 +96,9 @@ def backup_file(source, backup_directory=None, number_of_backups=-1,
                 source_base + datetime.fromtimestamp(
                     os.path.getmtime(source)).strftime('-%Y%m%dT%H%M%S')
                 + source_suffix)
-            pattern = (source_base + r'-\d{8}T\d{6}' + source_suffix)
+            regex = (source_base + r'-\d{8}T\d{6}' + source_suffix)
             backups = sorted([f for f in os.listdir(backup_directory)
-                              if re.fullmatch(pattern, f)])
+                              if re.fullmatch(regex, f)])
 
             if not os.path.exists(backup):
                 should_copy = True
@@ -320,7 +320,7 @@ def extract_commands(source, command='command'):
 
 def create_powershell_completion(script_base, options, values, interpreters,
                                  completion):
-    interpreters_pattern = f"({'|'.join(interpreters)})"
+    interpreters_regex = f"({'|'.join(interpreters)})"
     interpreters_array = f"@({', '.join(map(repr, interpreters))})"
     options_str = '|'.join(options)
 
@@ -342,7 +342,7 @@ def create_powershell_completion(script_base, options, values, interpreters,
     param($wordToComplete, $commandAst, $cursorPosition)
     $commandLine = $commandAst.ToString()
     $regex = `
-      '{interpreters_pattern}(\.exe)?\s+.*{script_base}\.py(\s+.*)?\s+({options_str})'
+      '{interpreters_regex}(\.exe)?\s+.*{script_base}\.py(\s+.*)?\s+({options_str})'
     if ($commandLine -cmatch $regex) {{
 {variable_str}{values_str})
         $options | Where-Object {{ $_ -like "$wordToComplete*" }} |
