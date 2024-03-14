@@ -58,7 +58,7 @@ Install each package as needed.  For example:
 winget install Google.Chrome
 winget install GnuPG.GnuPG
 python -m venv .venv
-.venv\Scripts\Activate.ps1
+. .venv\Scripts\Activate.ps1
 python -m pip install -r requirements.txt -U
 ```
 
