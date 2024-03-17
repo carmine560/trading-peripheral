@@ -1,6 +1,18 @@
+from io import StringIO
 import ast
+import configparser
 import os
+import re
 import sys
+import time
+
+from prompt_toolkit import ANSI
+from prompt_toolkit import prompt as pt_prompt
+from prompt_toolkit.completion import Completer, Completion, WordCompleter
+from prompt_toolkit.shortcuts import CompleteStyle
+import gnupg
+import pyautogui
+import win32api
 
 ANSI_BOLD = '\033[1m'
 ANSI_CURRENT = '\033[32m'
@@ -14,11 +26,24 @@ INDENT = '    '
 if sys.platform == 'win32':
     os.system('color')
 
+class CustomWordCompleter(Completer):
+    def __init__(self, words, ignore_case=False):
+        self.words = words
+        self.ignore_case = ignore_case
+
+    def get_completions(self, document, complete_event):
+        word_before_cursor = document.current_line_before_cursor.lstrip()
+        for word in self.words:
+            if self.ignore_case:
+                if word.lower().startswith(word_before_cursor.lower()):
+                    yield Completion(word, -len(word_before_cursor))
+            else:
+                if word.startswith(word_before_cursor):
+                    yield Completion(word, -len(word_before_cursor))
+
 def check_config_changes(default_config, config_path, excluded_sections=(),
                          user_option_ignored_sections=(),
                          backup_function=None, backup_parameters=None):
-    import configparser
-
     def truncate_string(string):
         max_length = 256
         if len(string) > max_length:
@@ -87,15 +112,6 @@ def check_config_changes(default_config, config_path, excluded_sections=(),
                             return
 
 def configure_position(answer, level=0, value=''):
-    import time
-
-    from prompt_toolkit import ANSI
-    from prompt_toolkit import prompt as pt_prompt
-    from prompt_toolkit.completion import WordCompleter
-    from prompt_toolkit.shortcuts import CompleteStyle
-    import pyautogui
-    import win32api
-
     prompt_prefix = f'{INDENT * level}input/{ANSI_UNDERLINE}c{ANSI_RESET}lick'
     if answer == 'modify' and value:
         completer = WordCompleter([value])
@@ -148,38 +164,42 @@ def list_section(config, section):
 
 def modify_data(prompt, level=0, data='', all_data=None, minimum_value=None,
                 maximum_value=None):
-    from prompt_toolkit import prompt as pt_prompt
-    from prompt_toolkit.completion import WordCompleter
-    from prompt_toolkit.shortcuts import CompleteStyle
-
     completer = None
     if all_data:
-        completer = WordCompleter(all_data, ignore_case=True)
+        completer = CustomWordCompleter(all_data, ignore_case=True)
     elif data:
-        completer = WordCompleter([data])
+        completer = CustomWordCompleter([data], ignore_case=True)
 
     prompt_prefix = INDENT * level + prompt
     if completer:
-        data = pt_prompt(
-            prompt_prefix + ': ', completer=completer,
-            complete_style=CompleteStyle.READLINE_LIKE).strip() or data
+        data = pt_prompt(prompt_prefix + ': ',
+                         completer=completer,).strip() or data
     elif data:
         data = input(prompt_prefix + ' '
                      + ANSI_CURRENT + data + ANSI_RESET + ': ').strip() or data
     else:
         data = input(prompt_prefix + ': ').strip()
 
-    try:
-        float_value = float(data)
-    except ValueError:
-        float_value = None
-    if float_value is not None:
+    numeric_value = None
+    if isinstance(minimum_value, int) and isinstance(maximum_value, int):
+        try:
+            numeric_value = int(float(data))
+        except ValueError as e:
+            print(e)
+            sys.exit(2)
+    if isinstance(minimum_value, float) and isinstance(maximum_value, float):
+        try:
+            numeric_value = float(data)
+        except ValueError as e:
+            print(e)
+            sys.exit(2)
+    if numeric_value is not None:
         if minimum_value is not None:
-            float_value = max(minimum_value, float_value)
+            numeric_value = max(minimum_value, numeric_value)
         if maximum_value is not None:
-            float_value = min(maximum_value, float_value)
+            numeric_value = min(maximum_value, numeric_value)
 
-        data = str(float_value)
+        data = str(numeric_value)
 
     return data
 
@@ -210,8 +230,6 @@ def modify_option(config, section, option, config_path, backup_function=None,
                   backup_parameters=None, prompts=None, categorized_keys=None,
                   tuple_info=(), dictionary_info=None, minimum_value=None,
                   maximum_value=None):
-    import re
-
     if backup_function:
         backup_function(config_path, **backup_parameters)
     if prompts is None:
@@ -232,6 +250,7 @@ def modify_option(config, section, option, config_path, backup_function=None,
             answer = tidy_answer(['modify', 'empty', 'default', 'quit'])
 
         if answer == 'modify':
+            # TODO: try ast.literal_eval()
             if re.sub(r'\s+', '', config[section][option])[:2] == '[(':
                 modify_tuple_list(config, section, option, config_path,
                                   categorized_keys=categorized_keys)
@@ -491,8 +510,6 @@ def modify_tuples(tuples, is_created, level=0, prompts=None,
 def read_config(config, config_path):
     encrypted_config_path = config_path + '.gpg'
     if os.path.exists(encrypted_config_path):
-        import gnupg
-
         with open(encrypted_config_path, 'rb') as f:
             encrypted_config = f.read()
 
@@ -537,9 +554,6 @@ def tidy_answer(answers, level=0):
 def write_config(config, config_path):
     encrypted_config_path = config_path + '.gpg'
     if os.path.exists(encrypted_config_path):
-        from io import StringIO
-        import gnupg
-
         config_string = StringIO()
         config.write(config_string)
         gpg = gnupg.GPG()
