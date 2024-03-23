@@ -1,10 +1,29 @@
+from datetime import datetime, timedelta, timezone
+from email.message import EmailMessage
+from email.utils import parsedate_to_datetime
+from io import StringIO
 import argparse
 import ast
+import base64
 import configparser
+import csv
 import inspect
+import json
 import os
 import re
 import sys
+
+from google.auth.transport.requests import Request
+from google.oauth2.credentials import Credentials
+from google_auth_oauthlib.flow import InstalledAppFlow
+from googleapiclient.discovery import build
+from googleapiclient.errors import HttpError
+from lxml import html
+from lxml.etree import Element
+import chardet
+import pandas as pd
+import pytz
+import requests
 
 import browser_driver
 import configuration
@@ -151,23 +170,20 @@ def main():
             implicitly_wait=float(section['implicitly_wait']))
         section = config[trade.actions_section]
         if args.s:
-            browser_driver.execute_action(
-                driver,
-                ast.literal_eval(section['replace_sbi_securities']))
+            browser_driver.execute_action(driver,
+                                          section['replace_sbi_securities'])
         if args.y:
             watchlists = convert_to_yahoo_finance(trade, config)
             for watchlist in watchlists:
                 config['Variables']['watchlist'] = watchlist
-                browser_driver.execute_action(
-                    driver,
-                    ast.literal_eval(section['export_to_yahoo_finance']
-                                     .replace('\\', '\\\\')
-                                     .replace('\\\\\\\\', '\\\\')))
+                action = section['export_to_yahoo_finance']
+                action = action.replace('\\', '\\\\')
+                action = action.replace('\\\\\\\\', '\\\\')
+                browser_driver.execute_action(driver, action)
         if args.q:
             check_daily_sales_order_quota(trade, config, driver)
         if args.o:
-            browser_driver.execute_action(
-                driver, ast.literal_eval(section['get_order_status']))
+            browser_driver.execute_action(driver, section['get_order_status'])
             extract_order_status(trade, config, driver)
 
         driver.quit()
@@ -361,17 +377,6 @@ def configure(trade, can_interpolate=True, can_override=True):
     return config
 
 def insert_maintenance_schedules(trade, config):
-    from datetime import datetime, timedelta, timezone
-    from email.utils import parsedate_to_datetime
-
-    from googleapiclient.discovery import build
-    from googleapiclient.errors import HttpError
-    from lxml import html
-    from lxml.etree import Element
-    import chardet
-    import pytz
-    import requests
-
     def replace_datetime(match):
         matched_year = match.group(year_group)
         matched_month = match.group(month_group)
@@ -410,7 +415,7 @@ def insert_maintenance_schedules(trade, config):
     calendar_id = section['calendar_id']
     all_service_xpath = section['all_service_xpath']
     all_service_name = section['all_service_name']
-    services = ast.literal_eval(section['services'])
+    services = configuration.evaluate_value(section['services'])
     service_xpath = section['service_xpath']
     function_xpath = section['function_xpath']
     datetime_xpath = section['datetime_xpath']
@@ -420,7 +425,7 @@ def insert_maintenance_schedules(trade, config):
     month_group = int(section['month_group'])
     day_group = int(section['day_group'])
     time_group = int(section['time_group'])
-    previous_bodies = ast.literal_eval(section['previous_bodies'])
+    previous_bodies = configuration.evaluate_value(section['previous_bodies'])
 
     head = requests.head(url)
     try:
@@ -545,9 +550,6 @@ def insert_maintenance_schedules(trade, config):
         configuration.write_config(config, trade.config_path)
 
 def convert_to_yahoo_finance(trade, config):
-    import csv
-    import json
-
     with open(config[trade.process]['watchlists']) as f:
         dictionary = json.load(f)
 
@@ -584,13 +586,6 @@ def convert_to_yahoo_finance(trade, config):
     return watchlists
 
 def check_daily_sales_order_quota(trade, config, driver):
-    from email.message import EmailMessage
-    import base64
-    import json
-
-    from googleapiclient.discovery import build
-    from googleapiclient.errors import HttpError
-
     with open(config[trade.process]['watchlists']) as f:
         watchlists = json.load(f)
 
@@ -607,9 +602,7 @@ def check_daily_sales_order_quota(trade, config, driver):
 
     text = []
     browser_driver.execute_action(
-        driver,
-        ast.literal_eval(
-            config[trade.actions_section]['get_daily_sales_order_quota']),
+        driver, config[trade.actions_section]['get_daily_sales_order_quota'],
         text=text)
 
     status = ''
@@ -644,11 +637,8 @@ def check_daily_sales_order_quota(trade, config, driver):
 
 # TODO
 def extract_order_status(trade, config, driver):
-    from io import StringIO
-    import pandas as pd
-
     section = config[trade.order_status_section]
-    output_columns = ast.literal_eval(section['output_columns'])
+    output_columns = configuration.evaluate_value(section['output_columns'])
     table_identifier = section['table_identifier']
     symbol_regex = section['symbol_regex']
     symbol_replacement = section['symbol_replacement']
@@ -743,8 +733,6 @@ def extract_order_status(trade, config, driver):
     results.to_clipboard(index=False, header=False)
 
 def remove_watchlists(settings):
-    import json
-
     with open(settings, encoding='utf-8') as f:
         dictionary = json.load(f)
 
@@ -761,10 +749,6 @@ def remove_watchlists(settings):
         json.dump(dictionary, f, ensure_ascii=False, indent=4)
 
 def get_credentials(token_json):
-    from google.auth.transport.requests import Request
-    from google.oauth2.credentials import Credentials
-    from google_auth_oauthlib.flow import InstalledAppFlow
-
     scopes = ['https://www.googleapis.com/auth/calendar',
               'https://www.googleapis.com/auth/gmail.send']
     credentials = None

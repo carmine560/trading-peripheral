@@ -1,10 +1,17 @@
+import re
+import time
+
+from selenium import webdriver
+from selenium.webdriver.chrome.options import Options
+from selenium.webdriver.chrome.service import Service
+from selenium.webdriver.common.by import By
+from selenium.webdriver.common.keys import Keys
+from webdriver_manager.chrome import ChromeDriverManager
+
+import configuration
+
 def initialize(headless=True, user_data_directory=None, profile_directory=None,
                implicitly_wait=2):
-    from selenium import webdriver
-    from selenium.webdriver.chrome.options import Options
-    from selenium.webdriver.chrome.service import Service
-    from webdriver_manager.chrome import ChromeDriverManager
-
     service = Service(executable_path=ChromeDriverManager().install())
     options = Options()
     if headless:
@@ -18,17 +25,14 @@ def initialize(headless=True, user_data_directory=None, profile_directory=None,
     return driver
 
 def execute_action(driver, action, element=None, text=None):
-    import time
-
-    from selenium.webdriver.common.by import By
-    from selenium.webdriver.common.keys import Keys
+    if isinstance(action, str):
+        action = configuration.evaluate_value(action)
 
     for index in range(len(action)):
         command = action[index][0]
-        if len(action[index]) > 1:
-            argument = action[index][1]
-        if len(action[index]) > 2:
-            additional_argument = action[index][2]
+        argument = action[index][1] if len(action[index]) > 1 else None
+        additional_argument = (action[index][2] if len(action[index]) > 2
+                               else None)
 
         if command == 'clear':
             driver.find_element(By.XPATH, argument).clear()
@@ -57,9 +61,6 @@ def execute_action(driver, action, element=None, text=None):
                 execute_action(driver, additional_argument, element=element,
                                text=text)
             elif text is not None:
-                # TODO
-                import re
-
                 match = re.search(r'//.*\[contains\(text\(\), "(.+)"\)\]',
                                   argument)
                 if match:
