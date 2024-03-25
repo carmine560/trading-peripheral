@@ -1,4 +1,4 @@
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timedelta
 from email.message import EmailMessage
 from email.utils import parsedate_to_datetime
 from io import StringIO
@@ -28,20 +28,13 @@ import requests
 import browser_driver
 import configuration
 import file_utilities
+import initializer
 import process_utilities
 
-class Trade:
+class Trade(initializer.Initializer):
     def __init__(self, brokerage, process):
-        self.brokerage = brokerage
-        self.process = process
-        self.config_directory = os.path.join(
-            os.path.expandvars('%LOCALAPPDATA%'),
-            os.path.basename(os.path.dirname(__file__)))
-        self.script_base = os.path.splitext(os.path.basename(__file__))[0]
-        self.config_path = os.path.join(self.config_directory,
-                                        self.script_base + '.ini')
-
-        file_utilities.check_directory(self.config_directory)
+        super().__init__(brokerage, process, __file__)
+        self.brokerage = self.vendor
 
         self.maintenance_schedules_section = (
             f'{self.brokerage} Maintenance Schedules')
@@ -125,15 +118,15 @@ def main():
         if args.G and configuration.modify_section(
                 config, 'General', trade.config_path, **backup_file):
             return
-        elif args.M and configuration.modify_section(
+        if args.M and configuration.modify_section(
                 config, trade.maintenance_schedules_section, trade.config_path,
                 **backup_file):
             return
-        elif args.Q and configuration.modify_section(
+        if args.Q and configuration.modify_section(
                 config, trade.daily_sales_order_quota_section,
                 trade.config_path, **backup_file):
             return
-        elif args.O and configuration.modify_section(
+        if args.O and configuration.modify_section(
                 config, trade.order_status_section, trade.config_path,
                 **backup_file,
                 tuple_info={'element_index': -1,
@@ -143,7 +136,7 @@ def main():
                                 'exit_time', 'size', 'symbol', 'trade_style',
                                 'trade_type']}):
             return
-        elif args.A and configuration.modify_section(
+        if args.A and configuration.modify_section(
                 config, trade.actions_section, trade.config_path,
                 **backup_file, categorized_keys=trade.categorized_keys):
             return
