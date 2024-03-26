@@ -532,7 +532,7 @@ def insert_maintenance_schedules(trade, config):
 
                             previous_bodies.setdefault(service, []).append(
                                 body_tuple)
-                            maximum_number_of_bodies = 16
+                            maximum_number_of_bodies = 32
                             if (len(previous_bodies[service])
                                 > maximum_number_of_bodies):
                                 previous_bodies[service] = previous_bodies[
