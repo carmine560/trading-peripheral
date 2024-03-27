@@ -89,8 +89,8 @@ file stores these configurations.
 
 ### Options ###
 
-  * `-P BROKERAGE PROCESS`: set the brokerage and the process [defaults: `SBI
-    Securities` and `HYPERSBI2`]
+  * `-P BROKERAGE PROCESS|PATH_TO_EXECUTABLE`: set the brokerage and the
+    process [defaults: `SBI Securities` and `HYPERSBI2`]
   * `-m`: insert Hyper SBI 2 maintenance schedules into Google Calendar
   * `-s`: replace watchlists on the SBI Securities website with the Hyper SBI 2
     watchlists
@@ -106,10 +106,7 @@ file stores these configurations.
   * `-W`: remove the ‘Watchlists’ window from the current set of windows in
     Hyper SBI 2 to reduce load
   * `-G`: configure general options and exit
-  * `-M`: configure maintenance schedules and exit
-  * `-Q`: configure checking the daily sales order quota and exit
   * `-O`: configure order status formats and exit
-  * `-A`: configure actions and exit
   * `-C`: check configuration changes and exit
 
 ## Known Issues ##

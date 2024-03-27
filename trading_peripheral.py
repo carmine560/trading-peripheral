@@ -36,12 +36,12 @@ class Trade(initializer.Initializer):
         super().__init__(brokerage, process, __file__)
         self.brokerage = self.vendor
 
-        self.maintenance_schedules_section = (
+        self.maintenance_schedules_title = (
             f'{self.brokerage} Maintenance Schedules')
-        self.daily_sales_order_quota_section = (
+        self.daily_sales_order_quota_title = (
             f'{self.brokerage} Daily Sales Order Quota')
-        self.order_status_section = f'{self.brokerage} Order Status'
-        self.actions_section = f'{self.process} Actions'
+        self.order_status_title = f'{self.brokerage} Order Status'
+        self.actions_title = f'{self.process} Actions'
         self.categorized_keys = {
             'all_keys': file_utilities.extract_commands(
                 inspect.getsource(browser_driver.execute_action)),
@@ -54,7 +54,7 @@ def main():
     group = parser.add_mutually_exclusive_group()
     parser.add_argument(
         '-P', default=('SBI Securities', 'HYPERSBI2'),
-        metavar=('BROKERAGE', 'PROCESS'), nargs=2,
+        metavar=('BROKERAGE', 'PROCESS|PATH_TO_EXECUTABLE'), nargs=2,
         help='set the brokerage and the process [defaults: %(default)s]')
     parser.add_argument(
         '-m', action='store_true',
@@ -93,17 +93,8 @@ def main():
         '-G', action='store_true',
         help='configure general options and exit')
     group.add_argument(
-        '-M', action='store_true',
-        help='configure maintenance schedules and exit')
-    group.add_argument(
-        '-Q', action='store_true',
-        help='configure checking the daily sales order quota and exit')
-    group.add_argument(
         '-O', action='store_true',
         help='configure order status formats and exit')
-    group.add_argument(
-        '-A', action='store_true',
-        help='configure actions and exit')
     group.add_argument(
         '-C', action='store_true',
         help='check configuration changes and exit')
@@ -113,21 +104,13 @@ def main():
     backup_file = {'backup_function': file_utilities.backup_file,
                    'backup_parameters': {'number_of_backups': 8}}
 
-    if args.G or args.M or args.Q or args.O or args.A:
+    if args.G or args.O:
         config = configure(trade, can_interpolate=False)
         if args.G and configuration.modify_section(
                 config, 'General', trade.config_path, **backup_file):
             return
-        if args.M and configuration.modify_section(
-                config, trade.maintenance_schedules_section, trade.config_path,
-                **backup_file):
-            return
-        if args.Q and configuration.modify_section(
-                config, trade.daily_sales_order_quota_section,
-                trade.config_path, **backup_file):
-            return
         if args.O and configuration.modify_section(
-                config, trade.order_status_section, trade.config_path,
+                config, trade.order_status_title, trade.config_path,
                 **backup_file,
                 tuple_info={'element_index': -1,
                             'possible_values': [
@@ -135,10 +118,6 @@ def main():
                                 'entry_time', 'exit_date', 'exit_price',
                                 'exit_time', 'size', 'symbol', 'trade_style',
                                 'trade_type']}):
-            return
-        if args.A and configuration.modify_section(
-                config, trade.actions_section, trade.config_path,
-                **backup_file, categorized_keys=trade.categorized_keys):
             return
 
         sys.exit(1)
@@ -154,45 +133,42 @@ def main():
 
     if args.m:
         insert_maintenance_schedules(trade, config)
-    if args.s or args.y or args.q or args.o:
-        section = config['General']
+    if any((args.s, args.y, args.q, args.o)):
         driver = browser_driver.initialize(
-            headless=section.getboolean('headless'),
-            user_data_directory=section['user_data_directory'],
-            profile_directory=section['profile_directory'],
-            implicitly_wait=float(section['implicitly_wait']))
-        section = config[trade.actions_section]
+            headless=config['General'].getboolean('headless'),
+            user_data_directory=config['General']['user_data_directory'],
+            profile_directory=config['General']['profile_directory'],
+            implicitly_wait=float(config['General']['implicitly_wait']))
         if args.s:
-            browser_driver.execute_action(driver,
-                                          section['replace_sbi_securities'])
+            browser_driver.execute_action(
+                driver, config[trade.actions_title]['replace_sbi_securities'])
         if args.y:
-            watchlists = convert_to_yahoo_finance(trade, config)
-            for watchlist in watchlists:
+            for watchlist in convert_to_yahoo_finance(trade, config):
                 config['Variables']['watchlist'] = watchlist
-                action = section['export_to_yahoo_finance']
+                action = config[trade.actions_title]['export_to_yahoo_finance']
                 action = action.replace('\\', '\\\\')
                 action = action.replace('\\\\\\\\', '\\\\')
                 browser_driver.execute_action(driver, action)
         if args.q:
             check_daily_sales_order_quota(trade, config, driver)
         if args.o:
-            browser_driver.execute_action(driver, section['get_order_status'])
+            browser_driver.execute_action(
+                driver, config[trade.actions_title]['get_order_status'])
             extract_order_status(trade, config, driver)
 
         driver.quit()
     if args.w:
-        section = config[trade.process]
         file_utilities.backup_file(
-            section['watchlists'],
-            backup_directory=section['backup_directory'])
+            config[trade.process]['watchlists'],
+            backup_directory=config[trade.process]['backup_directory'])
     if args.d or args.D:
         if process_utilities.is_running(trade.process):
             print(trade.process, 'is running.')
             sys.exit(1)
         else:
-            section = config[trade.process]
-            application_data_directory = section['application_data_directory']
-            snapshot_directory = section['snapshot_directory']
+            application_data_directory = config[trade.process][
+                'application_data_directory']
+            snapshot_directory = config[trade.process]['snapshot_directory']
             fingerprint = config['General']['fingerprint']
             if args.d:
                 file_utilities.archive_encrypt_directory(
@@ -210,10 +186,10 @@ def main():
             print(trade.process, 'is running.')
             sys.exit(1)
         else:
-            section = config[trade.process]
-            file_utilities.backup_file(section['settings'],
+            config[trade.process] = config[trade.process]
+            file_utilities.backup_file(config[trade.process]['settings'],
                                        number_of_backups=8)
-            remove_watchlists(section['settings'])
+            remove_watchlists(config[trade.process]['settings'])
 
 def configure(trade, can_interpolate=True, can_override=True):
     if can_interpolate:
@@ -233,12 +209,16 @@ def configure(trade, can_interpolate=True, can_override=True):
         'email_message_to': '',
         'fingerprint': ''}
     all_service_name = 'すべてのサービス'
-    config[trade.maintenance_schedules_section] = {
-        'url': 'https://search.sbisec.co.jp/v2/popwin/info/home/pop6040_maintenance.html',
+    config[trade.maintenance_schedules_title] = {
+        'url':
+        ('https://search.sbisec.co.jp/v2/popwin/info/home'
+         '/pop6040_maintenance.html'),
         'time_zone': 'Asia/Tokyo',
         'last_inserted': '',
         'calendar_id': '',
-        'all_service_xpath': '//p[contains(@class, "mt-x-2") and text()="ログイン後のすべてのサービスをご利用いただけません。"]',
+        'all_service_xpath':
+        ('//p[contains(@class, "mt-x-2") '
+         'and text()="ログイン後のすべてのサービスをご利用いただけません。"]'),
         'all_service_name': all_service_name,
         'services': (all_service_name, 'HYPER SBI 2', 'HYPER SBI2',
                      'メインサイト'),
@@ -254,10 +234,10 @@ def configure(trade, can_interpolate=True, can_override=True):
         'day_group': '3',
         'time_group': '4',
         'previous_bodies': {}}
-    config[trade.daily_sales_order_quota_section] = {
+    config[trade.daily_sales_order_quota_title] = {
         'quota_watchlist': '',
         'sufficient': '◎（余裕あり）'}
-    config[trade.order_status_section] = {
+    config[trade.order_status_title] = {
         'output_columns':
         ('entry_date', 'None', 'None', 'entry_time', 'symbol', 'size',
          'trade_type', 'trade_style', 'entry_price', 'None', 'None',
@@ -284,7 +264,7 @@ def configure(trade, can_interpolate=True, can_override=True):
         'backup_directory': '',
         'snapshot_directory':
         os.path.join(os.path.expanduser('~'), 'Downloads')}
-    config[trade.actions_section] = {
+    config[trade.actions_title] = {
         'replace_sbi_securities':
         [('get', 'https://www.sbisec.co.jp/ETGate'),
          ('sleep', '0.8'),
@@ -302,8 +282,10 @@ def configure(trade, can_interpolate=True, can_override=True):
          ('click', '//input[@value="指示実行"]')],
         'export_to_yahoo_finance':
         [('get', 'https://finance.yahoo.com/portfolios'),
-         ('exist', '//*[@id="Col1-0-Portfolios-Proxy"]//a[text()="${Variables:watchlist}"]',
-          [('click', '//*[@id="Col1-0-Portfolios-Proxy"]//a[text()="${Variables:watchlist}"]'),
+         ('exist', ('//*[@id="Col1-0-Portfolios-Proxy"]'
+                    '//a[text()="${Variables:watchlist}"]'),
+          [('click', ('//*[@id="Col1-0-Portfolios-Proxy"]'
+                      '//a[text()="${Variables:watchlist}"]')),
            ('click', '//span[text()="Settings"]'),
            ('sleep', '0.8'),
            ('click', '//span[text()="Delete Portfolio"]'),
@@ -378,19 +360,18 @@ def insert_maintenance_schedules(trade, config):
         if matched_year:
             return (f'{matched_year}-{matched_month}-{matched_day} '
                     f'{matched_time}')
-        else:
-            event_datetime = tzinfo.localize(datetime.strptime(
-                f'{current_year}-{matched_month}-{matched_day} {matched_time}',
-                '%Y-%m-%d %H:%M'))
-            timedelta_obj = event_datetime - now
-            threshold = timedelta(days=365 - time_frame)
-            assumed_year = current_year
-            if timedelta_obj < -threshold:
-                assumed_year = str(int(current_year) + 1)
-            elif timedelta_obj > threshold:
-                assumed_year = str(int(current_year) - 1)
-            return (f'{assumed_year}-{matched_month}-{matched_day} '
-                    f'{matched_time}')
+
+        event_datetime = tzinfo.localize(datetime.strptime(
+            f'{current_year}-{matched_month}-{matched_day} {matched_time}',
+            '%Y-%m-%d %H:%M'))
+        timedelta_obj = event_datetime - now
+        threshold = timedelta(days=365 - time_frame)
+        assumed_year = current_year
+        if timedelta_obj < -threshold:
+            assumed_year = str(int(current_year) + 1)
+        elif timedelta_obj > threshold:
+            assumed_year = str(int(current_year) - 1)
+        return f'{assumed_year}-{matched_month}-{matched_day} {matched_time}'
 
     def dict_to_tuple(d):
         if isinstance(d, dict):
@@ -398,10 +379,9 @@ def insert_maintenance_schedules(trade, config):
             for key, value in sorted(d.items()):
                 items.append((key, dict_to_tuple(value)))
             return tuple(items)
-        else:
-            return d
+        return d
 
-    section = config[trade.maintenance_schedules_section]
+    section = config[trade.maintenance_schedules_title]
     url = section['url']
     time_zone = section['time_zone']
     last_inserted = section['last_inserted']
@@ -452,7 +432,7 @@ def insert_maintenance_schedules(trade, config):
         resource = build('calendar', 'v3', credentials=credentials)
 
         if not section['calendar_id']:
-            body = {'summary': trade.maintenance_schedules_section,
+            body = {'summary': trade.maintenance_schedules_title,
                     'timeZone': time_zone}
             try:
                 calendar = resource.calendars().insert(body=body).execute()
@@ -582,7 +562,7 @@ def check_daily_sales_order_quota(trade, config, driver):
     with open(config[trade.process]['watchlists']) as f:
         watchlists = json.load(f)
 
-    quota_section = config[trade.daily_sales_order_quota_section]
+    quota_section = config[trade.daily_sales_order_quota_title]
     quota_watchlist = next(
         (watchlist for watchlist in watchlists['list']
          if watchlist['listName'] == quota_section['quota_watchlist']), None)
@@ -595,7 +575,7 @@ def check_daily_sales_order_quota(trade, config, driver):
 
     text = []
     browser_driver.execute_action(
-        driver, config[trade.actions_section]['get_daily_sales_order_quota'],
+        driver, config[trade.actions_title]['get_daily_sales_order_quota'],
         text=text)
 
     status = ''
@@ -615,7 +595,7 @@ def check_daily_sales_order_quota(trade, config, driver):
         resource = build('gmail', 'v1', credentials=credentials)
 
         email_message = EmailMessage()
-        email_message['Subject'] = trade.daily_sales_order_quota_section
+        email_message['Subject'] = trade.daily_sales_order_quota_title
         email_message['From'] = email_message_from
         email_message['To'] = email_message_to
         email_message.set_content(status)
@@ -630,7 +610,7 @@ def check_daily_sales_order_quota(trade, config, driver):
 
 # TODO
 def extract_order_status(trade, config, driver):
-    section = config[trade.order_status_section]
+    section = config[trade.order_status_title]
     output_columns = configuration.evaluate_value(section['output_columns'])
     table_identifier = section['table_identifier']
     symbol_regex = section['symbol_regex']
