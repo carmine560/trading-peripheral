@@ -28,11 +28,10 @@ def execute_action(driver, action, element=None, text=None):
     if isinstance(action, str):
         action = configuration.evaluate_value(action)
 
-    for index in range(len(action)):
-        command = action[index][0]
-        argument = action[index][1] if len(action[index]) > 1 else None
-        additional_argument = (action[index][2] if len(action[index]) > 2
-                               else None)
+    for instruction in action:
+        command = instruction[0]
+        argument = instruction[1] if len(instruction) > 1 else None
+        additional_argument = instruction[2] if len(instruction) > 2 else None
 
         if command == 'clear':
             driver.find_element(By.XPATH, argument).clear()
@@ -66,11 +65,12 @@ def execute_action(driver, action, element=None, text=None):
                 if match:
                     text.append(f'{match.group(1)} does not exist.')
         elif command == 'for':
-            for element in argument.split(', '):
-                execute_action(driver, additional_argument, element=element,
+            for item in argument.split(', '):
+                execute_action(driver, additional_argument, element=item,
                                text=text)
                 time.sleep(1)
 
         else:
             print(command, 'is not a recognized command.')
             return False
+    return True
