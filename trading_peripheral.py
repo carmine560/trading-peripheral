@@ -353,10 +353,10 @@ def configure(trade, can_interpolate=True, can_override=True):
 
 def insert_maintenance_schedules(trade, config):
     def replace_datetime(match):
-        matched_year = match.group(year_group)
-        matched_month = match.group(month_group)
-        matched_day = match.group(day_group)
-        matched_time = match.group(time_group)
+        matched_year = match.group(int(section['year_group']))
+        matched_month = match.group(int(section['month_group']))
+        matched_day = match.group(int(section['day_group']))
+        matched_time = match.group(int(section['time_group']))
         if matched_year:
             return (f'{matched_year}-{matched_month}-{matched_day} '
                     f'{matched_time}')
@@ -382,32 +382,22 @@ def insert_maintenance_schedules(trade, config):
         return d
 
     section = config[trade.maintenance_schedules_title]
-    url = section['url']
-    time_zone = section['time_zone']
+    # url = section['url']
+    # time_zone = section['time_zone']
     last_inserted = section['last_inserted']
     calendar_id = section['calendar_id']
-    all_service_xpath = section['all_service_xpath']
-    all_service_name = section['all_service_name']
-    services = configuration.evaluate_value(section['services'])
     service_xpath = section['service_xpath']
-    function_xpath = section['function_xpath']
-    datetime_xpath = section['datetime_xpath']
-    range_splitter_regex = section['range_splitter_regex']
     datetime_regex = section['datetime_regex']
-    year_group = int(section['year_group'])
-    month_group = int(section['month_group'])
-    day_group = int(section['day_group'])
-    time_group = int(section['time_group'])
     previous_bodies = configuration.evaluate_value(section['previous_bodies'])
 
-    head = requests.head(url)
+    head = requests.head(section['url'])
     try:
         head.raise_for_status()
     except Exception as e:
         print(e)
         sys.exit(1)
 
-    tzinfo = pytz.timezone(time_zone)
+    tzinfo = pytz.timezone(section['time_zone'])
     now = datetime.now(tzinfo)
     section['last_inserted'] = now.isoformat()
 
@@ -419,7 +409,7 @@ def insert_maintenance_schedules(trade, config):
         last_inserted = datetime.fromisoformat(last_inserted)
 
     if last_inserted < parsedate_to_datetime(head.headers['last-modified']):
-        response = requests.get(url)
+        response = requests.get(section['url'])
         response.encoding = chardet.detect(response.content)['encoding']
         text = response.text
         root = html.fromstring(text)
@@ -433,7 +423,7 @@ def insert_maintenance_schedules(trade, config):
 
         if not section['calendar_id']:
             body = {'summary': trade.maintenance_schedules_title,
-                    'timeZone': time_zone}
+                    'timeZone': section['time_zone']}
             try:
                 calendar = resource.calendars().insert(body=body).execute()
                 section['calendar_id'] = calendar_id = calendar['id']
@@ -445,28 +435,28 @@ def insert_maintenance_schedules(trade, config):
         time_frame = 30
 
         try:
-            all_service_element = root.xpath(all_service_xpath)[0]
+            all_service_element = root.xpath(section['all_service_xpath'])[0]
             match = re.search(r'//(\w+)', service_xpath)
             if match:
                 pre_element = Element(match.group(1))
                 match = re.search(r'@class, +\"(.+?)\"', service_xpath)
                 if match:
                     pre_element.set('class', match.group(1))
-                    pre_element.text = all_service_name
+                    pre_element.text = section['all_service_name']
                     all_service_element.addprevious(pre_element)
         except IndexError:
             pass
 
-        for service in services:
+        for service in configuration.evaluate_value(section['services']):
             for schedule in root.xpath(service_xpath.format(service)):
                 function = schedule.xpath(
-                    function_xpath)[0].xpath('normalize-space(text())')
+                    section['function_xpath'])[0].xpath('normalize-space(text())')
                 datetimes = schedule.xpath(
-                    datetime_xpath)[0].text_content().split('\n')
+                    section['datetime_xpath'])[0].text_content().split('\n')
 
                 for i in range(len(datetimes)):
                     datetime_range = re.split(
-                        re.compile(range_splitter_regex),
+                        re.compile(section['range_splitter_regex']),
                         datetimes[i].strip())
 
                     if len(datetime_range) == 2:
@@ -496,7 +486,7 @@ def insert_maintenance_schedules(trade, config):
                                 f'🛠️ {service}: {function}',
                                 'start': {'dateTime': start.isoformat()},
                                 'end': {'dateTime': end.isoformat()},
-                                'source': {'title': title, 'url': url}}
+                                'source': {'title': title, 'url': section['url']}}
                         body_tuple = dict_to_tuple(body)
 
                         if body_tuple not in previous_bodies.get(service, []):
