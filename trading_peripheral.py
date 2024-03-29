@@ -3,7 +3,6 @@ from email.message import EmailMessage
 from email.utils import parsedate_to_datetime
 from io import StringIO
 import argparse
-import ast
 import base64
 import configparser
 import csv
@@ -239,6 +238,7 @@ def configure(trade, can_interpolate=True, can_override=True):
         'sufficient': '◎（余裕あり）'}
     config[trade.order_status_title] = {
         'output_columns':
+        # TODO: make configurable
         ('entry_date', 'None', 'None', 'entry_time', 'symbol', 'size',
          'trade_type', 'trade_style', 'entry_price', 'None', 'None',
          'exit_date', 'exit_time', 'exit_price'),
@@ -352,210 +352,192 @@ def configure(trade, can_interpolate=True, can_override=True):
     return config
 
 def insert_maintenance_schedules(trade, config):
-    def replace_datetime(match):
-        matched_year = match.group(int(section['year_group']))
-        matched_month = match.group(int(section['month_group']))
-        matched_day = match.group(int(section['day_group']))
-        matched_time = match.group(int(section['time_group']))
+    def replace_datetime(match_object):
+        matched_year = match_object.group(int(section['year_group']))
+        matched_month = match_object.group(int(section['month_group']))
+        matched_day = match_object.group(int(section['day_group']))
+        matched_time = match_object.group(int(section['time_group']))
         if matched_year:
             return (f'{matched_year}-{matched_month}-{matched_day} '
                     f'{matched_time}')
 
-        event_datetime = tzinfo.localize(datetime.strptime(
-            f'{current_year}-{matched_month}-{matched_day} {matched_time}',
-            '%Y-%m-%d %H:%M'))
-        timedelta_obj = event_datetime - now
-        threshold = timedelta(days=365 - time_frame)
-        assumed_year = current_year
-        if timedelta_obj < -threshold:
-            assumed_year = str(int(current_year) + 1)
-        elif timedelta_obj > threshold:
-            assumed_year = str(int(current_year) - 1)
+        assumed_year = int(now.strftime('%Y'))
+        timedelta_object = tzinfo.localize(datetime.strptime(
+            f'{assumed_year}-{matched_month}-{matched_day} {matched_time}',
+            '%Y-%m-%d %H:%M')) - now
+        threshold = timedelta(days=365 - 30)
+        if timedelta_object < -threshold:
+            assumed_year = assumed_year + 1
+        elif timedelta_object > threshold:
+            assumed_year = assumed_year - 1
         return f'{assumed_year}-{matched_month}-{matched_day} {matched_time}'
 
-    def dict_to_tuple(d):
-        if isinstance(d, dict):
+    def dictionary_to_tuple(dictionary):
+        if isinstance(dictionary, dict):
             items = []
-            for key, value in sorted(d.items()):
-                items.append((key, dict_to_tuple(value)))
+            for key, value in sorted(dictionary.items()):
+                items.append((key, dictionary_to_tuple(value)))
             return tuple(items)
-        return d
+        return dictionary
 
     section = config[trade.maintenance_schedules_title]
-    # url = section['url']
-    # time_zone = section['time_zone']
-    last_inserted = section['last_inserted']
-    calendar_id = section['calendar_id']
-    service_xpath = section['service_xpath']
-    datetime_regex = section['datetime_regex']
-    previous_bodies = configuration.evaluate_value(section['previous_bodies'])
+    tzinfo = pytz.timezone(section['time_zone'])
+    now = datetime.now(tzinfo)
 
-    head = requests.head(section['url'])
+    head = requests.head(section['url'], timeout=5)
     try:
         head.raise_for_status()
-    except Exception as e:
+    except requests.exceptions.HTTPError as e:
         print(e)
         sys.exit(1)
 
-    tzinfo = pytz.timezone(section['time_zone'])
-    now = datetime.now(tzinfo)
-    section['last_inserted'] = now.isoformat()
+    last_inserted = (datetime.fromisoformat(section['last_inserted'])
+                     if section['last_inserted']
+                     else datetime.min.replace(tzinfo=tzinfo))
+    last_inserted = max(last_inserted, now - timedelta(days=29))
+    if parsedate_to_datetime(head.headers['last-modified']) <= last_inserted:
+        return
 
-    lower_bound = now - timedelta(days=29)
-    if (not last_inserted
-        or datetime.fromisoformat(last_inserted) < lower_bound):
-        last_inserted = lower_bound
-    else:
-        last_inserted = datetime.fromisoformat(last_inserted)
+    response = requests.get(section['url'], timeout=5)
+    response.encoding = chardet.detect(response.content)['encoding']
+    root = html.fromstring(response.text)
+    match_object = re.search('<title>(.*)</title>', response.text)
+    if match_object:
+        title = match_object.group(1)
 
-    if last_inserted < parsedate_to_datetime(head.headers['last-modified']):
-        response = requests.get(section['url'])
-        response.encoding = chardet.detect(response.content)['encoding']
-        text = response.text
-        root = html.fromstring(text)
-        matched = re.search('<title>(.*)</title>', text)
-        if matched:
-            title = matched.group(1)
+    resource = build('calendar', 'v3', credentials=get_credentials(
+        os.path.join(trade.config_directory, 'token.json')))
 
-        credentials = get_credentials(os.path.join(trade.config_directory,
-                                                   'token.json'))
-        resource = build('calendar', 'v3', credentials=credentials)
-
-        if not section['calendar_id']:
-            body = {'summary': trade.maintenance_schedules_title,
-                    'timeZone': section['time_zone']}
-            try:
-                calendar = resource.calendars().insert(body=body).execute()
-                section['calendar_id'] = calendar_id = calendar['id']
-            except HttpError as e:
-                print(e)
-                sys.exit(1)
-
-        current_year = now.strftime('%Y')
-        time_frame = 30
-
+    if not section['calendar_id']:
+        body = {'summary': trade.maintenance_schedules_title,
+                'timeZone': section['time_zone']}
         try:
-            all_service_element = root.xpath(section['all_service_xpath'])[0]
-            match = re.search(r'//(\w+)', service_xpath)
-            if match:
-                pre_element = Element(match.group(1))
-                match = re.search(r'@class, +\"(.+?)\"', service_xpath)
-                if match:
-                    pre_element.set('class', match.group(1))
-                    pre_element.text = section['all_service_name']
-                    all_service_element.addprevious(pre_element)
-        except IndexError:
-            pass
+            calendar = resource.calendars().insert(body=body).execute()
+            section['calendar_id'] = calendar['id']
+        except HttpError as e:
+            print(e)
+            sys.exit(1)
 
-        for service in configuration.evaluate_value(section['services']):
-            for schedule in root.xpath(service_xpath.format(service)):
-                function = schedule.xpath(
-                    section['function_xpath'])[0].xpath('normalize-space(text())')
-                datetimes = schedule.xpath(
-                    section['datetime_xpath'])[0].text_content().split('\n')
+    try:
+        all_service_element = root.xpath(section['all_service_xpath'])[0]
+        match_object = re.search(r'//(\w+)', section['service_xpath'])
+        if match_object:
+            pre_element = Element(match_object.group(1))
+            match_object = re.search(r'@class, +\"(.+?)\"',
+                                     section['service_xpath'])
+            if match_object:
+                pre_element.set('class', match_object.group(1))
+                pre_element.text = section['all_service_name']
+                all_service_element.addprevious(pre_element)
+    except IndexError:
+        pass
 
-                for i in range(len(datetimes)):
-                    datetime_range = re.split(
-                        re.compile(section['range_splitter_regex']),
-                        datetimes[i].strip())
+    previous_bodies = configuration.evaluate_value(section['previous_bodies'])
+    for service in configuration.evaluate_value(section['services']):
+        for schedule in root.xpath(section['service_xpath'].format(service)):
+            function = schedule.xpath(
+                section['function_xpath'])[0].xpath('normalize-space(text())')
+            datetimes = schedule.xpath(
+                section['datetime_xpath'])[0].text_content().split('\n')
 
-                    if len(datetime_range) == 2:
-                        if re.fullmatch(r'\d{1,2}:\d{2}', datetime_range[0]):
-                            datetime_str = (start.strftime('%Y-%m-%d ')
-                                            + datetime_range[0])
-                        else:
-                            datetime_str = re.sub(datetime_regex,
-                                                  replace_datetime,
-                                                  datetime_range[0])
+            for index, _ in enumerate(datetimes):
+                datetime_range = re.split(
+                    re.compile(section['range_splitter_regex']),
+                    datetimes[index].strip())
 
-                        start = tzinfo.localize(
-                            datetime.strptime(datetime_str, '%Y-%m-%d %H:%M'))
+                if len(datetime_range) != 2:
+                    continue
 
-                        if re.fullmatch(r'\d{1,2}:\d{2}', datetime_range[1]):
-                            datetime_str = (start.strftime('%Y-%m-%d ')
-                                            + datetime_range[1])
-                        else:
-                            datetime_str = re.sub(datetime_regex,
-                                                  replace_datetime,
-                                                  datetime_range[1])
+                datetime_string = re.sub(section['datetime_regex'],
+                                         replace_datetime,
+                                         datetime_range[0])
+                start = tzinfo.localize(
+                    datetime.strptime(datetime_string, '%Y-%m-%d %H:%M'))
+                if re.fullmatch(r'\d{1,2}:\d{2}', datetime_range[1]):
+                    datetime_string = (start.strftime('%Y-%m-%d ')
+                                       + datetime_range[1])
+                else:
+                    datetime_string = re.sub(section['datetime_regex'],
+                                             replace_datetime,
+                                             datetime_range[1])
 
-                        end = tzinfo.localize(
-                            datetime.strptime(datetime_str, '%Y-%m-%d %H:%M'))
+                end = tzinfo.localize(
+                    datetime.strptime(datetime_string, '%Y-%m-%d %H:%M'))
 
-                        body = {'summary':
-                                f'🛠️ {service}: {function}',
-                                'start': {'dateTime': start.isoformat()},
-                                'end': {'dateTime': end.isoformat()},
-                                'source': {'title': title, 'url': section['url']}}
-                        body_tuple = dict_to_tuple(body)
+                body = {'summary': f'🛠️ {service}: {function}',
+                        'start': {'dateTime': start.isoformat()},
+                        'end': {'dateTime': end.isoformat()},
+                        'source': {'title': title, 'url': section['url']}}
+                body_tuple = dictionary_to_tuple(body)
 
-                        if body_tuple not in previous_bodies.get(service, []):
-                            try:
-                                event = resource.events().insert(
-                                    calendarId=calendar_id, body=body
-                                ).execute()
-                                print(event.get('start')['dateTime'],
-                                      event.get('summary'))
-                            except HttpError as e:
-                                print(e)
-                                sys.exit(1)
+                if body_tuple not in previous_bodies.get(service, []):
+                    try:
+                        event = resource.events().insert(
+                            calendarId=section['calendar_id'],
+                            body=body).execute()
+                        print(event.get('start')['dateTime'],
+                              event.get('summary'))
+                    except HttpError as e:
+                        print(e)
+                        sys.exit(1)
 
-                            previous_bodies.setdefault(service, []).append(
-                                body_tuple)
-                            maximum_number_of_bodies = 32
-                            if (len(previous_bodies[service])
-                                > maximum_number_of_bodies):
-                                previous_bodies[service] = previous_bodies[
-                                    service][-maximum_number_of_bodies:]
+                    previous_bodies.setdefault(service, []).append(body_tuple)
+                    maximum_number_of_bodies = 32
+                    if (len(previous_bodies[service])
+                        > maximum_number_of_bodies):
+                        previous_bodies[service] = previous_bodies[
+                            service][-maximum_number_of_bodies:]
 
-                            section['previous_bodies'] = str(previous_bodies)
+                    section['previous_bodies'] = str(previous_bodies)
 
-        configuration.write_config(config, trade.config_path)
+    section['last_inserted'] = now.isoformat()
+    configuration.write_config(config, trade.config_path)
 
 def convert_to_yahoo_finance(trade, config):
-    with open(config[trade.process]['watchlists']) as f:
+    with open(config[trade.process]['watchlists'], encoding='utf-8') as f:
         dictionary = json.load(f)
 
     csv_directory = config['General']['csv_directory']
     file_utilities.check_directory(csv_directory)
     watchlists = []
-    HEADER = ['Symbol', 'Current Price', 'Date', 'Time', 'Change', 'Open',
+    header = ('Symbol', 'Current Price', 'Date', 'Time', 'Change', 'Open',
               'High', 'Low', 'Volume', 'Trade Date', 'Purchase Price',
-              'Quantity', 'Commission', 'High Limit', 'Low Limit', 'Comment']
+              'Quantity', 'Commission', 'High Limit', 'Low Limit', 'Comment')
     row = []
-    for _ in range(len(HEADER) - 1):
+    for _ in range(len(header) - 1):
         row.append('')
     for index in range(len(dictionary['list'])):
         watchlist = dictionary['list'][index]['listName']
-        csv_file = open(os.path.join(csv_directory, watchlist + '.csv'), 'w')
-        writer = csv.writer(csv_file)
-        writer.writerow(HEADER)
-        dictionary['list'][index]['secList'].reverse()
-        for item in dictionary['list'][index]['secList']:
-            if item['secKbn'] == 'ST':
-                if item['marketCd'] == 'TKY':
-                    writer.writerow([item['secCd'] + '.T'] + row)
-                elif item['marketCd'] == 'SPR':
-                    writer.writerow([item['secCd'] + '.S'] + row)
-                elif item['marketCd'] == 'NGY':
-                    # Yahoo Finance does not appear to have stocks listed
-                    # solely on the Nagoya Stock Exchange.
-                    writer.writerow([item['secCd'] + '.N'] + row)
-                elif item['marketCd'] == 'FKO':
-                    writer.writerow([item['secCd'] + '.F'] + row)
+        with open(os.path.join(csv_directory, watchlist + '.csv'), 'w',
+                  encoding='utf-8') as csv_file:
+            writer = csv.writer(csv_file)
+            writer.writerow(header)
+            dictionary['list'][index]['secList'].reverse()
+            for item in dictionary['list'][index]['secList']:
+                if item['secKbn'] == 'ST':
+                    if item['marketCd'] == 'TKY':
+                        writer.writerow([item['secCd'] + '.T'] + row)
+                    elif item['marketCd'] == 'SPR':
+                        writer.writerow([item['secCd'] + '.S'] + row)
+                    elif item['marketCd'] == 'NGY':
+                        # Yahoo Finance does not appear to have stocks listed
+                        # solely on the Nagoya Stock Exchange.
+                        writer.writerow([item['secCd'] + '.N'] + row)
+                    elif item['marketCd'] == 'FKO':
+                        writer.writerow([item['secCd'] + '.F'] + row)
 
-        csv_file.close()
         watchlists.append(watchlist)
     return watchlists
 
 def check_daily_sales_order_quota(trade, config, driver):
-    with open(config[trade.process]['watchlists']) as f:
+    with open(config[trade.process]['watchlists'], encoding='utf-8') as f:
         watchlists = json.load(f)
 
-    quota_section = config[trade.daily_sales_order_quota_title]
     quota_watchlist = next(
         (watchlist for watchlist in watchlists['list']
-         if watchlist['listName'] == quota_section['quota_watchlist']), None)
+         if watchlist['listName']
+         == config[trade.daily_sales_order_quota_title]['quota_watchlist']),
+        None)
     if quota_watchlist is None:
         print('No matching watchlist was found.')
         sys.exit(1)
@@ -570,24 +552,21 @@ def check_daily_sales_order_quota(trade, config, driver):
 
     status = ''
     for index, _ in enumerate(text):
-        if not quota_section['sufficient'] in text[index]:
+        if (not config[trade.daily_sales_order_quota_title]['sufficient']
+            in text[index]):
             status += f'{securities_codes[index]}: {text[index]}\n'
 
     print(status)
 
-    general_section = config['General']
-    email_message_from = general_section['email_message_from']
-    email_message_to = general_section['email_message_to']
-
-    if email_message_from and email_message_to and status:
-        credentials = get_credentials(os.path.join(trade.config_directory,
-                                                   'token.json'))
-        resource = build('gmail', 'v1', credentials=credentials)
+    if (config['General']['email_message_from']
+        and config['General']['email_message_to'] and status):
+        resource = build('gmail', 'v1', credentials=get_credentials(
+            os.path.join(trade.config_directory, 'token.json')))
 
         email_message = EmailMessage()
         email_message['Subject'] = trade.daily_sales_order_quota_title
-        email_message['From'] = email_message_from
-        email_message['To'] = email_message_to
+        email_message['From'] = config['General']['email_message_from']
+        email_message['To'] = config['General']['email_message_to']
         email_message.set_content(status)
 
         body = {'raw': base64.urlsafe_b64encode(
@@ -598,57 +577,47 @@ def check_daily_sales_order_quota(trade, config, driver):
             print(e)
             sys.exit(1)
 
-# TODO
+# TODO: make configurable
 def extract_order_status(trade, config, driver):
     section = config[trade.order_status_title]
-    output_columns = configuration.evaluate_value(section['output_columns'])
-    table_identifier = section['table_identifier']
-    symbol_regex = section['symbol_regex']
-    symbol_replacement = section['symbol_replacement']
-    margin_trading = section['margin_trading']
-    buying_on_margin = section['buying_on_margin']
-    execution_column = int(section['execution_column'])
-    execution = section['execution']
-    datetime_column = int(section['datetime_column'])
-    datetime_regex = section['datetime_regex']
-    date_replacement = section['date_replacement']
-    time_replacement = section['time_replacement']
-    size_column = int(section['size_column'])
-    price_column = int(section['price_column'])
 
     try:
         dfs = pd.read_html(StringIO(driver.page_source),
-                           match=table_identifier, flavor='lxml')
-    except Exception as e:
+                           match=section['table_identifier'], flavor='lxml')
+    except ValueError as e:
         print(e)
         sys.exit(1)
 
     index = 0
     df = dfs[1]
     size_price = pd.DataFrame(columns=('size', 'price'))
+    size_column = int(section['size_column'])
+    price_column = int(section['price_column'])
+    execution_column = int(section['execution_column'])
+    datetime_column = int(section['datetime_column'])
+    output_columns = configuration.evaluate_value(section['output_columns'])
     results = pd.DataFrame(columns=output_columns)
     while index < len(df):
-        if df.iloc[index, execution_column] == execution:
+        if df.iloc[index, execution_column] == section['execution']:
             if len(size_price) == 0:
                 size_price.loc[0] = [df.iloc[index - 1, size_column],
                                      df.iloc[index - 1, price_column]]
 
             size_price.loc[len(size_price)] = [df.iloc[index, size_column],
                                                df.iloc[index, price_column]]
-            if index + 1 == len(df) \
-               or df.iloc[index + 1, execution_column] != execution:
+            if (index + 1 == len(df) or df.iloc[index + 1, execution_column]
+                != section['execution']):
                 size_price_index = 0
                 size_price = size_price.astype(float)
                 summation = 0
                 while size_price_index < len(size_price):
-                    summation += \
-                        size_price.loc[size_price_index, 'size'] \
-                        * size_price.loc[size_price_index, 'price']
+                    summation += (size_price.loc[size_price_index, 'size']
+                                  * size_price.loc[size_price_index, 'price'])
                     size_price_index += 1
 
                 average_price = summation / size_price['size'].sum()
-                if margin_trading \
-                   in df.iloc[index - len(size_price), execution_column]:
+                if (section['margin_trading']
+                    in df.iloc[index - len(size_price), execution_column]):
                     entry_price = average_price
                 else:
                     results.loc[len(results) - 1, 'exit_price'] = average_price
@@ -657,36 +626,48 @@ def extract_order_status(trade, config, driver):
 
             index += 1
         else:
-            symbol = re.sub(symbol_regex, symbol_replacement,
+            symbol = re.sub(section['symbol_regex'],
+                            section['symbol_replacement'],
                             df.iloc[index, execution_column])
             size = df.iloc[index + 1, size_column]
+            # TODO: make configurable
             trade_style = 'day'
-            if margin_trading in df.iloc[index + 1, execution_column]:
-                entry_date = re.sub(datetime_regex, date_replacement,
+            if (section['margin_trading']
+                in df.iloc[index + 1, execution_column]):
+                entry_date = re.sub(section['datetime_regex'],
+                                    section['date_replacement'],
                                     df.iloc[index + 2, datetime_column])
-                entry_time = re.sub(datetime_regex, time_replacement,
+                entry_time = re.sub(section['datetime_regex'],
+                                    section['time_replacement'],
                                     df.iloc[index + 2, datetime_column])
-                if buying_on_margin in df.iloc[index + 1, execution_column]:
+                if (section['buying_on_margin']
+                    in df.iloc[index + 1, execution_column]):
                     trade_type = 'long'
                 else:
                     trade_type = 'short'
 
                 entry_price = df.iloc[index + 2, price_column]
             else:
-                exit_date = re.sub(datetime_regex, date_replacement,
+                exit_date = re.sub(section['datetime_regex'],
+                                   section['date_replacement'],
                                    df.iloc[index + 2, datetime_column])
-                exit_time = re.sub(datetime_regex, time_replacement,
+                exit_time = re.sub(section['datetime_regex'],
+                                   section['time_replacement'],
                                    df.iloc[index + 2, datetime_column])
                 exit_price = df.iloc[index + 2, price_column]
 
-                evaluated_results = []
-                for i in range(len(output_columns)):
-                    parsed = ast.parse(output_columns[i], mode='eval')
-                    fixed = ast.fix_missing_locations(parsed)
-                    compiled = compile(fixed, '<string>', 'eval')
-                    evaluated_results.append(eval(compiled))
-
-                results.loc[len(results)] = evaluated_results
+                results.loc[len(results)] = [
+                    {'entry_date': entry_date,
+                     'entry_time': entry_time,
+                     'symbol': symbol,
+                     'size': size,
+                     'trade_type': trade_type,
+                     'trade_style': trade_style,
+                     'entry_price': entry_price,
+                     'exit_date': exit_date,
+                     'exit_time': exit_time,
+                     'exit_price': exit_price}.get(column)
+                    for column in output_columns]
 
             index += 3
 
@@ -725,10 +706,10 @@ def get_credentials(token_json):
                 flow = InstalledAppFlow.from_client_secrets_file(
                     input('Path to client_secrets.json: '), scopes)
                 credentials = flow.run_local_server(port=0)
-            except Exception as e:
+            except (FileNotFoundError, ValueError) as e:
                 print(e)
                 sys.exit(1)
-        with open(token_json, 'w') as token:
+        with open(token_json, 'w', encoding='utf-8') as token:
             token.write(credentials.to_json())
     return credentials
 
