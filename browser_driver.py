@@ -29,11 +29,10 @@ def initialize(headless=True, user_data_directory=None, profile_directory=None,
     os_type_directory = os.path.dirname(os.path.dirname(os.path.dirname(
         executable_path)))
     version_directories = [
-        os.path.join(os_type_directory, version_directory)
-        for version_directory in os.listdir(os_type_directory)
-        if (os.path.isdir(os.path.join(os_type_directory, version_directory))
-            and re.fullmatch(r'[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+',
-                             version_directory))]
+        os.path.join(os_type_directory, subdirectory)
+        for subdirectory in os.listdir(os_type_directory)
+        if (os.path.isdir(os.path.join(os_type_directory, subdirectory))
+            and re.fullmatch(r'[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+', subdirectory))]
     version_directories.sort(key=os.path.getctime, reverse=True)
     for version_directory in version_directories[1:]:
         shutil.rmtree(version_directory)
