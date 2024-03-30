@@ -1,4 +1,6 @@
+import os
 import re
+import shutil
 import time
 
 from selenium import webdriver
@@ -12,7 +14,8 @@ import configuration
 
 def initialize(headless=True, user_data_directory=None, profile_directory=None,
                implicitly_wait=2):
-    service = Service(executable_path=ChromeDriverManager().install())
+    executable_path = ChromeDriverManager().install()
+    service = Service(executable_path=executable_path)
     options = Options()
     if headless:
         options.add_argument('--headless=new')
@@ -22,6 +25,19 @@ def initialize(headless=True, user_data_directory=None, profile_directory=None,
 
     driver = webdriver.Chrome(service=service, options=options)
     driver.implicitly_wait(implicitly_wait)
+
+    os_type_directory = os.path.dirname(os.path.dirname(os.path.dirname(
+        executable_path)))
+    version_directories = [
+        os.path.join(os_type_directory, version_directory)
+        for version_directory in os.listdir(os_type_directory)
+        if (os.path.isdir(os.path.join(os_type_directory, version_directory))
+            and re.fullmatch(r'[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+',
+                             version_directory))]
+    version_directories.sort(key=os.path.getctime, reverse=True)
+    for version_directory in version_directories[1:]:
+        shutil.rmtree(version_directory)
+
     return driver
 
 def execute_action(driver, action, element=None, text=None):
