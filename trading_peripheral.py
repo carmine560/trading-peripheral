@@ -108,15 +108,14 @@ def main():
         if args.G and configuration.modify_section(
                 config, 'General', trade.config_path, **backup_file):
             return
-        if args.O and configuration.modify_section(
-                config, trade.order_status_title, trade.config_path,
-                **backup_file,
-                tuple_info={'element_index': -1,
-                            'possible_values': [
-                                'None', 'entry_date', 'entry_price',
-                                'entry_time', 'exit_date', 'exit_price',
-                                'exit_time', 'size', 'symbol', 'trade_style',
-                                'trade_type']}):
+        if args.O and configuration.modify_option(
+                config, trade.order_status_title, 'output_columns',
+                trade.config_path, **backup_file,
+                prompts={'value': 'column', 'end_of_list': 'end of columns'},
+                tuple_values=(('None', 'entry_date', 'entry_price',
+                               'entry_time', 'exit_date', 'exit_price',
+                               'exit_time', 'size', 'symbol', 'trade_style',
+                               'trade_type'),)):
             return
 
         sys.exit(1)
@@ -238,7 +237,6 @@ def configure(trade, can_interpolate=True, can_override=True):
         'sufficient': '◎（余裕あり）'}
     config[trade.order_status_title] = {
         'output_columns':
-        # TODO: make configurable
         ('entry_date', 'None', 'None', 'entry_time', 'symbol', 'size',
          'trade_type', 'trade_style', 'entry_price', 'None', 'None',
          'exit_date', 'exit_time', 'exit_price'),
