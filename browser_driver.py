@@ -32,7 +32,7 @@ def initialize(headless=True, user_data_directory=None, profile_directory=None,
         os.path.join(os_type_directory, subdirectory)
         for subdirectory in os.listdir(os_type_directory)
         if (os.path.isdir(os.path.join(os_type_directory, subdirectory))
-            and re.fullmatch(r'[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+', subdirectory))]
+            and re.fullmatch(r'\d+\.\d+\.\d+\.\d+', subdirectory))]
     version_directories.sort(key=os.path.getctime, reverse=True)
     for version_directory in version_directories[1:]:
         shutil.rmtree(version_directory)
