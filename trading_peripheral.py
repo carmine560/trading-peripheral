@@ -44,9 +44,9 @@ class Trade(initializer.Initializer):
         self.categorized_keys = {
             'all_keys': file_utilities.extract_commands(
                 inspect.getsource(browser_driver.execute_action)),
-            'control_flow_keys': ('exist', 'for'),
-            'additional_value_keys': ('send_keys',),
-            'no_value_keys': ('refresh',)}
+            'control_flow_keys': {'exist', 'for'},
+            'additional_value_keys': {'send_keys'},
+            'no_value_keys': {'refresh'}}
 
 def main():
     parser = argparse.ArgumentParser()
