@@ -216,7 +216,7 @@ def configure(trade, can_interpolate=True, can_override=True):
         'calendar_id': '',
         'all_service_xpath':
         ('//p[contains(@class, "mt-x-2") '
-         'and text()="ログイン後のすべてのサービスをご利用いただけません。"]'),
+         f'and contains(., "{all_service_name}")]'),
         'all_service_name': all_service_name,
         'services': (all_service_name, 'HYPER SBI 2', 'HYPER SBI2',
                      'メインサイト'),
@@ -434,7 +434,7 @@ def insert_maintenance_schedules(trade, config):
     for service in configuration.evaluate_value(section['services']):
         for schedule in root.xpath(section['service_xpath'].format(service)):
             function = schedule.xpath(
-                section['function_xpath'])[0].xpath('normalize-space(text())')
+                section['function_xpath'])[0].xpath('normalize-space(.)')
             datetimes = schedule.xpath(
                 section['datetime_xpath'])[0].text_content().split('\n')
 
