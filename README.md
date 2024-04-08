@@ -103,8 +103,6 @@ file stores these configurations.
   * `-w`: backup the Hyper SBI 2 watchlists
   * `-d`: take a snapshot of the Hyper SBI 2 application data
   * `-D`: restore the Hyper SBI 2 application data from a snapshot
-  * `-W`: remove the ‘Watchlists’ window from the current set of windows in
-    Hyper SBI 2 to reduce load
   * `-G`: configure general options and exit
   * `-O`: configure order status formats and exit
   * `-A`: configure actions and exit

@@ -81,10 +81,6 @@ def main():
     parser.add_argument(
         '-D', action='store_true',
         help='restore the Hyper SBI 2 application data from a snapshot')
-    parser.add_argument(
-        '-W', action='store_true',
-        help='remove the Watchlists window from the current set of windows '
-        'in Hyper SBI 2 to reduce load')
     group.add_argument(
         '-G', action='store_true',
         help='configure general options and exit')
@@ -185,15 +181,6 @@ def main():
                     + '.tar.xz.gpg')
                 output_directory = os.path.dirname(application_data_directory)
                 file_utilities.decrypt_extract_file(snapshot, output_directory)
-    if args.W:
-        if process_utilities.is_running(trade.process):
-            print(trade.process, 'is running.')
-            sys.exit(1)
-        else:
-            config[trade.process] = config[trade.process]
-            file_utilities.backup_file(config[trade.process]['settings'],
-                                       number_of_backups=8)
-            remove_watchlists(config[trade.process]['settings'])
 
 def configure(trade, can_interpolate=True, can_override=True):
     if can_interpolate:
@@ -242,10 +229,7 @@ def configure(trade, can_interpolate=True, can_override=True):
         'quota_watchlist': '',
         'sufficient': '◎（余裕あり）'}
     config[trade.order_status_section] = {
-        'output_columns':
-        ('entry_date', 'None', 'None', 'entry_time', 'symbol', 'size',
-         'trade_type', 'trade_style', 'entry_price', 'None', 'None',
-         'exit_date', 'exit_time', 'exit_price'),
+        'output_columns': (),
         'table_identifier': '注文種別',
         'symbol_regex': r'^.* (\d{4}) 東証$$',
         'symbol_replacement': r'\1',
@@ -263,7 +247,6 @@ def configure(trade, can_interpolate=True, can_override=True):
         'application_data_directory':
         os.path.join(os.path.expandvars('%APPDATA%'), trade.vendor,
                      trade.process),
-        'settings': '',
         'watchlists': '',
         'backup_directory': '',
         'snapshot_directory':
@@ -333,7 +316,7 @@ def configure(trade, can_interpolate=True, can_override=True):
 
     if trade.process == 'HYPERSBI2':
         section = config[trade.process]
-        if not section.get('settings') or not section.get('watchlists'):
+        if not section.get('watchlists'):
             application_data_directory = section['application_data_directory']
             latest_modified_time = 0.0
             identifier = ''
@@ -345,8 +328,6 @@ def configure(trade, can_interpolate=True, can_override=True):
                         latest_modified_time = modified_time
                         identifier = f
             if identifier:
-                section['settings'] = os.path.join(
-                    application_data_directory, identifier, 'setting.json')
                 section['watchlists'] = os.path.join(
                     application_data_directory, identifier, 'portfolio.json')
             else:
@@ -679,22 +660,6 @@ def extract_order_status(trade, config, driver):
         results = results.reindex([0, 1])
 
     results.to_clipboard(index=False, header=False)
-
-def remove_watchlists(settings):
-    with open(settings, encoding='utf-8') as f:
-        dictionary = json.load(f)
-
-    current_template = dictionary['LastSession']['CurrentTemplateId']
-
-    for template in dictionary['LastSession']['Templates']:
-        if template['TemplateName'] == current_template:
-            windows = template['hyper::stock::ui::WindowManager']['Windows']
-            for i in reversed(range(len(windows))):
-                if windows[i].get('WindowId') == 'Portfolio':
-                    del windows[i]
-
-    with open(settings, 'w', encoding='utf-8') as f:
-        json.dump(dictionary, f, ensure_ascii=False, indent=4)
 
 def get_credentials(token_json):
     scopes = ['https://www.googleapis.com/auth/calendar',
