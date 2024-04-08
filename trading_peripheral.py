@@ -115,7 +115,11 @@ def main():
             return
         if args.A and configuration.modify_section(
                 config, trade.actions_section, trade.config_path,
-                **backup_file, items=trade.instruction_items):
+                **backup_file,
+                prompts={'key': 'command', 'value': 'argument',
+                         'additional_value': 'additional argument',
+                         'end_of_list': 'end of commands'},
+                items=trade.instruction_items):
             return
 
         sys.exit(1)
