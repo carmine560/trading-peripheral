@@ -31,17 +31,14 @@ import initializer
 import process_utilities
 
 class Trade(initializer.Initializer):
-    def __init__(self, brokerage, process):
-        super().__init__(brokerage, process, __file__)
-        self.brokerage = self.vendor
-
-        self.maintenance_schedules_title = (
-            f'{self.brokerage} Maintenance Schedules')
-        self.daily_sales_order_quota_title = (
-            f'{self.brokerage} Daily Sales Order Quota')
-        self.order_status_title = f'{self.brokerage} Order Status'
-        self.actions_title = f'{self.process} Actions'
-        self.categorized_keys = {
+    def __init__(self, vendor, process):
+        super().__init__(vendor, process, __file__)
+        self.maintenance_schedules_section = (
+            f'{self.vendor} Maintenance Schedules')
+        self.daily_sales_order_quota_section = (
+            f'{self.vendor} Daily Sales Order Quota')
+        self.order_status_section = f'{self.vendor} Order Status'
+        self.instruction_items = {
             'all_keys': file_utilities.extract_commands(
                 inspect.getsource(browser_driver.execute_action)),
             'control_flow_keys': {'exist', 'for'},
@@ -95,6 +92,9 @@ def main():
         '-O', action='store_true',
         help='configure order status formats and exit')
     group.add_argument(
+        '-A', action='store_true',
+        help='configure actions and exit')
+    group.add_argument(
         '-C', action='store_true',
         help='check configuration changes and exit')
     args = parser.parse_args(None if sys.argv[1:] else ['-h'])
@@ -103,19 +103,23 @@ def main():
     backup_file = {'backup_function': file_utilities.backup_file,
                    'backup_parameters': {'number_of_backups': 8}}
 
-    if args.G or args.O:
+    if any((args.G, args.O, args.A)):
         config = configure(trade, can_interpolate=False)
         if args.G and configuration.modify_section(
                 config, 'General', trade.config_path, **backup_file):
             return
         if args.O and configuration.modify_option(
-                config, trade.order_status_title, 'output_columns',
+                config, trade.order_status_section, 'output_columns',
                 trade.config_path, **backup_file,
                 prompts={'value': 'column', 'end_of_list': 'end of columns'},
                 tuple_values=(('None', 'entry_date', 'entry_price',
                                'entry_time', 'exit_date', 'exit_price',
                                'exit_time', 'size', 'symbol', 'trade_style',
                                'trade_type'),)):
+            return
+        if args.A and configuration.modify_section(
+                config, trade.actions_section, trade.config_path,
+                **backup_file, items=trade.instruction_items):
             return
 
         sys.exit(1)
@@ -139,11 +143,13 @@ def main():
             implicitly_wait=float(config['General']['implicitly_wait']))
         if args.s:
             browser_driver.execute_action(
-                driver, config[trade.actions_title]['replace_sbi_securities'])
+                driver,
+                config[trade.actions_section]['replace_sbi_securities'])
         if args.y:
             for watchlist in convert_to_yahoo_finance(trade, config):
                 config['Variables']['watchlist'] = watchlist
-                action = config[trade.actions_title]['export_to_yahoo_finance']
+                action = config[trade.actions_section][
+                    'export_to_yahoo_finance']
                 action = action.replace('\\', '\\\\')
                 action = action.replace('\\\\\\\\', '\\\\')
                 browser_driver.execute_action(driver, action)
@@ -151,7 +157,7 @@ def main():
             check_daily_sales_order_quota(trade, config, driver)
         if args.o:
             browser_driver.execute_action(
-                driver, config[trade.actions_title]['get_order_status'])
+                driver, config[trade.actions_section]['get_order_status'])
             extract_order_status(trade, config, driver)
 
         driver.quit()
@@ -207,7 +213,7 @@ def configure(trade, can_interpolate=True, can_override=True):
         'email_message_to': '',
         'fingerprint': ''}
     all_service_name = 'すべてのサービス'
-    config[trade.maintenance_schedules_title] = {
+    config[trade.maintenance_schedules_section] = {
         'url':
         ('https://search.sbisec.co.jp/v2/popwin/info/home'
          '/pop6040_maintenance.html'),
@@ -232,10 +238,10 @@ def configure(trade, can_interpolate=True, can_override=True):
         'day_group': '3',
         'time_group': '4',
         'previous_bodies': {}}
-    config[trade.daily_sales_order_quota_title] = {
+    config[trade.daily_sales_order_quota_section] = {
         'quota_watchlist': '',
         'sufficient': '◎（余裕あり）'}
-    config[trade.order_status_title] = {
+    config[trade.order_status_section] = {
         'output_columns':
         ('entry_date', 'None', 'None', 'entry_time', 'symbol', 'size',
          'trade_type', 'trade_style', 'entry_price', 'None', 'None',
@@ -255,14 +261,14 @@ def configure(trade, can_interpolate=True, can_override=True):
         'price_column': '7'}
     config[trade.process] = {
         'application_data_directory':
-        os.path.join(os.path.expandvars('%APPDATA%'), trade.brokerage,
+        os.path.join(os.path.expandvars('%APPDATA%'), trade.vendor,
                      trade.process),
         'settings': '',
         'watchlists': '',
         'backup_directory': '',
         'snapshot_directory':
         os.path.join(os.path.expanduser('~'), 'Downloads')}
-    config[trade.actions_title] = {
+    config[trade.actions_section] = {
         'replace_sbi_securities':
         [('get', 'https://www.sbisec.co.jp/ETGate'),
          ('sleep', '0.8'),
@@ -378,7 +384,7 @@ def insert_maintenance_schedules(trade, config):
             return tuple(items)
         return dictionary
 
-    section = config[trade.maintenance_schedules_title]
+    section = config[trade.maintenance_schedules_section]
     tzinfo = pytz.timezone(section['time_zone'])
     now = datetime.now(tzinfo)
 
@@ -407,7 +413,7 @@ def insert_maintenance_schedules(trade, config):
         os.path.join(trade.config_directory, 'token.json')))
 
     if not section['calendar_id']:
-        body = {'summary': trade.maintenance_schedules_title,
+        body = {'summary': trade.maintenance_schedules_section,
                 'timeZone': section['time_zone']}
         try:
             calendar = resource.calendars().insert(body=body).execute()
@@ -534,7 +540,7 @@ def check_daily_sales_order_quota(trade, config, driver):
     quota_watchlist = next(
         (watchlist for watchlist in watchlists['list']
          if watchlist['listName']
-         == config[trade.daily_sales_order_quota_title]['quota_watchlist']),
+         == config[trade.daily_sales_order_quota_section]['quota_watchlist']),
         None)
     if quota_watchlist is None:
         print('No matching watchlist was found.')
@@ -545,12 +551,12 @@ def check_daily_sales_order_quota(trade, config, driver):
 
     text = []
     browser_driver.execute_action(
-        driver, config[trade.actions_title]['get_daily_sales_order_quota'],
+        driver, config[trade.actions_section]['get_daily_sales_order_quota'],
         text=text)
 
     status = ''
     for index, _ in enumerate(text):
-        if (not config[trade.daily_sales_order_quota_title]['sufficient']
+        if (not config[trade.daily_sales_order_quota_section]['sufficient']
             in text[index]):
             status += f'{securities_codes[index]}: {text[index]}\n'
 
@@ -562,7 +568,7 @@ def check_daily_sales_order_quota(trade, config, driver):
             os.path.join(trade.config_directory, 'token.json')))
 
         email_message = EmailMessage()
-        email_message['Subject'] = trade.daily_sales_order_quota_title
+        email_message['Subject'] = trade.daily_sales_order_quota_section
         email_message['From'] = config['General']['email_message_from']
         email_message['To'] = config['General']['email_message_to']
         email_message.set_content(status)
@@ -577,7 +583,7 @@ def check_daily_sales_order_quota(trade, config, driver):
 
 # TODO: make configurable
 def extract_order_status(trade, config, driver):
-    section = config[trade.order_status_title]
+    section = config[trade.order_status_section]
 
     try:
         dfs = pd.read_html(StringIO(driver.page_source),

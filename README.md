@@ -107,6 +107,7 @@ file stores these configurations.
     Hyper SBI 2 to reduce load
   * `-G`: configure general options and exit
   * `-O`: configure order status formats and exit
+  * `-A`: configure actions and exit
   * `-C`: check configuration changes and exit
 
 ## Known Issues ##
