@@ -96,17 +96,17 @@ def main():
     args = parser.parse_args(None if sys.argv[1:] else ['-h'])
 
     trade = Trade(*args.P)
-    backup_file = {'backup_function': file_utilities.backup_file,
-                   'backup_parameters': {'number_of_backups': 8}}
+    backup_parameters = {'number_of_backups': 8}
 
     if any((args.G, args.O, args.A)):
         config = configure(trade, can_interpolate=False)
         if args.G and configuration.modify_section(
-                config, 'General', trade.config_path, **backup_file):
+                config, 'General', trade.config_path,
+                backup_parameters=backup_parameters):
             return
         if args.O and configuration.modify_option(
                 config, trade.order_status_section, 'output_columns',
-                trade.config_path, **backup_file,
+                trade.config_path, backup_parameters=backup_parameters,
                 prompts={'value': 'column', 'end_of_list': 'end of columns'},
                 tuple_values=(('None', 'entry_date', 'entry_price',
                                'entry_time', 'exit_date', 'exit_price',
@@ -115,7 +115,7 @@ def main():
             return
         if args.A and configuration.modify_section(
                 config, trade.actions_section, trade.config_path,
-                **backup_file,
+                backup_parameters=backup_parameters,
                 prompts={'key': 'command', 'value': 'argument',
                          'additional_value': 'additional argument',
                          'end_of_list': 'end of commands'},
@@ -128,7 +128,7 @@ def main():
                                    can_override=False)
         configuration.check_config_changes(default_config, trade.config_path,
                                            excluded_sections=('Variables',),
-                                           **backup_file)
+                                           backup_parameters=backup_parameters)
         return
     else:
         config = configure(trade)
