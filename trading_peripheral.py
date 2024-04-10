@@ -108,10 +108,9 @@ def main():
                 config, trade.order_status_section, 'output_columns',
                 trade.config_path, backup_parameters=backup_parameters,
                 prompts={'value': 'column', 'end_of_list': 'end of columns'},
-                tuple_values=(('None', 'entry_date', 'entry_price',
-                               'entry_time', 'exit_date', 'exit_price',
-                               'exit_time', 'size', 'symbol', 'trade_style',
-                               'trade_type'),)):
+                all_values=(('None', 'entry_date', 'entry_price', 'entry_time',
+                             'exit_date', 'exit_price', 'exit_time', 'size',
+                             'symbol', 'trade_style', 'trade_type'),)):
             return
         if args.A and configuration.modify_section(
                 config, trade.actions_section, trade.config_path,
