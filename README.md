@@ -47,8 +47,8 @@ the following web browser and packages:
     [`pyarrow`](https://arrow.apache.org/docs/python/) to extract data from the
     web pages
   * [`python-gnupg`](https://docs.red-dove.com/python-gnupg/) to invoke
-    [GnuPG](https://gnupg.org/index.html) to encrypt and decrypt the
-    configuration file
+    [GnuPG](https://gnupg.org/index.html) to encrypt and decrypt a snapshot of
+    the Hyper SBI 2 application data
   * [`prompt_toolkit`](https://python-prompt-toolkit.readthedocs.io/en/master/index.html)
     to complete possible values or a previous value in configuring
 
