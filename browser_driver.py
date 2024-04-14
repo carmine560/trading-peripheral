@@ -12,6 +12,7 @@ from webdriver_manager.chrome import ChromeDriverManager
 
 import configuration
 
+
 def initialize(headless=True, user_data_directory=None, profile_directory=None,
                implicitly_wait=2):
     executable_path = ChromeDriverManager().install()
@@ -38,6 +39,7 @@ def initialize(headless=True, user_data_directory=None, profile_directory=None,
         shutil.rmtree(version_directory)
 
     return driver
+
 
 def execute_action(driver, action, element=None, text=None):
     if isinstance(action, str):

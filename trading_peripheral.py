@@ -30,6 +30,7 @@ import file_utilities
 import initializer
 import process_utilities
 
+
 class Trade(initializer.Initializer):
     def __init__(self, vendor, process):
         super().__init__(vendor, process, __file__)
@@ -44,6 +45,7 @@ class Trade(initializer.Initializer):
             'control_flow_keys': {'exist', 'for'},
             'additional_value_keys': {'send_keys'},
             'no_value_keys': {'refresh'}}
+
 
 def main():
     parser = argparse.ArgumentParser()
@@ -184,6 +186,7 @@ def main():
                     + '.tar.xz.gpg')
                 output_directory = os.path.dirname(application_data_directory)
                 file_utilities.decrypt_extract_file(snapshot, output_directory)
+
 
 def configure(trade, can_interpolate=True, can_override=True):
     if can_interpolate:
@@ -339,6 +342,7 @@ def configure(trade, can_interpolate=True, can_override=True):
 
     return config
 
+
 def insert_maintenance_schedules(trade, config):
     def replace_datetime(match_object):
         matched_year = match_object.group(int(section['year_group']))
@@ -472,7 +476,7 @@ def insert_maintenance_schedules(trade, config):
                     previous_bodies.setdefault(service, []).append(body_tuple)
                     maximum_number_of_bodies = 32
                     if (len(previous_bodies[service])
-                        > maximum_number_of_bodies):
+                            > maximum_number_of_bodies):
                         previous_bodies[service] = previous_bodies[
                             service][-maximum_number_of_bodies:]
 
@@ -480,6 +484,7 @@ def insert_maintenance_schedules(trade, config):
 
     section['last_inserted'] = now.isoformat()
     configuration.write_config(config, trade.config_path)
+
 
 def convert_to_yahoo_finance(trade, config):
     with open(config[trade.process]['watchlists'], encoding='utf-8') as f:
@@ -517,6 +522,7 @@ def convert_to_yahoo_finance(trade, config):
         watchlists.append(watchlist)
     return watchlists
 
+
 def check_daily_sales_order_quota(trade, config, driver):
     with open(config[trade.process]['watchlists'], encoding='utf-8') as f:
         watchlists = json.load(f)
@@ -541,13 +547,13 @@ def check_daily_sales_order_quota(trade, config, driver):
     status = ''
     for index, _ in enumerate(text):
         if (not config[trade.daily_sales_order_quota_section]['sufficient']
-            in text[index]):
+                in text[index]):
             status += f'{securities_codes[index]}: {text[index]}\n'
 
     print(status)
 
     if (config['General']['email_message_from']
-        and config['General']['email_message_to'] and status):
+            and config['General']['email_message_to'] and status):
         resource = build('gmail', 'v1', credentials=get_credentials(
             os.path.join(trade.config_directory, 'token.json')))
 
@@ -565,8 +571,9 @@ def check_daily_sales_order_quota(trade, config, driver):
             print(e)
             sys.exit(1)
 
-# TODO: make configurable
+
 def extract_order_status(trade, config, driver):
+    # TODO: make configurable
     section = config[trade.order_status_section]
 
     try:
@@ -594,7 +601,7 @@ def extract_order_status(trade, config, driver):
             size_price.loc[len(size_price)] = [df.iloc[index, size_column],
                                                df.iloc[index, price_column]]
             if (index + 1 == len(df) or df.iloc[index + 1, execution_column]
-                != section['execution']):
+                    != section['execution']):
                 size_price_index = 0
                 size_price = size_price.astype(float)
                 summation = 0
@@ -605,7 +612,7 @@ def extract_order_status(trade, config, driver):
 
                 average_price = summation / size_price['size'].sum()
                 if (section['margin_trading']
-                    in df.iloc[index - len(size_price), execution_column]):
+                        in df.iloc[index - len(size_price), execution_column]):
                     entry_price = average_price
                 else:
                     results.loc[len(results) - 1, 'exit_price'] = average_price
@@ -621,7 +628,7 @@ def extract_order_status(trade, config, driver):
             # TODO: make configurable
             trade_style = 'day'
             if (section['margin_trading']
-                in df.iloc[index + 1, execution_column]):
+                    in df.iloc[index + 1, execution_column]):
                 entry_date = re.sub(section['datetime_regex'],
                                     section['date_replacement'],
                                     df.iloc[index + 2, datetime_column])
@@ -629,7 +636,7 @@ def extract_order_status(trade, config, driver):
                                     section['time_replacement'],
                                     df.iloc[index + 2, datetime_column])
                 if (section['buying_on_margin']
-                    in df.iloc[index + 1, execution_column]):
+                        in df.iloc[index + 1, execution_column]):
                     trade_type = 'long'
                 else:
                     trade_type = 'short'
@@ -664,6 +671,7 @@ def extract_order_status(trade, config, driver):
 
     results.to_clipboard(index=False, header=False)
 
+
 def get_credentials(token_json):
     scopes = ['https://www.googleapis.com/auth/calendar',
               'https://www.googleapis.com/auth/gmail.send']
@@ -684,6 +692,7 @@ def get_credentials(token_json):
         with open(token_json, 'w', encoding='utf-8') as token:
             token.write(credentials.to_json())
     return credentials
+
 
 if __name__ == '__main__':
     main()
