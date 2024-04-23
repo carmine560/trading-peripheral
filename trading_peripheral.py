@@ -40,7 +40,7 @@ class Trade(initializer.Initializer):
             f'{self.vendor} Daily Sales Order Quota')
         self.order_status_section = f'{self.vendor} Order Status'
         self.instruction_items = {
-            'all_keys': file_utilities.extract_commands(
+            'all_keys': initializer.extract_commands(
                 inspect.getsource(browser_driver.execute_action)),
             'control_flow_keys': {'exist', 'for'},
             'additional_value_keys': {'send_keys'},
