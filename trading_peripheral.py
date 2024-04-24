@@ -1,3 +1,5 @@
+"""Manages SBI Securities data and integrates with other services."""
+
 from datetime import datetime, timedelta
 from email.message import EmailMessage
 from email.utils import parsedate_to_datetime
@@ -32,7 +34,33 @@ import process_utilities
 
 
 class Trade(initializer.Initializer):
+    """
+    Represent a trade process for a specific vendor.
+
+    This class is a subclass of the Initializer class and is used to
+    represent a trade process for a specific vendor. It includes
+    sections for maintenance schedules, daily sales order quota, and
+    order status. It also includes instruction items for various
+    actions.
+
+    Attributes:
+        maintenance_schedules_section (str): The section for maintenance
+            schedules.
+        daily_sales_order_quota_section (str): The section for daily
+            sales order quota.
+        order_status_section (str): The section for order status.
+        instruction_items (dict): The instruction items for various
+            actions.
+    """
+
     def __init__(self, vendor, process):
+        """
+        Initialize the Trade with the vendor and process.
+
+        Args:
+            vendor (str): The vendor for the trade.
+            process (str): The process for the trade.
+        """
         super().__init__(vendor, process, __file__)
         self.maintenance_schedules_section = (
             f'{self.vendor} Maintenance Schedules')
@@ -48,6 +76,19 @@ class Trade(initializer.Initializer):
 
 
 def main():
+    """
+    Execute the main program based on command-line arguments.
+
+    This function parses command-line arguments and performs the
+    requested operations, which can include configuring the trade
+    process, inserting maintenance schedules into a Google Calendar,
+    replacing watchlists on the SBI Securities website, exporting the
+    Hyper SBI 2 watchlists to My Portfolio on Yahoo Finance, checking
+    the daily sales order quota, extracting the order status from the
+    SBI Securities web page, backing up the Hyper SBI 2 watchlists,
+    taking a snapshot of the Hyper SBI 2 application data, and restoring
+    the Hyper SBI 2 application data from a snapshot.
+    """
     parser = argparse.ArgumentParser()
     group = parser.add_mutually_exclusive_group()
     parser.add_argument(
@@ -189,6 +230,26 @@ def main():
 
 
 def configure(trade, can_interpolate=True, can_override=True):
+    """
+    Configure the trade process based on the provided parameters.
+
+    This function creates a configuration for the trade process. It sets
+    up general settings, maintenance schedules, daily sales order quota,
+    order status, process, actions, and variables. It also handles
+    interpolation and overriding of configurations.
+
+    Args:
+        trade (Trade): An instance of a Trade class representing trades.
+        can_interpolate (bool): A flag indicating whether the
+            configuration parser should interpolate the values. Defaults
+            to True.
+        can_override (bool): A flag indicating whether the configuration
+            can be overridden. Defaults to True.
+
+    Returns:
+        ConfigParser: The configuration parser object with the set up
+            configuration.
+    """
     if can_interpolate:
         config = configparser.ConfigParser(
             interpolation=configparser.ExtendedInterpolation())
@@ -344,7 +405,32 @@ def configure(trade, can_interpolate=True, can_override=True):
 
 
 def insert_maintenance_schedules(trade, config):
+    """
+    Insert maintenance schedules into a Google Calendar.
+
+    This function retrieves maintenance schedules from a specified URL
+    and inserts them into a Google Calendar. If the calendar does not
+    exist, it creates one. The function also handles time zone
+    conversions and updates the configuration with the last inserted
+    schedule.
+
+    Args:
+        trade (Trade): An instance of a Trade class representing trades.
+        config (ConfigParser): The configuration parser object.
+
+    Returns:
+        None
+    """
     def replace_datetime(match_object):
+        """
+        Replace matched datetime strings with formatted strings.
+
+        Args:
+            match_object (re.Match): The matched datetime strings.
+
+        Returns:
+            str: The formatted datetime string.
+        """
         matched_year = match_object.group(int(section['year_group']))
         matched_month = match_object.group(int(section['month_group']))
         matched_day = match_object.group(int(section['day_group']))
@@ -365,6 +451,16 @@ def insert_maintenance_schedules(trade, config):
         return f'{assumed_year}-{matched_month}-{matched_day} {matched_time}'
 
     def dictionary_to_tuple(dictionary):
+        """
+        Convert a dictionary to a tuple of key-value pairs.
+
+        Args:
+            dictionary (Union[dict, Any]): The dictionary to convert.
+
+        Returns:
+            Union[tuple, Any]: The converted tuple if the input is a
+                dictionary, otherwise the input itself.
+        """
         if isinstance(dictionary, dict):
             items = []
             for key, value in sorted(dictionary.items()):
@@ -487,6 +583,22 @@ def insert_maintenance_schedules(trade, config):
 
 
 def convert_to_yahoo_finance(trade, config):
+    """
+    Convert trade watchlists to Yahoo Finance compatible CSV files.
+
+    This function reads the watchlists from a JSON file, converts them
+    into Yahoo Finance compatible CSV files, and saves them in a
+    specified directory. Each CSV file corresponds to a watchlist and
+    contains stock information.
+
+    Args:
+        trade (Trade): An instance of a Trade class representing trades.
+        config (ConfigParser): The configuration parser object.
+
+    Returns:
+        List[str]: A list of the names of the watchlists that were
+            converted.
+    """
     with open(config[trade.process]['watchlists'], encoding='utf-8') as f:
         dictionary = json.load(f)
 
@@ -524,6 +636,22 @@ def convert_to_yahoo_finance(trade, config):
 
 
 def check_daily_sales_order_quota(trade, config, driver):
+    """
+    Check the daily sales order quota and sends an email if necessary.
+
+    This function checks the daily sales order quota from a specified
+    watchlist. If the quota is not sufficient, it generates a status
+    report and sends an email to the specified address.
+
+    Args:
+        trade (Trade): An instance of a Trade class representing trades.
+        config (ConfigParser): The configuration parser object.
+        driver (WebDriver): The Selenium WebDriver object for webpage
+            interaction.
+
+    Returns:
+        None
+    """
     with open(config[trade.process]['watchlists'], encoding='utf-8') as f:
         watchlists = json.load(f)
 
@@ -573,6 +701,23 @@ def check_daily_sales_order_quota(trade, config, driver):
 
 
 def extract_order_status(trade, config, driver):
+    """
+    Extract order status from a webpage and copies it to the clipboard.
+
+    This function retrieves order status information from a trade
+    webpage, processes the data, and copies the results to the
+    clipboard. The function handles various scenarios such as margin
+    trading and calculates average prices.
+
+    Args:
+        trade (Trade): An instance of a Trade class representing trades.
+        config (ConfigParser): The configuration parser object.
+        driver (WebDriver): The Selenium WebDriver object for webpage
+            interaction.
+
+    Returns:
+        None
+    """
     # TODO: make configurable
     section = config[trade.order_status_section]
 
@@ -673,6 +818,21 @@ def extract_order_status(trade, config, driver):
 
 
 def get_credentials(token_json):
+    """
+    Obtain valid Google API credentials from a JSON token file.
+
+    This function retrieves Google API credentials from a JSON token
+    file. If the credentials are not valid, it attempts to refresh them.
+    If the credentials do not exist or cannot be refreshed, it prompts
+    the user for the path to a client secrets file and attempts to
+    create new credentials.
+
+    Args:
+        token_json (str): The path to the JSON token file.
+
+    Returns:
+        Credentials: The valid Google API credentials.
+    """
     scopes = ['https://www.googleapis.com/auth/calendar',
               'https://www.googleapis.com/auth/gmail.send']
     credentials = None
