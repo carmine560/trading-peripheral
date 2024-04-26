@@ -275,8 +275,8 @@ def configure(trade, can_interpolate=True, can_override=True):
         'last_inserted': '',
         'calendar_id': '',
         'all_service_xpath':
-        ('//p[contains(@class, "mt-x-2") '
-         f'and contains(., "{all_service_name}")]'),
+        ('//p[contains(@class, "mt-x-2") and contains(., "メインサイト")'
+         f' and contains(., "{all_service_name}")]'),
         'all_service_name': all_service_name,
         'services': (all_service_name, 'HYPER SBI 2', 'HYPER SBI2',
                      'メインサイト'),
@@ -417,9 +417,6 @@ def insert_maintenance_schedules(trade, config):
     Args:
         trade (Trade): An instance of a Trade class representing trades.
         config (ConfigParser): The configuration parser object.
-
-    Returns:
-        None
     """
     def replace_datetime(match_object):
         """
@@ -648,9 +645,6 @@ def check_daily_sales_order_quota(trade, config, driver):
         config (ConfigParser): The configuration parser object.
         driver (WebDriver): The Selenium WebDriver object for webpage
             interaction.
-
-    Returns:
-        None
     """
     with open(config[trade.process]['watchlists'], encoding='utf-8') as f:
         watchlists = json.load(f)
@@ -714,9 +708,6 @@ def extract_order_status(trade, config, driver):
         config (ConfigParser): The configuration parser object.
         driver (WebDriver): The Selenium WebDriver object for webpage
             interaction.
-
-    Returns:
-        None
     """
     # TODO: make configurable
     section = config[trade.order_status_section]

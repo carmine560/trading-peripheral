@@ -106,9 +106,6 @@ def read_config(config, config_path):
             the configuration into.
         config_path (str): The path to the configuration file (without
             the .gpg extension).
-
-    Returns:
-        None
     """
     encrypted_config_path = config_path + '.gpg'
     if os.path.exists(encrypted_config_path):
@@ -134,9 +131,6 @@ def write_config(config, config_path):
     Args:
         config (ConfigParser): The configuration parser object to write.
         config_path (str): The path to the configuration file.
-
-    Returns:
-        None
     """
     encrypted_config_path = config_path + '.gpg'
     if os.path.exists(encrypted_config_path):
@@ -180,9 +174,6 @@ def check_config_changes(default_config, config_path, excluded_sections=(),
             user options are ignored.
         backup_parameters (dict, optional): Parameters for backing up
             the file. Defaults to None.
-
-    Returns:
-        None
     """
     def truncate_string(string):
         """

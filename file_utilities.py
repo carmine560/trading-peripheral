@@ -48,9 +48,6 @@ def archive_encrypt_directory(source, output_directory, fingerprint=''):
         fingerprint (str, optional): The GPG key fingerprint to use for
             encryption. If not provided, the first available key in the
             GPG keyring is used. Defaults to ''.
-
-    Returns:
-        None
     """
     if GNUPG_IMPORT_ERROR:
         print(GNUPG_IMPORT_ERROR)
@@ -92,9 +89,6 @@ def backup_file(source, backup_directory=None, number_of_backups=-1,
         should_compare (bool, optional): If True, the source file is
             compared to the most recent backup, and a new backup is
             only created if the files are different. Defaults to True.
-
-    Returns:
-        None
     """
     encrypted_source = source + '.gpg'
     if os.path.exists(encrypted_source):
@@ -173,9 +167,6 @@ def check_directory(directory):
 
     Args:
         directory (str): The path to the directory to check or create.
-
-    Returns:
-        None
     """
     if not os.path.isdir(directory):
         try:
@@ -199,9 +190,6 @@ def decrypt_extract_file(source, output_directory):
             extracted.
         output_directory (str): Path to the directory where the contents
             will be extracted.
-
-    Returns:
-        None
     """
     if GNUPG_IMPORT_ERROR:
         print(GNUPG_IMPORT_ERROR)
@@ -277,9 +265,6 @@ def move_to_trash(path, option=None):
             trash.
         option (str, optional): An additional option for the 'trash-put'
             command. Defaults to None.
-
-    Returns:
-        None
     """
     command = ['trash-put', path]
     if option:
@@ -332,9 +317,6 @@ def create_bash_completion(script_base, options, values, interpreters,
         interpreters (list): A list of interpreter names for completion.
         completion (str): The path to the file where the completion
             script will be written.
-
-    Returns:
-        None
     """
     variable_str = '    values="'
     line = ''
@@ -399,9 +381,6 @@ def create_powershell_completion(script_base, options, values, interpreters,
         interpreters (list): A list of interpreter names for completion.
         completion (str): The path to the file where the completion
             script will be written.
-
-    Returns:
-        None
     """
     interpreters_regex = fr"({'|'.join(interpreters)})(\.exe)?"
     interpreters_array = f"@({', '.join(map(repr, interpreters))})"
@@ -575,9 +554,6 @@ def create_shortcut(base, target_path, arguments, program_group_base=None,
             Defaults to None.
         hotkey (str, optional): The hotkey for the shortcut. Defaults to
             None.
-
-    Returns:
-        None
     """
     if WINDOWS_IMPORT_ERROR:
         print(WINDOWS_IMPORT_ERROR)
@@ -615,9 +591,6 @@ def delete_shortcut(base, program_group_base=None, icon_directory=None):
             group. Defaults to None.
         icon_directory (str, optional): The directory of the icon file.
             Defaults to None.
-
-    Returns:
-        None
     """
     if icon_directory:
         icon = os.path.join(icon_directory, base + '.ico')
@@ -756,9 +729,6 @@ def write_chapter(video, current_title, previous_title=None, offset=None):
             when creating a new metadata file. Defaults to None.
         offset (float, optional): The offset in seconds to apply to the
             start time of the new chapter. Defaults to None.
-
-    Returns:
-        None
     """
     if is_writing(video):
         ffmpeg_metadata = os.path.splitext(video)[0] + '.txt'
