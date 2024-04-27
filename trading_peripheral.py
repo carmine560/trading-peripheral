@@ -254,7 +254,7 @@ def configure(trade, can_interpolate=True, can_override=True):
         config = configparser.ConfigParser(
             interpolation=configparser.ExtendedInterpolation())
     else:
-        config = configparser.ConfigParser()
+        config = configparser.ConfigParser(interpolation=None)
 
     config['General'] = {
         'headless': 'True',
