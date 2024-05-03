@@ -17,27 +17,7 @@ import configuration
 
 def initialize(headless=True, user_data_directory=None, profile_directory=None,
                implicitly_wait=2):
-    """
-    Initialize a Selenium WebDriver with specified options.
-
-    This function initializes a Selenium WebDriver with the specified
-    options, installs the ChromeDriver, and sets up the user data and
-    profile directories if provided. It also cleans up older versions of
-    the ChromeDriver.
-
-    Args:
-        headless (bool, optional): Whether to run the WebDriver in
-            headless mode. Defaults to True.
-        user_data_directory (str, optional): The directory for user
-            data. Defaults to None.
-        profile_directory (str, optional): The directory for the
-            profile. Defaults to None.
-        implicitly_wait (int, optional): The time in seconds to
-            implicitly wait for elements to load. Defaults to 2.
-
-    Returns:
-        WebDriver: The initialized WebDriver.
-    """
+    """Initialize a Selenium WebDriver with specified options."""
     executable_path = ChromeDriverManager().install()
     service = Service(executable_path=executable_path)
     options = Options()
@@ -65,28 +45,7 @@ def initialize(headless=True, user_data_directory=None, profile_directory=None,
 
 
 def execute_action(driver, action, element=None, text=None):
-    """
-    Execute a series of actions on a Selenium WebDriver.
-
-    This function takes a list of actions and executes them on a
-    Selenium WebDriver. The actions can include navigating to a URL,
-    clicking elements, sending keys, and more. It also supports control
-    flow commands like 'exist' and 'for'.
-
-    Args:
-        driver (WebDriver): The Selenium WebDriver to execute actions
-            on.
-        action (list or str): The actions to execute. If a string is
-            provided, it is evaluated to a list of actions.
-        element (str, optional): An element to send keys to. Defaults to
-            None.
-        text (list, optional): A list to append text to. Defaults to
-            None.
-
-    Returns:
-        bool: True if all actions are successfully executed, False
-            otherwise.
-    """
+    """Execute a series of actions on a Selenium WebDriver."""
     if isinstance(action, str):
         action = configuration.evaluate_value(action)
 
