@@ -217,7 +217,7 @@ def configure(trade, can_interpolate=True, can_override=True):
         'url':
         ('https://search.sbisec.co.jp/v2/popwin/info/home'
          '/pop6040_maintenance.html'),
-        'time_zone': 'Asia/Tokyo',
+        'timezone': 'Asia/Tokyo',
         'last_inserted': '',
         'calendar_id': '',
         'all_service_xpath':
@@ -383,7 +383,7 @@ def insert_maintenance_schedules(trade, config):
         return dictionary
 
     section = config[trade.maintenance_schedules_section]
-    tzinfo = pytz.timezone(section['time_zone'])
+    tzinfo = pytz.timezone(section['timezone'])
     now = datetime.now(tzinfo)
 
     head = requests.head(section['url'], timeout=5)
@@ -412,7 +412,7 @@ def insert_maintenance_schedules(trade, config):
 
     if not section['calendar_id']:
         body = {'summary': trade.maintenance_schedules_section,
-                'timeZone': section['time_zone']}
+                'timeZone': section['timezone']}
         try:
             calendar = resource.calendars().insert(body=body).execute()
             section['calendar_id'] = calendar['id']
