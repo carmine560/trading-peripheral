@@ -7,7 +7,6 @@ from io import StringIO
 import argparse
 import base64
 import configparser
-import csv
 import inspect
 import json
 import os
@@ -65,21 +64,18 @@ def main():
         help='insert Hyper SBI 2 maintenance schedules into Google Calendar')
     parser.add_argument(
         '-s', action='store_true',
-        help='replace watchlists on the SBI Securities website '
-        'with the Hyper SBI 2 watchlists')
-    parser.add_argument(
-        '-y', action='store_true',
-        help='export the Hyper SBI 2 watchlists to My Portfolio '
-        'on Yahoo Finance')
+        help='replace watchlists on the SBI Securities website'
+        ' with the Hyper SBI 2 watchlists')
     parser.add_argument(
         '-q', action='store_true',
-        help='check the daily sales order quota in general margin trading '
-        'for the specified Hyper SBI 2 watchlist '
-        'and send a notification via Gmail if insufficient')
+        help='check the daily sales order quota for general margin trading'
+        ' for the specified Hyper SBI 2 watchlist'
+        ' and send a notification via Gmail if it is insufficient')
     parser.add_argument(
         '-o', action='store_true',
-        help='extract the order status from the SBI Securities web page '
-        'and copy it to the clipboard')
+        help='extract the order status'
+        ' from the SBI Securities order status web page'
+        ' and copy it to the clipboard')
     parser.add_argument(
         '-w', action='store_true',
         help='backup the Hyper SBI 2 watchlists')
@@ -133,16 +129,17 @@ def main():
     elif args.C:
         default_config = configure(trade, can_interpolate=False,
                                    can_override=False)
-        configuration.check_config_changes(default_config, trade.config_path,
-                                           excluded_sections=('Variables',),
-                                           backup_parameters=backup_parameters)
+        configuration.check_config_changes(
+            default_config, trade.config_path,
+            excluded_sections=(trade.variables_section,),
+            backup_parameters=backup_parameters)
         return
     else:
         config = configure(trade)
 
     if args.m:
         insert_maintenance_schedules(trade, config)
-    if any((args.s, args.y, args.q, args.o)):
+    if any((args.s, args.q, args.o)):
         driver = browser_driver.initialize(
             headless=config['General'].getboolean('headless'),
             user_data_directory=config['General']['user_data_directory'],
@@ -152,14 +149,6 @@ def main():
             browser_driver.execute_action(
                 driver,
                 config[trade.actions_section]['replace_sbi_securities'])
-        if args.y:
-            for watchlist in convert_to_yahoo_finance(trade, config):
-                config['Variables']['watchlist'] = watchlist
-                action = config[trade.actions_section][
-                    'export_to_yahoo_finance']
-                action = action.replace('\\', '\\\\')
-                action = action.replace('\\\\\\\\', '\\\\')
-                browser_driver.execute_action(driver, action)
         if args.q:
             check_daily_sales_order_quota(trade, config, driver)
         if args.o:
@@ -208,7 +197,6 @@ def configure(trade, can_interpolate=True, can_override=True):
         os.path.expandvars(r'%LOCALAPPDATA%\Google\Chrome\User Data'),
         'profile_directory': 'Default',
         'implicitly_wait': '4',
-        'csv_directory': os.path.join(os.path.expanduser('~'), 'Downloads'),
         'email_message_from': '',
         'email_message_to': '',
         'fingerprint': ''}
@@ -280,30 +268,6 @@ def configure(trade, can_interpolate=True, can_override=True):
          ('click', '//*[@name="add_replace_tool_01" and @value="1_2"]'),
          ('click', '//input[@value="確認画面へ"]'),
          ('click', '//input[@value="指示実行"]')],
-        'export_to_yahoo_finance':
-        [('get', 'https://finance.yahoo.com/portfolios'),
-         ('exist', ('//*[@id="Col1-0-Portfolios-Proxy"]'
-                    '//a[text()="${Variables:watchlist}"]'),
-          [('click', ('//*[@id="Col1-0-Portfolios-Proxy"]'
-                      '//a[text()="${Variables:watchlist}"]')),
-           ('click', '//span[text()="Settings"]'),
-           ('sleep', '0.8'),
-           ('click', '//span[text()="Delete Portfolio"]'),
-           ('click', '//span[text()="Confirm"]')]),
-         ('click', '//span[text()="Import"]'),
-         ('send_keys', '//input[@name="ext_pf"]',
-          r'${General:csv_directory}\${Variables:watchlist}.csv'),
-         ('click', '//span[text()="Submit"]'),
-         ('refresh',),
-         ('sleep', '0.8'),
-         ('click', '//a[text()="Imported from Yahoo"]'),
-         ('click', '//span[text()="Settings"]'),
-         ('click', '//span[text()="Rename Portfolio"]'),
-         ('clear', '//input[@value="Imported from Yahoo"]'),
-         ('send_keys', '//input[@value="Imported from Yahoo"]',
-          '${Variables:watchlist}'),
-         ('click', '//span[text()="Save"]'),
-         ('sleep', '0.8')],
         'get_daily_sales_order_quota':
         [('get', 'https://www.sbisec.co.jp/ETGate'),
          ('sleep', '0.8'),
@@ -320,8 +284,7 @@ def configure(trade, can_interpolate=True, can_override=True):
          ('sleep', '0.8'),
          ('click', '//input[@name="ACT_login"]'),
          ('click', '//a[text()="注文照会"]')]}
-    config['Variables'] = {
-        'watchlist': '',
+    config[trade.variables_section] = {
         'securities_codes': ''}
 
     if can_override:
@@ -486,7 +449,7 @@ def insert_maintenance_schedules(trade, config):
                     previous_bodies.setdefault(service, []).append(body_tuple)
                     maximum_number_of_bodies = 32
                     if (len(previous_bodies[service])
-                            > maximum_number_of_bodies):
+                        > maximum_number_of_bodies):
                         previous_bodies[service] = previous_bodies[
                             service][-maximum_number_of_bodies:]
 
@@ -494,44 +457,6 @@ def insert_maintenance_schedules(trade, config):
 
     section['last_inserted'] = now.isoformat()
     configuration.write_config(config, trade.config_path)
-
-
-def convert_to_yahoo_finance(trade, config):
-    """Convert trade watchlists to Yahoo Finance compatible CSV files."""
-    with open(config[trade.process]['watchlists'], encoding='utf-8') as f:
-        dictionary = json.load(f)
-
-    csv_directory = config['General']['csv_directory']
-    file_utilities.check_directory(csv_directory)
-    watchlists = []
-    header = ('Symbol', 'Current Price', 'Date', 'Time', 'Change', 'Open',
-              'High', 'Low', 'Volume', 'Trade Date', 'Purchase Price',
-              'Quantity', 'Commission', 'High Limit', 'Low Limit', 'Comment')
-    row = []
-    for _ in range(len(header) - 1):
-        row.append('')
-    for index in range(len(dictionary['list'])):
-        watchlist = dictionary['list'][index]['listName']
-        with open(os.path.join(csv_directory, watchlist + '.csv'), 'w',
-                  encoding='utf-8') as csv_file:
-            writer = csv.writer(csv_file)
-            writer.writerow(header)
-            dictionary['list'][index]['secList'].reverse()
-            for item in dictionary['list'][index]['secList']:
-                if item['secKbn'] == 'ST':
-                    if item['marketCd'] == 'TKY':
-                        writer.writerow([item['secCd'] + '.T'] + row)
-                    elif item['marketCd'] == 'SPR':
-                        writer.writerow([item['secCd'] + '.S'] + row)
-                    elif item['marketCd'] == 'NGY':
-                        # Yahoo Finance does not appear to have stocks listed
-                        # solely on the Nagoya Stock Exchange.
-                        writer.writerow([item['secCd'] + '.N'] + row)
-                    elif item['marketCd'] == 'FKO':
-                        writer.writerow([item['secCd'] + '.F'] + row)
-
-        watchlists.append(watchlist)
-    return watchlists
 
 
 def check_daily_sales_order_quota(trade, config, driver):
@@ -549,7 +474,8 @@ def check_daily_sales_order_quota(trade, config, driver):
         sys.exit(1)
 
     securities_codes = [item['secCd'] for item in quota_watchlist['secList']]
-    config['Variables']['securities_codes'] = ', '.join(securities_codes)
+    config[trade.variables_section]['securities_codes'] = (
+        ', '.join(securities_codes))
 
     text = []
     browser_driver.execute_action(
@@ -559,13 +485,13 @@ def check_daily_sales_order_quota(trade, config, driver):
     status = ''
     for index, _ in enumerate(text):
         if (not config[trade.daily_sales_order_quota_section]['sufficient']
-                in text[index]):
+            in text[index]):
             status += f'{securities_codes[index]}: {text[index]}\n'
 
     print(status)
 
     if (config['General']['email_message_from']
-            and config['General']['email_message_to'] and status):
+        and config['General']['email_message_to'] and status):
         resource = build('gmail', 'v1', credentials=get_credentials(
             os.path.join(trade.config_directory, 'token.json')))
 
@@ -614,7 +540,7 @@ def extract_order_status(trade, config, driver):
             size_price.loc[len(size_price)] = [df.iloc[index, size_column],
                                                df.iloc[index, price_column]]
             if (index + 1 == len(df) or df.iloc[index + 1, execution_column]
-                    != section['execution']):
+                != section['execution']):
                 size_price_index = 0
                 size_price = size_price.astype(float)
                 summation = 0
@@ -625,7 +551,7 @@ def extract_order_status(trade, config, driver):
 
                 average_price = summation / size_price['size'].sum()
                 if (section['margin_trading']
-                        in df.iloc[index - len(size_price), execution_column]):
+                    in df.iloc[index - len(size_price), execution_column]):
                     entry_price = average_price
                 else:
                     results.loc[len(results) - 1, 'exit_price'] = average_price
@@ -641,7 +567,7 @@ def extract_order_status(trade, config, driver):
             # TODO: make configurable
             trade_style = 'day'
             if (section['margin_trading']
-                    in df.iloc[index + 1, execution_column]):
+                in df.iloc[index + 1, execution_column]):
                 entry_date = re.sub(section['datetime_regex'],
                                     section['date_replacement'],
                                     df.iloc[index + 2, datetime_column])
@@ -649,7 +575,7 @@ def extract_order_status(trade, config, driver):
                                     section['time_replacement'],
                                     df.iloc[index + 2, datetime_column])
                 if (section['buying_on_margin']
-                        in df.iloc[index + 1, execution_column]):
+                    in df.iloc[index + 1, execution_column]):
                     trade_type = 'long'
                 else:
                     trade_type = 'short'

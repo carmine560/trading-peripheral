@@ -1,8 +1,8 @@
 # trading-peripheral #
 
-<!-- Python script that inserts Hyper SBI 2 maintenance schedules into Google
-Calendar, exports its watchlists to Yahoo Finance, and extracts order status
--->
+<!-- Python script that retrieves Hyper SBI 2 maintenance schedules, checks the
+daily sales order quota, and extracts order status from the SBI Securities web
+pages. -->
 
 The `trading_peripheral.py` Python script can:
 
@@ -13,11 +13,10 @@ The `trading_peripheral.py` Python script can:
     schedules into Google Calendar,
   * Replace watchlists on the SBI Securities website with Hyper SBI 2
     watchlists,
-  * Export them from the `%APPDATA%\SBI
-    Securities\HYPERSBI2\IDENTIFIER\portfolio.json` file to [*My
-    Portfolio*](https://finance.yahoo.com/portfolios) on Yahoo Finance,
-  * Extract the order status from the SBI Securities web page and copy it to
-    the clipboard,
+  * Check the daily sales order quota for general margin trading and send a
+    notification via Gmail if it is insufficient,
+  * Extract the order status from the SBI Securities order status web page and
+    copy it to the clipboard,
   * Take a snapshot of the `%APPDATA%\SBI Securities\HYPERSBI2` application
     data and restore it.
 
@@ -27,8 +26,8 @@ The `trading_peripheral.py` Python script can:
 ## Prerequisites ##
 
 `trading_peripheral.py` has been tested in [Python for
-Windows](https://www.python.org/downloads/windows/) with Hyper SBI 2 and uses
-the following web browser and packages:
+Windows](https://www.python.org/downloads/windows/) with Hyper SBI 2 and
+requires the following web browser and packages:
 
   * [`google-api-python-client`](https://googleapis.github.io/google-api-python-client/docs/),
     [`google-auth-httplib2`](https://github.com/googleapis/google-auth-library-python-httplib2),
@@ -52,7 +51,7 @@ the following web browser and packages:
   * [`prompt_toolkit`](https://python-prompt-toolkit.readthedocs.io/en/master/index.html)
     to complete possible values or a previous value in configuring
 
-Install each package as needed.  For example:
+Install each package as needed. For example:
 
 ``` powershell
 winget install Google.Chrome
@@ -64,7 +63,7 @@ python -m pip install -r requirements.txt -U
 
 ## Usage ##
 
-The `-m` and `-q` options use the Google Calendar and Gmail APIs.  Follow the
+The `-m` and `-q` options use the Google Calendar and Gmail APIs. Follow the
 [*Google Calendar API
 Quickstart*](https://developers.google.com/calendar/api/quickstart/python) and
 [*Gmail API
@@ -72,7 +71,7 @@ Quickstart*](https://developers.google.com/gmail/api/quickstart/python) pages
 to obtain your `client_secret_*.json` file.
 
 If you use Chrome as your default web browser, create a separate profile that
-stores your credentials.  Then, specify the profile directory as the value of
+stores your credentials. Then, specify the profile directory as the value of
 the `profile_directory` option, as shown below:
 
 ``` powershell
@@ -80,9 +79,9 @@ python trading_peripheral.py -G
 ```
 
 The `-d` option encrypts a snapshot of the Hyper SBI 2 application data using
-GnuPG.  By default, it uses the default key pair of GnuPG.  However, you can
-also specify a key fingerprint as the value of the `fingerprint` option using
-the `-G` option.
+GnuPG. By default, it uses the default key pair of GnuPG. However, you can also
+specify a key fingerprint as the value of the `fingerprint` option using the
+`-G` option.
 
 The `%LOCALAPPDATA%\trading-peripheral\trading_peripheral.ini` configuration
 file stores these configurations.
@@ -94,12 +93,11 @@ file stores these configurations.
   * `-m`: insert Hyper SBI 2 maintenance schedules into Google Calendar
   * `-s`: replace watchlists on the SBI Securities website with the Hyper SBI 2
     watchlists
-  * `-y`: export the Hyper SBI 2 watchlists to My Portfolio on Yahoo Finance
-  * `-q`: check the daily sales order quota in general margin trading for the
-    specified Hyper SBI 2 watchlist and send a notification via Gmail if
+  * `-q`: check the daily sales order quota for general margin trading for the
+    specified Hyper SBI 2 watchlist and send a notification via Gmail if it is
     insufficient
-  * `-o`: extract the order status from the SBI Securities web page and copy it
-    to the clipboard
+  * `-o`: extract the order status from the SBI Securities order status web
+    page and copy it to the clipboard
   * `-w`: backup the Hyper SBI 2 watchlists
   * `-d`: take a snapshot of the Hyper SBI 2 application data
   * `-D`: restore the Hyper SBI 2 application data from a snapshot
@@ -110,8 +108,6 @@ file stores these configurations.
 
 ## Known Issues ##
 
-  * Stocks listed solely on the Nagoya Stock Exchange do not seem to be
-    available on Yahoo Finance.
   * For the extraction of the order status, I assume there are 1 to 10 pairs of
     orders (a pair consists of a position and repayment order) for day trading
     on margin.
