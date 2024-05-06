@@ -272,7 +272,7 @@ def configure(trade, can_interpolate=True, can_override=True):
         [('get', 'https://www.sbisec.co.jp/ETGate'),
          ('sleep', '0.8'),
          ('click', '//input[@name="ACT_login"]'),
-         ('for', "${Variables:securities_codes}",
+         ('for', f'${{{trade.variables_section}:securities_codes}}',
           [('send_keys', '//*[@id="top_stock_sec"]', 'element'),
            ('send_keys', '//*[@id="top_stock_sec"]', 'enter'),
            ('click', '//a[text()="信用売"]'),
