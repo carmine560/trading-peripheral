@@ -2,7 +2,7 @@
 
 <!-- Python script that retrieves Hyper SBI 2 maintenance schedules, checks the
 daily sales order quota, and extracts order status from the SBI Securities web
-pages. -->
+pages -->
 
 The `trading_peripheral.py` Python script can:
 
