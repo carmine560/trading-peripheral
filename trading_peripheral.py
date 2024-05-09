@@ -53,52 +53,7 @@ class Trade(initializer.Initializer):
 
 def main():
     """Execute the main program based on command-line arguments."""
-    parser = argparse.ArgumentParser()
-    group = parser.add_mutually_exclusive_group()
-    parser.add_argument(
-        '-P', default=('SBI Securities', 'HYPERSBI2'),
-        metavar=('BROKERAGE', 'PROCESS|PATH_TO_EXECUTABLE'), nargs=2,
-        help='set the brokerage and the process [defaults: %(default)s]')
-    parser.add_argument(
-        '-m', action='store_true',
-        help='insert Hyper SBI 2 maintenance schedules into Google Calendar')
-    parser.add_argument(
-        '-s', action='store_true',
-        help='replace watchlists on the SBI Securities website'
-        ' with the Hyper SBI 2 watchlists')
-    parser.add_argument(
-        '-q', action='store_true',
-        help='check the daily sales order quota for general margin trading'
-        ' for the specified Hyper SBI 2 watchlist'
-        ' and send a notification via Gmail if it is insufficient')
-    parser.add_argument(
-        '-o', action='store_true',
-        help='extract the order status'
-        ' from the SBI Securities order status web page'
-        ' and copy it to the clipboard')
-    parser.add_argument(
-        '-w', action='store_true',
-        help='backup the Hyper SBI 2 watchlists')
-    parser.add_argument(
-        '-d', action='store_true',
-        help='take a snapshot of the Hyper SBI 2 application data')
-    parser.add_argument(
-        '-D', action='store_true',
-        help='restore the Hyper SBI 2 application data from a snapshot')
-    group.add_argument(
-        '-G', action='store_true',
-        help='configure general options and exit')
-    group.add_argument(
-        '-O', action='store_true',
-        help='configure order status formats and exit')
-    group.add_argument(
-        '-A', action='store_true',
-        help='configure actions and exit')
-    group.add_argument(
-        '-C', action='store_true',
-        help='check configuration changes and exit')
-    args = parser.parse_args(None if sys.argv[1:] else ['-h'])
-
+    args = get_arguments()
     trade = Trade(*args.P)
     backup_parameters = {'number_of_backups': 8}
 
@@ -181,6 +136,57 @@ def main():
                     + '.tar.xz.gpg')
                 output_directory = os.path.dirname(application_data_directory)
                 file_utilities.decrypt_extract_file(snapshot, output_directory)
+
+
+def get_arguments():
+    """Parse and return command-line arguments."""
+    parser = argparse.ArgumentParser()
+    group = parser.add_mutually_exclusive_group()
+
+    parser.add_argument(
+        '-P', nargs=2, default=('SBI Securities', 'HYPERSBI2'),
+        help='set the brokerage and the process [defaults: %(default)s]',
+        metavar=('BROKERAGE', 'PROCESS|PATH_TO_EXECUTABLE'))
+    parser.add_argument(
+        '-m', action='store_true',
+        help='insert Hyper SBI 2 maintenance schedules into Google Calendar')
+    parser.add_argument(
+        '-s', action='store_true',
+        help='replace watchlists on the SBI Securities website'
+        ' with the Hyper SBI 2 watchlists')
+    parser.add_argument(
+        '-q', action='store_true',
+        help='check the daily sales order quota for general margin trading'
+        ' for the specified Hyper SBI 2 watchlist'
+        ' and send a notification via Gmail if it is insufficient')
+    parser.add_argument(
+        '-o', action='store_true',
+        help='extract the order status'
+        ' from the SBI Securities order status web page'
+        ' and copy it to the clipboard')
+    parser.add_argument(
+        '-w', action='store_true',
+        help='backup the Hyper SBI 2 watchlists')
+    parser.add_argument(
+        '-d', action='store_true',
+        help='take a snapshot of the Hyper SBI 2 application data')
+    parser.add_argument(
+        '-D', action='store_true',
+        help='restore the Hyper SBI 2 application data from a snapshot')
+    group.add_argument(
+        '-G', action='store_true',
+        help='configure general options and exit')
+    group.add_argument(
+        '-O', action='store_true',
+        help='configure order status formats and exit')
+    group.add_argument(
+        '-A', action='store_true',
+        help='configure actions and exit')
+    group.add_argument(
+        '-C', action='store_true',
+        help='check configuration changes and exit')
+
+    return parser.parse_args(None if sys.argv[1:] else ['-h'])
 
 
 def configure(trade, can_interpolate=True, can_override=True):
