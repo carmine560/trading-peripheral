@@ -57,6 +57,9 @@ def main():
     trade = Trade(*args.P)
     backup_parameters = {'number_of_backups': 8}
 
+    if args.B:
+        file_utilities.create_bash_wrapper(__file__, args.B)
+        return
     if any((args.G, args.O, args.A)):
         config = configure(trade, can_interpolate=False)
         if args.G and configuration.modify_section(
@@ -173,6 +176,12 @@ def get_arguments():
     parser.add_argument(
         '-D', action='store_true',
         help='restore the Hyper SBI 2 application data from a snapshot')
+    group.add_argument(
+        '-B', nargs='?', const='.',
+        help='generate a WSL Bash script'
+        f' for running {os.path.basename(__file__)}'
+        ' with an optional output directory',
+        metavar='DIRECTORY')
     group.add_argument(
         '-G', action='store_true',
         help='configure general options and exit')
