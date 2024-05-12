@@ -181,16 +181,12 @@ def get_arguments():
         help='restore the Hyper SBI 2 application data from a snapshot')
     group.add_argument(
         '-B', nargs='?', const='.',
-        help='generate a WSL Bash script'
-        f' for operating {os.path.basename(__file__)}'
-        ' with an optional output directory',
-        metavar='DIRECTORY')
+        help='generate a WSL Bash script to activate and run this script',
+        metavar='OUTPUT_DIRECTORY')
     group.add_argument(
         '-PS', nargs='?', const='.',
-        help='generate a PowerShell script'
-        f' for operating {os.path.basename(__file__)}'
-        ' with an optional output directory',
-        metavar='DIRECTORY')
+        help='generate a PowerShell 7 script to activate and run this script',
+        metavar='OUTPUT_DIRECTORY')
     group.add_argument(
         '-G', action='store_true',
         help='configure general options and exit')

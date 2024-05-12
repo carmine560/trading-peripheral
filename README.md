@@ -101,10 +101,10 @@ file stores these configurations.
   * `-w`: backup the Hyper SBI 2 watchlists
   * `-d`: take a snapshot of the Hyper SBI 2 application data
   * `-D`: restore the Hyper SBI 2 application data from a snapshot
-  * `-B [DIRECTORY]`: generate a WSL Bash script for operating
-  `trading_peripheral.py` with an optional output directory
-  * `-PS [DIRECTORY]`: generate a PowerShell script for operating
-    `trading_assistant.py` with an optional output directory
+  * `-B [OUTPUT_DIRECTORY]`: generate a WSL Bash script to activate and run
+  this script
+  * `-PS [OUTPUT_DIRECTORY]`: generate a PowerShell 7 script to activate and
+    run this script
   * `-G`: configure general options and exit
   * `-O`: configure order status formats and exit
   * `-A`: configure actions and exit
