@@ -88,8 +88,8 @@ file stores these configurations.
 
 ### Options ###
 
-  * `-P BROKERAGE PROCESS|PATH_TO_EXECUTABLE`: set the brokerage and the
-    process [defaults: `SBI Securities` and `HYPERSBI2`]
+  * `-P BROKERAGE PROCESS|EXECUTABLE_PATH`: set the brokerage and the process
+    [defaults: `SBI Securities` and `HYPERSBI2`]
   * `-m`: insert Hyper SBI 2 maintenance schedules into Google Calendar
   * `-s`: replace watchlists on the SBI Securities website with the Hyper SBI 2
     watchlists

@@ -152,7 +152,7 @@ def get_arguments():
     parser.add_argument(
         '-P', nargs=2, default=('SBI Securities', 'HYPERSBI2'),
         help='set the brokerage and the process [defaults: %(default)s]',
-        metavar=('BROKERAGE', 'PROCESS|PATH_TO_EXECUTABLE'))
+        metavar=('BROKERAGE', 'PROCESS|EXECUTABLE_PATH'))
     parser.add_argument(
         '-m', action='store_true',
         help='insert Hyper SBI 2 maintenance schedules into Google Calendar')
