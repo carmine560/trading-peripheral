@@ -62,7 +62,7 @@ class CustomWordCompleter(Completer):
 def read_config(config, config_path):
     """Read and load configuration from a file, decrypt if encrypted."""
     encrypted_config_path = config_path + '.gpg'
-    if os.path.exists(encrypted_config_path):
+    if os.path.isfile(encrypted_config_path):
         if GNUPG_IMPORT_ERROR:
             raise RuntimeError(GNUPG_IMPORT_ERROR)
 
@@ -79,7 +79,7 @@ def read_config(config, config_path):
 def write_config(config, config_path):
     """Write config to file or encrypt and write if encrypted file exists."""
     encrypted_config_path = config_path + '.gpg'
-    if os.path.exists(encrypted_config_path):
+    if os.path.isfile(encrypted_config_path):
         if GNUPG_IMPORT_ERROR:
             raise RuntimeError(GNUPG_IMPORT_ERROR)
 
@@ -326,7 +326,8 @@ def modify_option(config, section, option, config_path, backup_parameters=None,
             else:
                 config[section][option] = modify_value(
                     prompts.get('value', 'value'),
-                    value=config[section][option], limits=limits)
+                    value=config[section][option], all_values=all_values,
+                    limits=limits)
         elif answer == 'toggle':
             config[section][option] = str(not boolean_value)
         elif answer == 'empty':

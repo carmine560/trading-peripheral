@@ -57,6 +57,7 @@ def main():
     trade = Trade(*args.P)
     backup_parameters = {'number_of_backups': 8}
 
+    # TODO: simplify
     if args.B:
         file_utilities.create_bash_wrapper(__file__, args.B)
         return
@@ -179,14 +180,9 @@ def get_arguments():
     parser.add_argument(
         '-D', action='store_true',
         help='restore the Hyper SBI 2 application data from a snapshot')
-    group.add_argument(
-        '-B', nargs='?', const='.',
-        help='generate a WSL Bash script to activate and run this script',
-        metavar='OUTPUT_DIRECTORY')
-    group.add_argument(
-        '-PS', nargs='?', const='.',
-        help='generate a PowerShell 7 script to activate and run this script',
-        metavar='OUTPUT_DIRECTORY')
+
+    file_utilities.add_wrapper_options(group)
+
     group.add_argument(
         '-G', action='store_true',
         help='configure general options and exit')
@@ -636,7 +632,7 @@ def get_credentials(token_json):
     scopes = ['https://www.googleapis.com/auth/calendar',
               'https://www.googleapis.com/auth/gmail.send']
     credentials = None
-    if os.path.exists(token_json):
+    if os.path.isfile(token_json):
         credentials = Credentials.from_authorized_user_file(token_json, scopes)
     if not credentials or not credentials.valid:
         if credentials and credentials.expired and credentials.refresh_token:
