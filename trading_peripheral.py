@@ -63,7 +63,7 @@ def main():
 
     if args.m:
         insert_maintenance_schedules(trade, config)
-    if any((args.s, args.q, args.o)):
+    if any((args.s, args.S, args.q, args.o)):
         driver = browser_driver.initialize(
             headless=config['General'].getboolean('headless'),
             user_data_directory=config['General']['user_data_directory'],
@@ -71,8 +71,12 @@ def main():
             implicitly_wait=float(config['General']['implicitly_wait']))
         if args.s:
             browser_driver.execute_action(
-                driver,
-                config[trade.actions_section]['replace_sbi_securities'])
+                driver, config[trade.actions_section][
+                    f'replace_{trade.vendor}_watchlists'])
+        if args.S:
+            browser_driver.execute_action(
+                driver, config[trade.actions_section][
+                    f'replace_{trade.process}_watchlists'])
         if args.q:
             check_daily_sales_order_quota(trade, config, driver)
         if args.o:
@@ -110,38 +114,46 @@ def main():
 def get_arguments():
     """Parse and return command-line arguments."""
     parser = argparse.ArgumentParser()
+    default_vendor = 'SBI Securities' # TODO
+    default_process = 'HYPERSBI2'
+    default_title = 'Hyper SBI 2'
     group = parser.add_mutually_exclusive_group()
 
     parser.add_argument(
-        '-P', nargs=2, default=('SBI Securities', 'HYPERSBI2'),
+        '-P', nargs=2, default=(default_vendor, default_process),
         help='set the brokerage and the process [defaults: %(default)s]',
         metavar=('BROKERAGE', 'PROCESS|EXECUTABLE_PATH'))
     parser.add_argument(
         '-m', action='store_true',
-        help='insert Hyper SBI 2 maintenance schedules into Google Calendar')
+        help=f'insert {default_title} maintenance schedules'
+        ' into Google Calendar')
     parser.add_argument(
         '-s', action='store_true',
-        help='replace watchlists on the SBI Securities website'
-        ' with the Hyper SBI 2 watchlists')
+        help=f'replace watchlists on the {default_vendor} website'
+        f' with the {default_title} watchlists')
+    parser.add_argument(
+        '-S', action='store_true',
+        help=f'replace the {default_title} watchlists'
+        f' with watchlists on the {default_vendor} website')
     parser.add_argument(
         '-q', action='store_true',
         help='check the daily sales order quota for general margin trading'
-        ' for the specified Hyper SBI 2 watchlist'
+        f' for the specified {default_title} watchlist'
         ' and send a notification via Gmail if it is insufficient')
     parser.add_argument(
         '-o', action='store_true',
         help='extract the order status'
-        ' from the SBI Securities order status web page'
+        f' from the {default_vendor} order status web page'
         ' and copy it to the clipboard')
     parser.add_argument(
         '-w', action='store_true',
-        help='backup the Hyper SBI 2 watchlists')
+        help=f'backup the {default_title} watchlists')
     parser.add_argument(
         '-d', action='store_true',
-        help='take a snapshot of the Hyper SBI 2 application data')
+        help=f'take a snapshot of the {default_title} application data')
     parser.add_argument(
         '-D', action='store_true',
-        help='restore the Hyper SBI 2 application data from a snapshot')
+        help=f'restore the {default_title} application data from a snapshot')
 
     file_utilities.add_launcher_options(group)
 
@@ -179,7 +191,7 @@ def configure(trade, can_interpolate=True, can_override=True):
         'email_message_to': '',
         'fingerprint': ''}
     all_service_name = 'すべてのサービス'
-    config[trade.maintenance_schedules_section] = {
+    config[trade.maintenance_schedules_section] = { # TODO: move to HYPERSBI2
         'url':
         ('https://search.sbisec.co.jp/v2/popwin/info/home'
          '/pop6040_maintenance.html'),
@@ -231,7 +243,7 @@ def configure(trade, can_interpolate=True, can_override=True):
         'snapshot_directory':
         os.path.join(os.path.expanduser('~'), 'Downloads')}
     config[trade.actions_section] = {
-        'replace_sbi_securities':
+        f'replace_{trade.vendor}_watchlists':
         [('get', 'https://www.sbisec.co.jp/ETGate'),
          ('sleep', '0.8'),
          ('click', '//input[@name="ACT_login"]'),
@@ -244,6 +256,21 @@ def configure(trade, can_interpolate=True, can_override=True):
          ('click', '//*[@name="tool_to_1" and @value="1"]'),
          ('click', '//input[@value="次へ"]'),
          ('click', '//*[@name="add_replace_tool_01" and @value="1_2"]'),
+         ('click', '//input[@value="確認画面へ"]'),
+         ('click', '//input[@value="指示実行"]')],
+        f'replace_{trade.process}_watchlists':
+        [('get', 'https://www.sbisec.co.jp/ETGate'),
+         ('sleep', '0.8'),
+         ('click', '//input[@name="ACT_login"]'),
+         ('click', '//a[text()="ポートフォリオ"]'),
+         ('click', '//a[text()="登録銘柄リストの追加・置き換え"]'),
+         ('click',
+          '//img[@alt="登録銘柄リストの追加・置き換え機能を利用する"]'),
+         ('click', '//*[@name="tool_from" and @value="1"]'),
+         ('click', '//input[@value="次へ"]'),
+         ('click', '//*[@name="tool_to_3" and @value="3"]'),
+         ('click', '//input[@value="次へ"]'),
+         ('click', '//*[@name="add_replace_tool_03" and @value="3_2"]'),
          ('click', '//input[@value="確認画面へ"]'),
          ('click', '//input[@value="指示実行"]')],
         'get_daily_sales_order_quota':

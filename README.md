@@ -93,6 +93,8 @@ file stores these configurations.
   * `-m`: insert Hyper SBI 2 maintenance schedules into Google Calendar
   * `-s`: replace watchlists on the SBI Securities website with the Hyper SBI 2
     watchlists
+  * `-S`: replace the Hyper SBI 2 watchlists with watchlists on the SBI
+    Securities website
   * `-q`: check the daily sales order quota for general margin trading for the
     specified Hyper SBI 2 watchlist and send a notification via Gmail if it is
     insufficient
