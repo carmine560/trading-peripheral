@@ -55,49 +55,11 @@ def main():
     """Execute the main program based on command-line arguments."""
     args = get_arguments()
     trade = Trade(*args.P)
-    backup_parameters = {'number_of_backups': 8}
 
-    # TODO: simplify
-    if args.B:
-        file_utilities.create_bash_wrapper(__file__, args.B)
-        return
-    if args.PS:
-        file_utilities.create_powershell_wrapper(__file__, args.PS)
-        return
-    if any((args.G, args.O, args.A)):
-        config = configure(trade, can_interpolate=False)
-        if args.G and configuration.modify_section(
-                config, 'General', trade.config_path,
-                backup_parameters=backup_parameters):
-            return
-        if args.O and configuration.modify_option(
-                config, trade.order_status_section, 'output_columns',
-                trade.config_path, backup_parameters=backup_parameters,
-                prompts={'value': 'column', 'end_of_list': 'end of columns'},
-                all_values=(('None', 'entry_date', 'entry_price', 'entry_time',
-                             'exit_date', 'exit_price', 'exit_time', 'size',
-                             'symbol', 'trade_style', 'trade_type'),)):
-            return
-        if args.A and configuration.modify_section(
-                config, trade.actions_section, trade.config_path,
-                backup_parameters=backup_parameters,
-                prompts={'key': 'command', 'value': 'argument',
-                         'additional_value': 'additional argument',
-                         'end_of_list': 'end of commands'},
-                items=trade.instruction_items):
-            return
+    file_utilities.create_launchers_exit(args, __file__)
+    configure_exit(args, trade)
 
-        sys.exit(1)
-    elif args.C:
-        default_config = configure(trade, can_interpolate=False,
-                                   can_override=False)
-        configuration.check_config_changes(
-            default_config, trade.config_path,
-            excluded_sections=(trade.variables_section,),
-            backup_parameters=backup_parameters)
-        return
-    else:
-        config = configure(trade)
+    config = configure(trade)
 
     if args.m:
         insert_maintenance_schedules(trade, config)
@@ -181,7 +143,7 @@ def get_arguments():
         '-D', action='store_true',
         help='restore the Hyper SBI 2 application data from a snapshot')
 
-    file_utilities.add_wrapper_options(group)
+    file_utilities.add_launcher_options(group)
 
     group.add_argument(
         '-G', action='store_true',
@@ -327,6 +289,42 @@ def configure(trade, can_interpolate=True, can_override=True):
                 sys.exit(1)
 
     return config
+
+
+def configure_exit(args, trade):
+    """Configure parameters based on command-line arguments and exit."""
+    config = configure(trade, can_interpolate=False)
+    backup_parameters = {'number_of_backups': 8}
+
+    if any((args.G, args.O, args.A)):
+        for argument, (
+                section, option, prompts, items, all_values
+        ) in {
+            'G': ('General', None, None, None, None),
+            'O': (trade.order_status_section, 'output_columns',
+                  {'value': 'column', 'end_of_list': 'end of columns'}, None,
+                  (('None', 'entry_date', 'entry_price', 'entry_time',
+                    'exit_date', 'exit_price', 'exit_time', 'size', 'symbol',
+                    'trade_style', 'trade_type'),)),
+            'A': (trade.actions_section, None,
+                  {'key': 'command', 'value': 'argument',
+                   'additional_value': 'additional argument',
+                   'end_of_list': 'end of commands'}, trade.instruction_items,
+                  None)}.items():
+            if getattr(args, argument):
+                configuration.modify_section(
+                    config, section, trade.config_path,
+                    backup_parameters=backup_parameters, option=option,
+                    prompts=prompts, items=items, all_values=all_values)
+                break
+
+        sys.exit()
+    elif args.C:
+        configuration.check_config_changes(
+            configure(trade, can_interpolate=False, can_override=False),
+            trade.config_path, excluded_sections=(trade.variables_section,),
+            backup_parameters=backup_parameters)
+        sys.exit()
 
 
 def insert_maintenance_schedules(trade, config):
