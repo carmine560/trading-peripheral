@@ -113,47 +113,49 @@ def main():
 
 def get_arguments():
     """Parse and return command-line arguments."""
+    pre_parser = argparse.ArgumentParser(add_help=False)
+    pre_parser.add_argument('-P', nargs=2)
+    pre_args, _ = pre_parser.parse_known_args()
+
     parser = argparse.ArgumentParser()
-    default_vendor = 'SBI Securities' # TODO
-    default_process = 'HYPERSBI2'
-    default_title = 'Hyper SBI 2'
+    default_vendor_process = ('SBI Securities', 'HYPERSBI2')
+    vendor, process = pre_args.P if pre_args.P else default_vendor_process
     group = parser.add_mutually_exclusive_group()
 
     parser.add_argument(
-        '-P', nargs=2, default=(default_vendor, default_process),
+        '-P', nargs=2, default=default_vendor_process,
         help='set the brokerage and the process [defaults: %(default)s]',
         metavar=('BROKERAGE', 'PROCESS|EXECUTABLE_PATH'))
     parser.add_argument(
         '-m', action='store_true',
-        help=f'insert {default_title} maintenance schedules'
-        ' into Google Calendar')
+        help=f'insert {process} maintenance schedules into Google Calendar')
     parser.add_argument(
         '-s', action='store_true',
-        help=f'replace watchlists on the {default_vendor} website'
-        f' with the {default_title} watchlists')
+        help=f'replace watchlists on the {vendor} website'
+        f' with the {process} watchlists')
     parser.add_argument(
         '-S', action='store_true',
-        help=f'replace the {default_title} watchlists'
-        f' with watchlists on the {default_vendor} website')
+        help=f'replace the {process} watchlists'
+        f' with watchlists on the {vendor} website')
     parser.add_argument(
         '-q', action='store_true',
         help='check the daily sales order quota for general margin trading'
-        f' for the specified {default_title} watchlist'
+        f' for the specified {process} watchlist'
         ' and send a notification via Gmail if it is insufficient')
     parser.add_argument(
         '-o', action='store_true',
         help='extract the order status'
-        f' from the {default_vendor} order status web page'
+        f' from the {vendor} order status web page'
         ' and copy it to the clipboard')
     parser.add_argument(
         '-w', action='store_true',
-        help=f'backup the {default_title} watchlists')
+        help=f'backup the {process} watchlists')
     parser.add_argument(
         '-d', action='store_true',
-        help=f'take a snapshot of the {default_title} application data')
+        help=f'take a snapshot of the {process} application data')
     parser.add_argument(
         '-D', action='store_true',
-        help=f'restore the {default_title} application data from a snapshot')
+        help=f'restore the {process} application data from a snapshot')
 
     file_utilities.add_launcher_options(group)
 
@@ -550,9 +552,8 @@ def check_daily_sales_order_quota(trade, config, driver):
             sys.exit(1)
 
 
-def extract_order_status(trade, config, driver):
+def extract_order_status(trade, config, driver): # TODO: make configurable
     """Extract order status from a webpage and copies it to the clipboard."""
-    # TODO: make configurable
     section = config[trade.order_status_section]
 
     try:
@@ -604,8 +605,7 @@ def extract_order_status(trade, config, driver):
                             section['symbol_replacement'],
                             df.iloc[index, execution_column])
             size = df.iloc[index + 1, size_column]
-            # TODO: make configurable
-            trade_style = 'day'
+            trade_style = 'day' # TODO: make configurable
             if (section['margin_trading']
                 in df.iloc[index + 1, execution_column]):
                 entry_date = re.sub(section['datetime_regex'],
