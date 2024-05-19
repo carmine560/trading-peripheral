@@ -293,10 +293,9 @@ def configure(trade, can_interpolate=True, can_override=True):
 
 def configure_exit(args, trade):
     """Configure parameters based on command-line arguments and exit."""
-    config = configure(trade, can_interpolate=False)
     backup_parameters = {'number_of_backups': 8}
-
     if any((args.G, args.O, args.A)):
+        config = configure(trade, can_interpolate=False)
         for argument, (
                 section, option, prompts, items, all_values
         ) in {
