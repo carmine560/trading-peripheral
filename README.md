@@ -90,6 +90,8 @@ file stores these configurations.
 
   * `-P BROKERAGE PROCESS|EXECUTABLE_PATH`: set the brokerage and the process
     [defaults: `SBI Securities` and `HYPERSBI2`]
+  * `-t`: check the SBI Securities investment tools web page and send a
+    notification via Gmail if it is updated
   * `-m`: insert Hyper SBI 2 maintenance schedules into Google Calendar
   * `-s`: replace watchlists on the SBI Securities website with the Hyper SBI 2
     watchlists

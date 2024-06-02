@@ -1,11 +1,9 @@
-"""Manages SBI Securities data and integrates with other services."""
+"""Manage SBI Securities data and integrate with other services."""
 
 from datetime import datetime, timedelta
-from email.message import EmailMessage
 from email.utils import parsedate_to_datetime
 from io import StringIO
 import argparse
-import base64
 import configparser
 import inspect
 import json
@@ -13,9 +11,6 @@ import os
 import re
 import sys
 
-from google.auth.transport.requests import Request
-from google.oauth2.credentials import Credentials
-from google_auth_oauthlib.flow import InstalledAppFlow
 from googleapiclient.discovery import build
 from googleapiclient.errors import HttpError
 from lxml import html
@@ -28,6 +23,7 @@ import requests
 import browser_driver
 import configuration
 import file_utilities
+import google_services
 import initializer
 import process_utilities
 
@@ -38,6 +34,8 @@ class Trade(initializer.Initializer):
     def __init__(self, vendor, process):
         """Initialize the Trade with the vendor and process."""
         super().__init__(vendor, process, __file__)
+        self.investment_tools_news_section = (
+            f'{self.vendor} Investment Tools News')
         self.maintenance_schedules_section = (
             f'{self.vendor} Maintenance Schedules')
         self.daily_sales_order_quota_section = (
@@ -61,6 +59,8 @@ def main():
 
     config = configure(trade)
 
+    if args.t:
+        check_investment_tools_news(trade, config)
     if args.m:
         insert_maintenance_schedules(trade, config)
     if any((args.s, args.S, args.q, args.o)):
@@ -127,6 +127,10 @@ def get_arguments():
         help='set the brokerage and the process [defaults: %(default)s]',
         metavar=('BROKERAGE', 'PROCESS|EXECUTABLE_PATH'))
     parser.add_argument(
+        '-t', action='store_true',
+        help=f'check the {vendor} investment tools web page'
+        ' and send a notification via Gmail if it is updated')
+    parser.add_argument(
         '-m', action='store_true',
         help=f'insert {process} maintenance schedules into Google Calendar')
     parser.add_argument(
@@ -192,8 +196,17 @@ def configure(trade, can_interpolate=True, can_override=True):
         'email_message_from': '',
         'email_message_to': '',
         'fingerprint': ''}
+    # TODO: move to HYPERSBI2
+    config[trade.investment_tools_news_section] = {
+        'url':
+        ('https://site2.sbisec.co.jp/ETGate/?_ControlID=WPLETmgR001Control'
+         '&_PageID=WPLETmgR001Mdtl20&_DataStoreID=DSWPLETmgR001Control'
+         '&_ActionID=DefaultAID&burl=search_home&cat1=home&cat2=tool'
+         '&dir=tool%2F&file=home_tool.html&getFlg=on&OutSide=on'),
+        'latest_news_xpath': '//*[@id="tab1_news"]/a[1]',
+        'latest_news_text': ''}
     all_service_name = 'すべてのサービス'
-    config[trade.maintenance_schedules_section] = { # TODO: move to HYPERSBI2
+    config[trade.maintenance_schedules_section] = {
         'url':
         ('https://search.sbisec.co.jp/v2/popwin/info/home'
          '/pop6040_maintenance.html'),
@@ -412,8 +425,9 @@ def insert_maintenance_schedules(trade, config):
     if match_object:
         title = match_object.group(1)
 
-    resource = build('calendar', 'v3', credentials=get_credentials(
-        os.path.join(trade.config_directory, 'token.json')))
+    resource = build('calendar', 'v3', # TODO: move to google_services
+                     credentials=google_services.get_credentials(
+                         os.path.join(trade.config_directory, 'token.json')))
 
     if not section['calendar_id']:
         body = {'summary': trade.maintenance_schedules_section,
@@ -502,7 +516,7 @@ def insert_maintenance_schedules(trade, config):
 
 
 def check_daily_sales_order_quota(trade, config, driver):
-    """Check the daily sales order quota and sends an email if necessary."""
+    """Check the daily sales order quota and send an email if necessary."""
     with open(config[trade.process]['watchlists'], encoding='utf-8') as f:
         watchlists = json.load(f)
 
@@ -532,28 +546,46 @@ def check_daily_sales_order_quota(trade, config, driver):
 
     print(status)
 
-    if (config['General']['email_message_from']
-        and config['General']['email_message_to'] and status):
-        resource = build('gmail', 'v1', credentials=get_credentials(
-            os.path.join(trade.config_directory, 'token.json')))
+    google_services.send_email_message(
+        os.path.join(trade.config_directory, 'token.json'),
+        trade.daily_sales_order_quota_section,
+        config['General']['email_message_from'],
+        config['General']['email_message_to'],
+        status)
 
-        email_message = EmailMessage()
-        email_message['Subject'] = trade.daily_sales_order_quota_section
-        email_message['From'] = config['General']['email_message_from']
-        email_message['To'] = config['General']['email_message_to']
-        email_message.set_content(status)
 
-        body = {'raw': base64.urlsafe_b64encode(
-            email_message.as_bytes()).decode()}
-        try:
-            resource.users().messages().send(userId='me', body=body).execute()
-        except HttpError as e:
-            print(e)
-            sys.exit(1)
+def check_investment_tools_news(trade, config):
+    """Check the investment tools web page and send an email if necessary."""
+    response = requests.get(config[trade.investment_tools_news_section]['url'],
+                            timeout=5)
+    response.encoding = chardet.detect(response.content)['encoding']
+    root = html.fromstring(response.text)
+
+    latest_news_text = root.xpath(
+        config[trade.investment_tools_news_section]['latest_news_xpath']
+    )[0].text_content().strip()
+    latest_news_text += (
+        f"\n{config[trade.investment_tools_news_section]['url']}")
+    if (latest_news_text
+        == config[trade.investment_tools_news_section]['latest_news_text']):
+        return
+
+    print(latest_news_text)
+
+    google_services.send_email_message(
+        os.path.join(trade.config_directory, 'token.json'),
+        trade.investment_tools_news_section,
+        config['General']['email_message_from'],
+        config['General']['email_message_to'],
+        latest_news_text)
+
+    config[trade.investment_tools_news_section]['latest_news_text'] = (
+        latest_news_text)
+    configuration.write_config(config, trade.config_path)
 
 
 def extract_order_status(trade, config, driver): # TODO: make configurable
-    """Extract order status from a webpage and copies it to the clipboard."""
+    """Extract order status from a webpage and copy it to the clipboard."""
     section = config[trade.order_status_section]
 
     try:
@@ -649,29 +681,6 @@ def extract_order_status(trade, config, driver): # TODO: make configurable
         results = results.reindex([0, 1])
 
     results.to_clipboard(index=False, header=False)
-
-
-def get_credentials(token_json):
-    """Obtain valid Google API credentials from a JSON token file."""
-    scopes = ['https://www.googleapis.com/auth/calendar',
-              'https://www.googleapis.com/auth/gmail.send']
-    credentials = None
-    if os.path.isfile(token_json):
-        credentials = Credentials.from_authorized_user_file(token_json, scopes)
-    if not credentials or not credentials.valid:
-        if credentials and credentials.expired and credentials.refresh_token:
-            credentials.refresh(Request())
-        else:
-            try:
-                flow = InstalledAppFlow.from_client_secrets_file(
-                    input('Path to client_secrets.json: '), scopes)
-                credentials = flow.run_local_server(port=0)
-            except (FileNotFoundError, ValueError) as e:
-                print(e)
-                sys.exit(1)
-        with open(token_json, 'w', encoding='utf-8') as token:
-            token.write(credentials.to_json())
-    return credentials
 
 
 if __name__ == '__main__':
