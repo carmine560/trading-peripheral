@@ -24,6 +24,7 @@ import file_utilities
 import google_services
 import initializer
 import process_utilities
+import web_utilities
 
 
 class Trade(initializer.Initializer):
@@ -372,13 +373,7 @@ def insert_maintenance_schedules(trade, config):
     tzinfo = pytz.timezone(section['timezone'])
     now = datetime.now(tzinfo)
 
-    head = requests.head(section['url'], timeout=5)
-    try:
-        head.raise_for_status()
-    except requests.exceptions.HTTPError as e:
-        print(e)
-        sys.exit(1)
-
+    head = web_utilities.make_head_request(section['url'])
     last_inserted = (datetime.fromisoformat(section['last_inserted'])
                      if section['last_inserted']
                      else datetime.min.replace(tzinfo=tzinfo))
