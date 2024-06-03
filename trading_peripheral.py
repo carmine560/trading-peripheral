@@ -11,8 +11,6 @@ import os
 import re
 import sys
 
-from googleapiclient.discovery import build
-from googleapiclient.errors import HttpError
 from lxml import html
 from lxml.etree import Element
 import chardet
@@ -391,15 +389,6 @@ def insert_maintenance_schedules(trade, config):
             assumed_year = assumed_year - 1
         return f'{assumed_year}-{matched_month}-{matched_day} {matched_time}'
 
-    def dictionary_to_tuple(dictionary):
-        """Convert a dictionary to a tuple of key-value pairs."""
-        if isinstance(dictionary, dict):
-            items = []
-            for key, value in sorted(dictionary.items()):
-                items.append((key, dictionary_to_tuple(value)))
-            return tuple(items)
-        return dictionary
-
     section = config[trade.maintenance_schedules_section]
     tzinfo = pytz.timezone(section['timezone'])
     now = datetime.now(tzinfo)
@@ -425,20 +414,6 @@ def insert_maintenance_schedules(trade, config):
     if match_object:
         title = match_object.group(1)
 
-    resource = build('calendar', 'v3', # TODO: move to google_services
-                     credentials=google_services.get_credentials(
-                         os.path.join(trade.config_directory, 'token.json')))
-
-    if not section['calendar_id']:
-        body = {'summary': trade.maintenance_schedules_section,
-                'timeZone': section['timezone']}
-        try:
-            calendar = resource.calendars().insert(body=body).execute()
-            section['calendar_id'] = calendar['id']
-        except HttpError as e:
-            print(e)
-            sys.exit(1)
-
     try:
         all_service_element = root.xpath(section['all_service_xpath'])[0]
         match_object = re.search(r'//(\w+)', section['service_xpath'])
@@ -452,6 +427,11 @@ def insert_maintenance_schedules(trade, config):
                 all_service_element.addprevious(pre_element)
     except IndexError:
         pass
+
+    resource, section['calendar_id'] = google_services.get_calendar_resource(
+        os.path.join(trade.config_directory, 'token.json'),
+        section['calendar_id'], trade.maintenance_schedules_section,
+        section['timezone'])
 
     previous_bodies = configuration.evaluate_value(section['previous_bodies'])
     for service in configuration.evaluate_value(section['services']):
@@ -489,18 +469,11 @@ def insert_maintenance_schedules(trade, config):
                         'start': {'dateTime': start.isoformat()},
                         'end': {'dateTime': end.isoformat()},
                         'source': {'title': title, 'url': section['url']}}
-                body_tuple = dictionary_to_tuple(body)
+                body_tuple = file_utilities.dictionary_to_tuple(body)
 
                 if body_tuple not in previous_bodies.get(service, []):
-                    try:
-                        event = resource.events().insert(
-                            calendarId=section['calendar_id'],
-                            body=body).execute()
-                        print(event.get('start')['dateTime'],
-                              event.get('summary'))
-                    except HttpError as e:
-                        print(e)
-                        sys.exit(1)
+                    google_services.insert_calendar_event(
+                        resource, section['calendar_id'], body)
 
                     previous_bodies.setdefault(service, []).append(body_tuple)
                     maximum_number_of_bodies = 32

@@ -1,4 +1,4 @@
-"""Send Gmail messages and manage Google API credentials."""
+"""Handle Google Calendar events and Gmail messages."""
 
 from email.message import EmailMessage
 import base64
@@ -10,6 +10,34 @@ from google.oauth2.credentials import Credentials
 from google_auth_oauthlib.flow import InstalledAppFlow
 from googleapiclient.discovery import build
 from googleapiclient.errors import HttpError
+
+
+def get_calendar_resource(credentials_path, calendar_id, summary, timezone):
+    """Get a Google Calendar resource and create a new calendar if needed."""
+    resource = build('calendar', 'v3',
+                     credentials=get_credentials(credentials_path))
+
+    if not calendar_id:
+        try:
+            calendar = resource.calendars().insert(
+                body={'summary': summary, 'timeZone': timezone}).execute()
+            calendar_id = calendar['id']
+        except HttpError as e:
+            print(e)
+            sys.exit(1)
+
+    return (resource, calendar_id)
+
+
+def insert_calendar_event(resource, calendar_id, body):
+    """Insert an event into a calendar and print its start time and summary."""
+    try:
+        event = resource.events().insert(calendarId=calendar_id,
+                                         body=body).execute()
+        print(event.get('start')['dateTime'], event.get('summary'))
+    except HttpError as e:
+        print(e)
+        sys.exit(1)
 
 
 def send_email_message(credentials_path, subject, email_message_from,
