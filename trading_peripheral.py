@@ -368,27 +368,6 @@ def configure_exit(args, trade):
 
 def insert_maintenance_schedules(trade, config):
     """Insert maintenance schedules into a Google Calendar."""
-    def replace_datetime(match_object):
-        """Replace matched datetime strings with formatted strings."""
-        matched_year = match_object.group(int(section['year_group']))
-        matched_month = match_object.group(int(section['month_group']))
-        matched_day = match_object.group(int(section['day_group']))
-        matched_time = match_object.group(int(section['time_group']))
-        if matched_year:
-            return (f'{matched_year}-{matched_month}-{matched_day} '
-                    f'{matched_time}')
-
-        assumed_year = int(now.strftime('%Y'))
-        timedelta_object = tzinfo.localize(datetime.strptime(
-            f'{assumed_year}-{matched_month}-{matched_day} {matched_time}',
-            '%Y-%m-%d %H:%M')) - now
-        threshold = timedelta(days=365 - 30)
-        if timedelta_object < -threshold:
-            assumed_year = assumed_year + 1
-        elif timedelta_object > threshold:
-            assumed_year = assumed_year - 1
-        return f'{assumed_year}-{matched_month}-{matched_day} {matched_time}'
-
     section = config[trade.maintenance_schedules_section]
     tzinfo = pytz.timezone(section['timezone'])
     now = datetime.now(tzinfo)
@@ -449,18 +428,22 @@ def insert_maintenance_schedules(trade, config):
                 if len(datetime_range) != 2:
                     continue
 
-                datetime_string = re.sub(section['datetime_regex'],
-                                         replace_datetime,
-                                         datetime_range[0])
+                datetime_string = re.sub(
+                    section['datetime_regex'],
+                    lambda match_object: replace_datetime(
+                        match_object, section, now, tzinfo),
+                    datetime_range[0])
                 start = tzinfo.localize(
                     datetime.strptime(datetime_string, '%Y-%m-%d %H:%M'))
                 if re.fullmatch(r'\d{1,2}:\d{2}', datetime_range[1]):
                     datetime_string = (start.strftime('%Y-%m-%d ')
                                        + datetime_range[1])
                 else:
-                    datetime_string = re.sub(section['datetime_regex'],
-                                             replace_datetime,
-                                             datetime_range[1])
+                    datetime_string = re.sub(
+                        section['datetime_regex'],
+                        lambda match_object: replace_datetime(
+                            match_object, section, now, tzinfo),
+                        datetime_range[1])
 
                 end = tzinfo.localize(
                     datetime.strptime(datetime_string, '%Y-%m-%d %H:%M'))
@@ -486,6 +469,27 @@ def insert_maintenance_schedules(trade, config):
 
     section['last_inserted'] = now.isoformat()
     configuration.write_config(config, trade.config_path)
+
+
+def replace_datetime(match_object, section, now, tzinfo):
+    """Replace matched datetime strings with formatted strings."""
+    matched_year = match_object.group(int(section['year_group']))
+    matched_month = match_object.group(int(section['month_group']))
+    matched_day = match_object.group(int(section['day_group']))
+    matched_time = match_object.group(int(section['time_group']))
+    if matched_year:
+        return f'{matched_year}-{matched_month}-{matched_day} {matched_time}'
+
+    assumed_year = int(now.strftime('%Y'))
+    timedelta_object = tzinfo.localize(datetime.strptime(
+        f'{assumed_year}-{matched_month}-{matched_day} {matched_time}',
+        '%Y-%m-%d %H:%M')) - now
+    threshold = timedelta(days=365 - 30)
+    if timedelta_object < -threshold:
+        assumed_year = assumed_year + 1
+    elif timedelta_object > threshold:
+        assumed_year = assumed_year - 1
+    return f'{assumed_year}-{matched_month}-{matched_day} {matched_time}'
 
 
 def check_daily_sales_order_quota(trade, config, driver):
