@@ -1,4 +1,4 @@
-"""Module for managing and executing actions with a Selenium WebDriver."""
+"""Manage and execute actions with a Selenium WebDriver."""
 
 import os
 import re
