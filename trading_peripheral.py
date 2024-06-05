@@ -196,139 +196,190 @@ def configure(trade, can_interpolate=True, can_override=True):
         'email_message_from': '',
         'email_message_to': '',
         'fingerprint': ''}
-    # TODO: move to HYPERSBI2
     config[trade.investment_tools_news_section] = {
-        'url':
-        ('https://site2.sbisec.co.jp/ETGate/?_ControlID=WPLETmgR001Control'
-         '&_PageID=WPLETmgR001Mdtl20&_DataStoreID=DSWPLETmgR001Control'
-         '&_ActionID=DefaultAID&burl=search_home&cat1=home&cat2=tool'
-         '&dir=tool%2F&file=home_tool.html&getFlg=on&OutSide=on'),
-        'latest_news_xpath': '//*[@id="tab1_news"]/a[1]',
+        'url': '',
+        'latest_news_xpath': '',
         'latest_news_text': ''}
-    all_service_name = 'すべてのサービス'
     config[trade.maintenance_schedules_section] = {
-        'url':
-        ('https://search.sbisec.co.jp/v2/popwin/info/home'
-         '/pop6040_maintenance.html'),
-        'timezone': 'Asia/Tokyo',
+        'url': '',
+        'timezone': '',
         'last_inserted': '',
         'calendar_id': '',
-        'all_service_xpath':
-        ('//p[contains(@class, "mt-x-2") and contains(., "メインサイト")'
-         f' and contains(., "{all_service_name}")]'),
-        'all_service_name': all_service_name,
-        'services': (all_service_name, 'HYPER SBI 2', 'HYPER SBI2',
-                     'メインサイト'),
-        'service_xpath':
-        '//span[contains(@class, "font-xs font-bold") and text()="{0}"]',
-        'function_xpath': 'following::p[1]',
-        'datetime_xpath': 'ancestor::li[1]/div[1]',
-        'range_splitter_regex': '〜|～',
-        'datetime_regex':
-        r'^(\d{4}年)?(\d{1,2})月(\d{1,2})日（[^）]+）(\d{1,2}:\d{2})$$',
-        'year_group': '1',
-        'month_group': '2',
-        'day_group': '3',
-        'time_group': '4',
+        'all_service_xpath': '',
+        'all_service_name': '',
+        'services': '',
+        'service_xpath': '',
+        'function_xpath': '',
+        'datetime_xpath': '',
+        'range_splitter_regex': '',
+        'datetime_regex': '',
+        'year_group': '',
+        'month_group': '',
+        'day_group': '',
+        'time_group': '',
         'previous_bodies': {}}
     config[trade.daily_sales_order_quota_section] = {
         'quota_watchlist': '',
-        'sufficient': '◎（余裕あり）'}
+        'sufficient': ''}
     config[trade.order_status_section] = {
         'output_columns': (),
-        'table_identifier': '注文種別',
-        'symbol_regex': r'^.* (\d{4}) 東証$$',
-        'symbol_replacement': r'\1',
-        'margin_trading': '信新',
-        'buying_on_margin': '信新買',
-        'execution_column': '3',
-        'execution': '約定',
-        'datetime_column': '5',
-        'datetime_regex': r'^(\d{2}/\d{2}) (\d{2}:\d{2}:\d{2})$$',
-        'date_replacement': r'\1',
-        'time_replacement': r'\2',
-        'size_column': '6',
-        'price_column': '7'}
+        'table_identifier': '',
+        'symbol_regex': '',
+        'symbol_replacement': '',
+        'margin_trading': '',
+        'buying_on_margin': '',
+        'execution_column': '',
+        'execution': '',
+        'datetime_column': '',
+        'datetime_regex': '',
+        'date_replacement': '',
+        'time_replacement': '',
+        'size_column': '',
+        'price_column': ''}
     config[trade.process] = {
-        'application_data_directory':
-        os.path.join(os.path.expandvars('%APPDATA%'), trade.vendor,
-                     trade.process),
+        'application_data_directory': '',
         'watchlists': '',
         'backup_directory': '',
-        'snapshot_directory':
-        os.path.join(os.path.expanduser('~'), 'Downloads')}
+        'snapshot_directory': ''}
     config[trade.actions_section] = {
-        f'replace_{trade.vendor}_watchlists':
-        [('get', 'https://www.sbisec.co.jp/ETGate'),
-         ('sleep', '0.8'),
-         ('click', '//input[@name="ACT_login"]'),
-         ('click', '//a[text()="ポートフォリオ"]'),
-         ('click', '//a[text()="登録銘柄リストの追加・置き換え"]'),
-         ('click',
-          '//img[@alt="登録銘柄リストの追加・置き換え機能を利用する"]'),
-         ('click', '//*[@name="tool_from" and @value="3"]'),
-         ('click', '//input[@value="次へ"]'),
-         ('click', '//*[@name="tool_to_1" and @value="1"]'),
-         ('click', '//input[@value="次へ"]'),
-         ('click', '//*[@name="add_replace_tool_01" and @value="1_2"]'),
-         ('click', '//input[@value="確認画面へ"]'),
-         ('click', '//input[@value="指示実行"]')],
-        f'replace_{trade.process}_watchlists':
-        [('get', 'https://www.sbisec.co.jp/ETGate'),
-         ('sleep', '0.8'),
-         ('click', '//input[@name="ACT_login"]'),
-         ('click', '//a[text()="ポートフォリオ"]'),
-         ('click', '//a[text()="登録銘柄リストの追加・置き換え"]'),
-         ('click',
-          '//img[@alt="登録銘柄リストの追加・置き換え機能を利用する"]'),
-         ('click', '//*[@name="tool_from" and @value="1"]'),
-         ('click', '//input[@value="次へ"]'),
-         ('click', '//*[@name="tool_to_3" and @value="3"]'),
-         ('click', '//input[@value="次へ"]'),
-         ('click', '//*[@name="add_replace_tool_03" and @value="3_2"]'),
-         ('click', '//input[@value="確認画面へ"]'),
-         ('click', '//input[@value="指示実行"]')],
-        'get_daily_sales_order_quota':
-        [('get', 'https://www.sbisec.co.jp/ETGate'),
-         ('sleep', '0.8'),
-         ('click', '//input[@name="ACT_login"]'),
-         ('for', f'${{{trade.variables_section}:securities_codes}}',
-          [('send_keys', '//*[@id="top_stock_sec"]', 'element'),
-           ('send_keys', '//*[@id="top_stock_sec"]', 'enter'),
-           ('click', '//a[text()="信用売"]'),
-           ('exist', '//td[contains(text(), "一般/日計り売建受注枠")]',
-            [('text',
-              '//td[contains(text(), "一般/日計り売建受注枠")]')])])],
-        'get_order_status':
-        [('get', 'https://www.sbisec.co.jp/ETGate'),
-         ('sleep', '0.8'),
-         ('click', '//input[@name="ACT_login"]'),
-         ('click', '//a[text()="注文照会"]')]}
+        f'replace_{trade.vendor}_watchlists': [()],
+        f'replace_{trade.process}_watchlists': [()],
+        'get_daily_sales_order_quota': [()],
+        'get_order_status': [()]}
     config[trade.variables_section] = {
         'securities_codes': ''}
 
-    if can_override:
-        config.read(trade.config_path, encoding='utf-8')
+    if trade.vendor == 'SBI Securities':
+        config[trade.investment_tools_news_section] = {
+            'url':
+            ('https://site2.sbisec.co.jp/ETGate/?_ControlID=WPLETmgR001Control'
+             '&_PageID=WPLETmgR001Mdtl20&_DataStoreID=DSWPLETmgR001Control'
+             '&_ActionID=DefaultAID&burl=search_home&cat1=home&cat2=tool'
+             '&dir=tool%2F&file=home_tool.html&getFlg=on&OutSide=on'),
+            'latest_news_xpath': '//*[@id="tab1_news"]/a[1]',
+            'latest_news_text': ''}
+        ALL_SERVICE_NAME = 'すべてのサービス'
+        config[trade.maintenance_schedules_section] = {
+            'url':
+            ('https://search.sbisec.co.jp/v2/popwin/info/home'
+             '/pop6040_maintenance.html'),
+            'timezone': 'Asia/Tokyo',
+            'last_inserted': '',
+            'calendar_id': '',
+            'all_service_xpath':
+            ('//p[contains(@class, "mt-x-2") and contains(., "メインサイト")'
+             f' and contains(., "{ALL_SERVICE_NAME}")]'),
+            'all_service_name': ALL_SERVICE_NAME,
+            'services': (ALL_SERVICE_NAME, 'HYPER SBI 2', 'HYPER SBI2',
+                         'メインサイト'),
+            'service_xpath':
+            '//span[contains(@class, "font-xs font-bold") and text()="{0}"]',
+            'function_xpath': 'following::p[1]',
+            'datetime_xpath': 'ancestor::li[1]/div[1]',
+            'range_splitter_regex': '〜|～',
+            'datetime_regex':
+            r'^(\d{4}年)?(\d{1,2})月(\d{1,2})日（[^）]+）(\d{1,2}:\d{2})$$',
+            'year_group': '1',
+            'month_group': '2',
+            'day_group': '3',
+            'time_group': '4',
+            'previous_bodies': {}}
+        config[trade.daily_sales_order_quota_section] = {
+            'quota_watchlist': '',
+            'sufficient': '◎（余裕あり）'}
+        config[trade.order_status_section] = {
+            'output_columns': (),
+            'table_identifier': '注文種別',
+            'symbol_regex': r'^.* (\d{4}) 東証$$',
+            'symbol_replacement': r'\1',
+            'margin_trading': '信新',
+            'buying_on_margin': '信新買',
+            'execution_column': '3',
+            'execution': '約定',
+            'datetime_column': '5',
+            'datetime_regex': r'^(\d{2}/\d{2}) (\d{2}:\d{2}:\d{2})$$',
+            'date_replacement': r'\1',
+            'time_replacement': r'\2',
+            'size_column': '6',
+            'price_column': '7'}
 
     if trade.process == 'HYPERSBI2':
-        section = config[trade.process]
-        if not section.get('watchlists'):
-            application_data_directory = section['application_data_directory']
-            latest_modified_time = 0.0
-            identifier = ''
-            for f in os.listdir(application_data_directory):
-                if re.fullmatch('[0-9a-z]{32}', f):
-                    modified_time = os.path.getmtime(os.path.join(
-                        application_data_directory, f))
-                    if modified_time > latest_modified_time:
-                        latest_modified_time = modified_time
-                        identifier = f
-            if identifier:
-                section['watchlists'] = os.path.join(
-                    application_data_directory, identifier, 'portfolio.json')
-            else:
-                print('Unspecified identifier.')
-                sys.exit(1)
+        config[trade.process] = {
+            'application_data_directory':
+            os.path.join(os.path.expandvars('%APPDATA%'), trade.vendor,
+                         trade.process),
+            'watchlists': '',
+            'backup_directory': '',
+            'snapshot_directory':
+            os.path.join(os.path.expanduser('~'), 'Downloads')}
+        config[trade.actions_section] = {
+            f'replace_{trade.vendor}_watchlists':
+            [('get', 'https://www.sbisec.co.jp/ETGate'),
+             ('sleep', '0.8'),
+             ('click', '//input[@name="ACT_login"]'),
+             ('click', '//a[text()="ポートフォリオ"]'),
+             ('click', '//a[text()="登録銘柄リストの追加・置き換え"]'),
+             ('click',
+              '//img[@alt="登録銘柄リストの追加・置き換え機能を利用する"]'),
+             ('click', '//*[@name="tool_from" and @value="3"]'),
+             ('click', '//input[@value="次へ"]'),
+             ('click', '//*[@name="tool_to_1" and @value="1"]'),
+             ('click', '//input[@value="次へ"]'),
+             ('click', '//*[@name="add_replace_tool_01" and @value="1_2"]'),
+             ('click', '//input[@value="確認画面へ"]'),
+             ('click', '//input[@value="指示実行"]')],
+            f'replace_{trade.process}_watchlists':
+            [('get', 'https://www.sbisec.co.jp/ETGate'),
+             ('sleep', '0.8'),
+             ('click', '//input[@name="ACT_login"]'),
+             ('click', '//a[text()="ポートフォリオ"]'),
+             ('click', '//a[text()="登録銘柄リストの追加・置き換え"]'),
+             ('click',
+              '//img[@alt="登録銘柄リストの追加・置き換え機能を利用する"]'),
+             ('click', '//*[@name="tool_from" and @value="1"]'),
+             ('click', '//input[@value="次へ"]'),
+             ('click', '//*[@name="tool_to_3" and @value="3"]'),
+             ('click', '//input[@value="次へ"]'),
+             ('click', '//*[@name="add_replace_tool_03" and @value="3_2"]'),
+             ('click', '//input[@value="確認画面へ"]'),
+             ('click', '//input[@value="指示実行"]')],
+            'get_daily_sales_order_quota':
+            [('get', 'https://www.sbisec.co.jp/ETGate'),
+             ('sleep', '0.8'),
+             ('click', '//input[@name="ACT_login"]'),
+             ('for', f'${{{trade.variables_section}:securities_codes}}',
+              [('send_keys', '//*[@id="top_stock_sec"]', 'element'),
+               ('send_keys', '//*[@id="top_stock_sec"]', 'enter'),
+               ('click', '//a[text()="信用売"]'),
+               ('exist', '//td[contains(text(), "一般/日計り売建受注枠")]',
+                [('text',
+                  '//td[contains(text(), "一般/日計り売建受注枠")]')])])],
+            'get_order_status':
+            [('get', 'https://www.sbisec.co.jp/ETGate'),
+             ('sleep', '0.8'),
+             ('click', '//input[@name="ACT_login"]'),
+             ('click', '//a[text()="注文照会"]')]}
+
+        latest_modified_time = 0.0
+        identifier = ''
+        for f in os.listdir(
+                config[trade.process]['application_data_directory']):
+            if re.fullmatch('[0-9a-z]{32}', f):
+                modified_time = os.path.getmtime(os.path.join(
+                    config[trade.process]['application_data_directory'], f))
+                if modified_time > latest_modified_time:
+                    latest_modified_time = modified_time
+                    identifier = f
+        if identifier:
+            config[trade.process]['watchlists'] = os.path.join(
+                config[trade.process]['application_data_directory'],
+                identifier, 'portfolio.json')
+        else:
+            print('Unspecified identifier.')
+            sys.exit(1)
+
+    if can_override:
+        config.read(trade.config_path, encoding='utf-8')
 
     return config
 
