@@ -20,7 +20,7 @@ import requests
 
 import browser_driver
 import configuration
-import data_converters
+import data_utilities
 import file_utilities
 import google_services
 import initializer
@@ -499,7 +499,7 @@ def insert_maintenance_schedules(trade, config):
                         'start': {'dateTime': start.isoformat()},
                         'end': {'dateTime': end.isoformat()},
                         'source': {'title': title, 'url': section['url']}}
-                body_tuple = data_converters.dictionary_to_tuple(body)
+                body_tuple = data_utilities.dictionary_to_tuple(body)
 
                 if body_tuple not in previous_bodies.get(service, []):
                     google_services.insert_calendar_event(
