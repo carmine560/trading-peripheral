@@ -26,8 +26,8 @@ The `trading_peripheral.py` Python script can:
 ## Prerequisites ##
 
 `trading_peripheral.py` has been tested in [Python for
-Windows](https://www.python.org/downloads/windows/) with Hyper SBI 2 and
-requires the following web browser and packages:
+Windows](https://www.python.org/downloads/windows/) with Hyper SBI 2 on Windows
+10 and requires the following web browser and packages:
 
   * [`google-api-python-client`](https://googleapis.github.io/google-api-python-client/docs/),
     [`google-auth-httplib2`](https://github.com/googleapis/google-auth-library-python-httplib2),
