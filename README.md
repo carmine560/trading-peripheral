@@ -114,7 +114,7 @@ file stores these configurations.
   * `-A`: configure actions and exit
   * `-C`: check configuration changes and exit
 
-## Known Issues ##
+## Known Issue ##
 
   * For the extraction of the order status, I assume there are 1 to 10 pairs of
     orders (a pair consists of a position and repayment order) for day trading
