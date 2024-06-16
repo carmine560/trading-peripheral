@@ -29,26 +29,24 @@ The `trading_peripheral.py` Python script can:
 Windows](https://www.python.org/downloads/windows/) with Hyper SBI 2 on Windows
 10 and requires the following web browser and packages:
 
-  * [`google-api-python-client`](https://googleapis.github.io/google-api-python-client/docs/),
+  * [`google-api-python-client`](https://github.com/googleapis/google-api-python-client/),
     [`google-auth-httplib2`](https://github.com/googleapis/google-auth-library-python-httplib2),
     and
     [`google-auth-oauthlib`](https://github.com/googleapis/google-auth-library-python-oauthlib)
     to access Google APIs
   * [Chrome](https://www.google.com/chrome/) to authenticate to the website and
     load the page
-  * [`selenium`](https://www.selenium.dev/documentation/webdriver/) to drive a
-    browser, and
+  * [`selenium`](https://www.selenium.dev/) to drive a browser, and
     [`webdriver-manager`](https://github.com/SergeyPirogov/webdriver_manager)
     to automatically update the driver
   * [`chardet`](https://github.com/chardet/chardet),
     [`lxml`](https://lxml.de/index.html),
     [`pandas`](https://pandas.pydata.org/), and
-    [`pyarrow`](https://arrow.apache.org/docs/python/) to extract data from the
-    web pages
-  * [`python-gnupg`](https://docs.red-dove.com/python-gnupg/) to invoke
+    [`pyarrow`](https://arrow.apache.org/) to extract data from the web pages
+  * [`python-gnupg`](https://github.com/vsajip/python-gnupg) to invoke
     [GnuPG](https://gnupg.org/index.html) to encrypt and decrypt a snapshot of
     the Hyper SBI 2 application data
-  * [`prompt_toolkit`](https://python-prompt-toolkit.readthedocs.io/en/master/index.html)
+  * [`prompt_toolkit`](https://github.com/prompt-toolkit/python-prompt-toolkit)
     to complete possible values or a previous value in configuring
 
 Install each package as needed. For example:
