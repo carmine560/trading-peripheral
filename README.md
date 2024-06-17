@@ -29,8 +29,7 @@ The `trading_peripheral.py` Python script can:
 Windows](https://www.python.org/downloads/windows/) with Hyper SBI 2 on Windows
 10 and requires the following web browser and packages:
 
-  * [`google-api-python-client`](https://github.com/googleapis/google-api-python-client/),
-    [`google-auth-httplib2`](https://github.com/googleapis/google-auth-library-python-httplib2),
+  * [`google-api-python-client`](https://github.com/googleapis/google-api-python-client/)
     and
     [`google-auth-oauthlib`](https://github.com/googleapis/google-auth-library-python-oauthlib)
     to access Google APIs
