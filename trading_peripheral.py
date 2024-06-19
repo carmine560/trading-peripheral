@@ -162,7 +162,6 @@ def get_arguments():
         help=f'restore the {process} application data from a snapshot')
 
     file_utilities.add_launcher_options(group)
-
     group.add_argument(
         '-G', action='store_true',
         help='configure general options and exit')
