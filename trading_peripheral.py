@@ -357,6 +357,7 @@ def configure(trade, can_interpolate=True, can_override=True):
             [('get', 'https://www.sbisec.co.jp/ETGate'),
              ('sleep', '0.8'),
              ('click', '//input[@name="ACT_login"]'),
+             ('click', '//*[@id="mymenuSec"]/div/div[2]/div[1]/div/a'),
              ('click', '//a[text()="注文照会"]')]}
 
         latest_modified_time = 0.0
