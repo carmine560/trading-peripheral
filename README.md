@@ -89,6 +89,8 @@ file stores these configurations.
     [defaults: `SBI Securities` and `HYPERSBI2`]
   * `-t`: check the SBI Securities investment tools web page and send a
     notification via Gmail if it is updated
+  * `-r`: check the Hyper SBI 2 release notes and send a notification via Gmail
+    if they are updated
   * `-m`: insert Hyper SBI 2 maintenance schedules into Google Calendar
   * `-s`: replace watchlists on the SBI Securities website with the Hyper SBI 2
     watchlists

@@ -36,6 +36,7 @@ class Trade(initializer.Initializer):
         super().__init__(vendor, process, __file__)
         self.investment_tools_news_section = (
             f'{self.vendor} Investment Tools News')
+        self.release_notes_section = f'{self.process} Release Notes'
         self.maintenance_schedules_section = (
             f'{self.vendor} Maintenance Schedules')
         self.daily_sales_order_quota_section = (
@@ -60,7 +61,11 @@ def main():
     config = configure(trade)
 
     if args.t:
-        check_investment_tools_news(trade, config)
+        check_web_page_send_email_message(trade, config,
+                                          trade.investment_tools_news_section)
+    if args.r:
+        check_web_page_send_email_message(trade, config,
+                                          trade.release_notes_section)
     if args.m:
         insert_maintenance_schedules(trade, config)
     if any((args.s, args.S, args.q, args.o)):
@@ -131,6 +136,10 @@ def get_arguments():
         help=f'check the {vendor} investment tools web page'
         ' and send a notification via Gmail if it is updated')
     parser.add_argument(
+        '-r', action='store_true',
+        help=f'check the {process} release notes'
+        ' and send a notification via Gmail if they are updated')
+    parser.add_argument(
         '-m', action='store_true',
         help=f'insert {process} maintenance schedules into Google Calendar')
     parser.add_argument(
@@ -196,6 +205,10 @@ def configure(trade, can_interpolate=True, can_override=True):
         'email_message_to': '',
         'fingerprint': ''}
     config[trade.investment_tools_news_section] = {
+        'url': '',
+        'latest_news_xpath': '',
+        'latest_news_text': ''}
+    config[trade.release_notes_section] = {
         'url': '',
         'latest_news_xpath': '',
         'latest_news_text': ''}
@@ -303,6 +316,12 @@ def configure(trade, can_interpolate=True, can_override=True):
             'price_column': '7'}
 
     if trade.process == 'HYPERSBI2':
+        config[trade.release_notes_section] = {
+            'url':
+            'https://go.sbisec.co.jp/lp/lp_hyper_sbi2_211112_update.html',
+            'latest_news_xpath':
+            '/html/body/main/div[1]/section[3]/div/div[1]/div[1]/p[1]',
+            'latest_news_text': ''}
         config[trade.process] = {
             'application_data_directory':
             os.path.join(os.path.expandvars('%APPDATA%'), trade.vendor,
@@ -578,33 +597,26 @@ def check_daily_sales_order_quota(trade, config, driver):
         status)
 
 
-def check_investment_tools_news(trade, config):
-    """Check the investment tools web page and send an email if necessary."""
-    response = requests.get(config[trade.investment_tools_news_section]['url'],
-                            timeout=5)
+def check_web_page_send_email_message(trade, config, section):
+    """Check the web page and send an email message if an update is found."""
+    response = requests.get(config[section]['url'], timeout=5)
     response.encoding = chardet.detect(response.content)['encoding']
     root = html.fromstring(response.text)
 
     latest_news_text = root.xpath(
-        config[trade.investment_tools_news_section]['latest_news_xpath']
-    )[0].text_content().strip()
-    latest_news_text += (
-        f"\n{config[trade.investment_tools_news_section]['url']}")
-    if (latest_news_text
-        == config[trade.investment_tools_news_section]['latest_news_text']):
+        config[section]['latest_news_xpath'])[0].text_content().strip()
+    if latest_news_text == config[section]['latest_news_text']:
         return
 
     print(latest_news_text)
 
     google_services.send_email_message(
         os.path.join(trade.config_directory, 'token.json'),
-        trade.investment_tools_news_section,
-        config['General']['email_message_from'],
+        section, config['General']['email_message_from'],
         config['General']['email_message_to'],
-        latest_news_text)
+        f"{latest_news_text}\n{config[section]['url']}")
 
-    config[trade.investment_tools_news_section]['latest_news_text'] = (
-        latest_news_text)
+    config[section]['latest_news_text'] = latest_news_text
     configuration.write_config(config, trade.config_path)
 
 
