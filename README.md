@@ -104,7 +104,7 @@ file stores these configurations.
   * `-w`: backup the Hyper SBI 2 watchlists
   * `-d`: take a snapshot of the Hyper SBI 2 application data
   * `-D`: restore the Hyper SBI 2 application data from a snapshot
-  * `-B [OUTPUT_DIRECTORY]`: generate a WSL Bash script to launch this script
+  * `-BS [OUTPUT_DIRECTORY]`: generate a WSL Bash script to launch this script
     and exit
   * `-PS [OUTPUT_DIRECTORY]`: generate a PowerShell 7 script to launch this
     script and exit
