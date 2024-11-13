@@ -279,7 +279,7 @@ def configure(trade, can_interpolate=True, can_override=True):
             'last_inserted': '',
             'calendar_id': '',
             'all_service_xpath':
-            ('//p[contains(@class, "mt-x-2") and contains(., "メインサイト")'
+            ('//p[contains(@class, "mt-x-2")'
              f' and contains(., "{ALL_SERVICE_NAME}")]'),
             'all_service_name': ALL_SERVICE_NAME,
             'services': (ALL_SERVICE_NAME, 'HYPER SBI 2', 'HYPER SBI2',
