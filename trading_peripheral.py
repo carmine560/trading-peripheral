@@ -517,6 +517,7 @@ def insert_maintenance_schedules(trade, config):
                 body = {'summary': f'🛠️ {service}: {function}',
                         'start': {'dateTime': start.isoformat()},
                         'end': {'dateTime': end.isoformat()},
+                        'reminders': {'useDefault': False},
                         'source': {'title': title, 'url': section['url']}}
                 body_tuple = data_utilities.dictionary_to_tuple(body)
 
