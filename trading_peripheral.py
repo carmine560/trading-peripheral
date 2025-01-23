@@ -319,8 +319,7 @@ def configure(trade, can_interpolate=True, can_override=True):
         config[trade.release_notes_section] = {
             'url':
             'https://go.sbisec.co.jp/lp/lp_hyper_sbi2_211112_update.html',
-            'latest_news_xpath':
-            '/html/body/main/div[1]/section[3]/div/div[1]/div[1]/p[1]',
+            'latest_news_xpath': '//p[contains(@class, "Rnote__ver")]',
             'latest_news_text': ''}
         config[trade.process] = {
             'application_data_directory':
