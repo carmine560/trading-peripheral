@@ -21,6 +21,7 @@ import requests
 import browser_driver
 import configuration
 import data_utilities
+import datetime_utilities
 import file_utilities
 import google_services
 import initializer
@@ -498,8 +499,9 @@ def insert_maintenance_schedules(trade, config):
                     lambda match_object: replace_datetime(
                         match_object, section, now, tzinfo),
                     datetime_range[0])
-                start = tzinfo.localize(
-                    datetime.strptime(datetime_string, '%Y-%m-%d %H:%M'))
+                start = tzinfo.localize(datetime.strptime(
+                    datetime_utilities.normalize_datetime_string(
+                        datetime_string), '%Y-%m-%d %H:%M'))
                 if re.fullmatch(r'\d{1,2}:\d{2}', datetime_range[1]):
                     datetime_string = (start.strftime('%Y-%m-%d ')
                                        + datetime_range[1])
@@ -510,8 +512,9 @@ def insert_maintenance_schedules(trade, config):
                             match_object, section, now, tzinfo),
                         datetime_range[1])
 
-                end = tzinfo.localize(
-                    datetime.strptime(datetime_string, '%Y-%m-%d %H:%M'))
+                end = tzinfo.localize(datetime.strptime(
+                    datetime_utilities.normalize_datetime_string(
+                        datetime_string), '%Y-%m-%d %H:%M'))
 
                 body = {'summary': f'🛠️ {service}: {function}',
                         'start': {'dateTime': start.isoformat()},
