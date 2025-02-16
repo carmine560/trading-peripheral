@@ -119,57 +119,51 @@ def main():
 
 def get_arguments():
     """Parse and return command-line arguments."""
-    pre_parser = argparse.ArgumentParser(add_help=False)
-    pre_parser.add_argument('-P', nargs=2)
-    pre_args, _ = pre_parser.parse_known_args()
-
     parser = argparse.ArgumentParser()
-    default_vendor_process = ('SBI Securities', 'HYPERSBI2')
-    vendor, process = pre_args.P if pre_args.P else default_vendor_process
     group = parser.add_mutually_exclusive_group()
 
     parser.add_argument(
-        '-P', nargs=2, default=default_vendor_process,
+        '-P', nargs=2, default=('SBI Securities', 'HYPERSBI2'),
         help='set the brokerage and the process [defaults: %(default)s]',
         metavar=('BROKERAGE', 'PROCESS|EXECUTABLE_PATH'))
     parser.add_argument(
         '-t', action='store_true',
-        help=f'check the {vendor} investment tools web page'
+        help='check the BROKERAGE investment tools web page'
         ' and send a notification via Gmail if it is updated')
     parser.add_argument(
         '-r', action='store_true',
-        help=f'check the {process} release notes'
+        help='check the PROCESS release notes'
         ' and send a notification via Gmail if they are updated')
     parser.add_argument(
         '-m', action='store_true',
-        help=f'insert {process} maintenance schedules into Google Calendar')
+        help='insert PROCESS maintenance schedules into Google Calendar')
     parser.add_argument(
         '-s', action='store_true',
-        help=f'replace watchlists on the {vendor} website'
-        f' with the {process} watchlists')
+        help='replace watchlists on the BROKERAGE website'
+        ' with the PROCESS watchlists')
     parser.add_argument(
         '-S', action='store_true',
-        help=f'replace the {process} watchlists'
-        f' with watchlists on the {vendor} website')
+        help='replace the PROCESS watchlists'
+        ' with watchlists on the BROKERAGE website')
     parser.add_argument(
         '-q', action='store_true',
         help='check the daily sales order quota for general margin trading'
-        f' for the specified {process} watchlist'
+        ' for the specified PROCESS watchlist'
         ' and send a notification via Gmail if it is insufficient')
     parser.add_argument(
         '-o', action='store_true',
         help='extract the order status'
-        f' from the {vendor} order status web page'
+        ' from the BROKERAGE order status web page'
         ' and copy it to the clipboard')
     parser.add_argument(
         '-w', action='store_true',
-        help=f'backup the {process} watchlists')
+        help='backup the PROCESS watchlists')
     parser.add_argument(
         '-d', action='store_true',
-        help=f'take a snapshot of the {process} application data')
+        help='take a snapshot of the PROCESS application data')
     parser.add_argument(
         '-D', action='store_true',
-        help=f'restore the {process} application data from a snapshot')
+        help='restore the PROCESS application data from a snapshot')
 
     file_utilities.add_launcher_options(group)
     group.add_argument(

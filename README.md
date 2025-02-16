@@ -84,27 +84,25 @@ file stores these configurations.
 
   * `-P BROKERAGE PROCESS|EXECUTABLE_PATH`: set the brokerage and the process
     [defaults: `SBI Securities` and `HYPERSBI2`]
-  * `-t`: check the SBI Securities investment tools web page and send a
-    notification via Gmail if it is updated
-  * `-r`: check the Hyper SBI 2 release notes and send a notification via Gmail
-    if they are updated
-  * `-m`: insert Hyper SBI 2 maintenance schedules into Google Calendar
-  * `-s`: replace watchlists on the SBI Securities website with the Hyper SBI 2
+  * `-t`: check the BROKERAGE investment tools web page and send a notification
+    via Gmail if it is updated
+  * `-r`: check the PROCESS release notes and send a notification via Gmail if
+    they are updated
+  * `-m`: insert PROCESS maintenance schedules into Google Calendar
+  * `-s`: replace watchlists on the BROKERAGE website with the PROCESS
     watchlists
-  * `-S`: replace the Hyper SBI 2 watchlists with watchlists on the SBI
-    Securities website
+  * `-S`: replace the PROCESS watchlists with watchlists on the BROKERAGE
+    website
   * `-q`: check the daily sales order quota for general margin trading for the
-    specified Hyper SBI 2 watchlist and send a notification via Gmail if it is
+    specified PROCESS watchlist and send a notification via Gmail if it is
     insufficient
-  * `-o`: extract the order status from the SBI Securities order status web
-    page and copy it to the clipboard
-  * `-w`: backup the Hyper SBI 2 watchlists
-  * `-d`: take a snapshot of the Hyper SBI 2 application data
-  * `-D`: restore the Hyper SBI 2 application data from a snapshot
-  * `-BS [OUTPUT_DIRECTORY]`: generate a WSL Bash script to launch this script
-    and exit
-  * `-PS [OUTPUT_DIRECTORY]`: generate a PowerShell 7 script to launch this
-    script and exit
+  * `-o`: extract the order status from the BROKERAGE order status web page and
+    copy it to the clipboard
+  * `-w`: backup the PROCESS watchlists
+  * `-d`: take a snapshot of the PROCESS application data
+  * `-D`: restore the PROCESS application data from a snapshot
+  * `-BS`: generate a WSL Bash script to launch this script and exit
+  * `-PS`: generate a PowerShell 7 script to launch this script and exit
   * `-G`: configure general options and exit
   * `-O`: configure order status formats and exit
   * `-A`: configure actions and exit
