@@ -617,7 +617,7 @@ def check_web_page_send_email_message(trade, config, section):
     configuration.write_config(config, trade.config_path)
 
 
-def extract_order_status(trade, config, driver): # TODO: make configurable
+def extract_order_status(trade, config, driver): # TODO: Make configurable.
     """Extract order status from a webpage and copy it to the clipboard."""
     section = config[trade.order_status_section]
 
@@ -670,7 +670,7 @@ def extract_order_status(trade, config, driver): # TODO: make configurable
                             section['symbol_replacement'],
                             df.iloc[index, execution_column])
             size = df.iloc[index + 1, size_column]
-            trade_style = 'day' # TODO: make configurable
+            trade_style = 'day' # TODO: Make configurable.
             if (section['margin_trading']
                 in df.iloc[index + 1, execution_column]):
                 entry_date = re.sub(section['datetime_regex'],
