@@ -30,6 +30,10 @@ def initialize(headless=True, user_data_directory=None, profile_directory=None,
     driver = webdriver.Chrome(service=service, options=options)
     driver.implicitly_wait(implicitly_wait)
 
+    driver.execute_cdp_cmd('Network.setUserAgentOverride', {
+        'userAgent': driver.execute_script(
+            'return navigator.userAgent').replace('Headless', '')})
+
     os_type_directory = os.path.dirname(os.path.dirname(os.path.dirname(
         executable_path)))
     version_directories = [
