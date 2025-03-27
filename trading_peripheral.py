@@ -326,7 +326,7 @@ def configure(trade, can_interpolate=True, can_override=True):
             os.path.join(os.path.expanduser('~'), 'Downloads')}
         config[trade.actions_section] = {
             f'replace_{trade.vendor}_watchlists':
-            [('get', 'https://www.sbisec.co.jp/ETGate'),
+            [('get', 'https://www.sbisec.co.jp/ETGate/'),
              ('sleep', '0.8'),
              ('click', '//input[@name="ACT_login"]'),
              ('click', '//a[text()="ポートフォリオ"]'),
@@ -341,7 +341,7 @@ def configure(trade, can_interpolate=True, can_override=True):
              ('click', '//input[@value="確認画面へ"]'),
              ('click', '//input[@value="指示実行"]')],
             f'replace_{trade.process}_watchlists':
-            [('get', 'https://www.sbisec.co.jp/ETGate'),
+            [('get', 'https://www.sbisec.co.jp/ETGate/'),
              ('sleep', '0.8'),
              ('click', '//input[@name="ACT_login"]'),
              ('click', '//a[text()="ポートフォリオ"]'),
@@ -356,7 +356,7 @@ def configure(trade, can_interpolate=True, can_override=True):
              ('click', '//input[@value="確認画面へ"]'),
              ('click', '//input[@value="指示実行"]')],
             'get_daily_sales_order_quota':
-            [('get', 'https://www.sbisec.co.jp/ETGate'),
+            [('get', 'https://www.sbisec.co.jp/ETGate/'),
              ('sleep', '0.8'),
              ('click', '//input[@name="ACT_login"]'),
              ('for', f'${{{trade.variables_section}:securities_codes}}',
@@ -367,7 +367,7 @@ def configure(trade, can_interpolate=True, can_override=True):
                 [('text',
                   '//td[contains(text(), "一般/日計り売建受注枠")]')])])],
             'get_order_status':
-            [('get', 'https://www.sbisec.co.jp/ETGate'),
+            [('get', 'https://www.sbisec.co.jp/ETGate/'),
              ('sleep', '0.8'),
              ('click', '//input[@name="ACT_login"]'),
              ('click', '//*[@id="link02M"]/ul/li[2]/a'),
