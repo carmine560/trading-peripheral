@@ -1,20 +1,22 @@
 # trading-peripheral #
 
-<!-- Python script that retrieves Hyper SBI 2 maintenance schedules, checks the
-daily sales order quota, and extracts order status from the SBI Securities web
-pages -->
+<!-- Python script that retrieves Hyper SBI 2 maintenance schedules and extracts order status from the SBI Securities web page -->
 
 The `trading_peripheral.py` Python script can:
 
-  * Retrieve the [*SBI Securities Maintenance
+  * Check the [*SBI Securities Investment
+    Tools*](https://site2.sbisec.co.jp/ETGate/?_ControlID=WPLETmgR001Control&_PageID=WPLETmgR001Mdtl20&_DataStoreID=DSWPLETmgR001Control&_ActionID=DefaultAID&burl=search_home&cat1=home&cat2=tool&dir=tool%2F&file=home_tool.html&getFlg=on&OutSide=on#)
+    web page and send a notification via Gmail if it is updated,
+  * Check the [*Hyper SBI 2 Release
+    Notes*](https://go.sbisec.co.jp/lp/lp_hyper_sbi2_211112_update.html) and
+    send a notification via Gmail if they are updated,
+  * Check the [*SBI Securities Maintenance
     Schedules*](https://search.sbisec.co.jp/v2/popwin/info/home/pop6040_maintenance.html)
-    page and insert [Hyper SBI
+    web page and insert [Hyper SBI
     2](https://go.sbisec.co.jp/lp/lp_hyper_sbi2_211112.html) maintenance
     schedules into Google Calendar,
   * Replace watchlists on the SBI Securities website with Hyper SBI 2
     watchlists,
-  * Check the daily sales order quota for general margin trading and send a
-    notification via Gmail if it is insufficient,
   * Extract the order status from the SBI Securities order status web page and
     copy it to the clipboard,
   * Take a snapshot of the `%APPDATA%\SBI Securities\HYPERSBI2` application
@@ -31,7 +33,7 @@ Windows](https://www.python.org/downloads/windows/) with Hyper SBI 2 on Windows
     [`google-auth-oauthlib`](https://github.com/googleapis/google-auth-library-python-oauthlib)
     to access Google APIs
   * [Chrome](https://www.google.com/chrome/) to authenticate to the website and
-    load the page
+    load the web page
   * [`selenium`](https://www.selenium.dev/) to drive a browser, and
     [`webdriver-manager`](https://github.com/SergeyPirogov/webdriver_manager)
     to automatically update the driver
@@ -61,8 +63,8 @@ The `-m` and `-q` options use the Google Calendar and Gmail APIs. Follow the
 [*Google Calendar API
 Quickstart*](https://developers.google.com/calendar/api/quickstart/python) and
 [*Gmail API
-Quickstart*](https://developers.google.com/gmail/api/quickstart/python) pages
-to obtain your `client_secret_*.json` file.
+Quickstart*](https://developers.google.com/gmail/api/quickstart/python) web
+pages to obtain your `client_secret_*.json` file.
 
 If you use Chrome as your default web browser, create a separate profile that
 stores your credentials. Then, specify the profile directory as the value of
@@ -93,9 +95,6 @@ file stores these configurations.
     watchlists
   * `-S`: replace the PROCESS watchlists with watchlists on the BROKERAGE
     website
-  * `-q`: check the daily sales order quota for general margin trading for the
-    specified PROCESS watchlist and send a notification via Gmail if it is
-    insufficient
   * `-o`: extract the order status from the BROKERAGE order status web page and
     copy it to the clipboard
   * `-w`: backup the PROCESS watchlists
@@ -112,7 +111,8 @@ file stores these configurations.
 
   * The extraction of the order status assumes 1 to 10 pairs of orders for day
     trading on margin, with each pair consisting of a position order and a
-    repayment order. It does not support multiple pages of the order status.
+    repayment order. It does not support multiple web pages of the order
+    status.
 
 ## License ##
 

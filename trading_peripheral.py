@@ -6,7 +6,6 @@ from io import StringIO
 import argparse
 import configparser
 import inspect
-import json
 import os
 import re
 import sys
@@ -40,8 +39,6 @@ class Trade(initializer.Initializer):
         self.release_notes_section = f'{self.process} Release Notes'
         self.maintenance_schedules_section = (
             f'{self.vendor} Maintenance Schedules')
-        self.daily_sales_order_quota_section = (
-            f'{self.vendor} Daily Sales Order Quota')
         self.order_status_section = f'{self.vendor} Order Status'
         self.instruction_items = {
             'all_keys': initializer.extract_commands(
@@ -69,7 +66,7 @@ def main():
                                           trade.release_notes_section)
     if args.m:
         insert_maintenance_schedules(trade, config)
-    if any((args.s, args.S, args.q, args.o)):
+    if any((args.s, args.S, args.o)):
         driver = browser_driver.initialize(
             headless=config['General'].getboolean('headless'),
             user_data_directory=config['General']['user_data_directory'],
@@ -83,8 +80,6 @@ def main():
             browser_driver.execute_action(
                 driver, config[trade.actions_section][
                     f'replace_{trade.process}_watchlists'])
-        if args.q:
-            check_daily_sales_order_quota(trade, config, driver)
         if args.o:
             browser_driver.execute_action(
                 driver, config[trade.actions_section]['get_order_status'])
@@ -145,11 +140,6 @@ def get_arguments():
         '-S', action='store_true',
         help='replace the PROCESS watchlists'
         ' with watchlists on the BROKERAGE website')
-    parser.add_argument(
-        '-q', action='store_true',
-        help='check the daily sales order quota for general margin trading'
-        ' for the specified PROCESS watchlist'
-        ' and send a notification via Gmail if it is insufficient')
     parser.add_argument(
         '-o', action='store_true',
         help='extract the order status'
@@ -225,9 +215,6 @@ def configure(trade, can_interpolate=True, can_override=True):
         'day_group': '',
         'time_group': '',
         'previous_bodies': {}}
-    config[trade.daily_sales_order_quota_section] = {
-        'quota_watchlist': '',
-        'sufficient': ''}
     config[trade.order_status_section] = {
         'output_columns': (),
         'table_identifier': '',
@@ -251,7 +238,6 @@ def configure(trade, can_interpolate=True, can_override=True):
     config[trade.actions_section] = {
         f'replace_{trade.vendor}_watchlists': [()],
         f'replace_{trade.process}_watchlists': [()],
-        'get_daily_sales_order_quota': [()],
         'get_order_status': [()]}
     config[trade.variables_section] = {
         'securities_codes': ''}
@@ -291,9 +277,6 @@ def configure(trade, can_interpolate=True, can_override=True):
             'day_group': '3',
             'time_group': '4',
             'previous_bodies': {}}
-        config[trade.daily_sales_order_quota_section] = {
-            'quota_watchlist': '',
-            'sufficient': '◎（余裕あり）'}
         config[trade.order_status_section] = {
             'output_columns': (),
             'table_identifier': '注文種別',
@@ -355,17 +338,6 @@ def configure(trade, can_interpolate=True, can_override=True):
              ('click', '//*[@name="add_replace_tool_03" and @value="3_2"]'),
              ('click', '//input[@value="確認画面へ"]'),
              ('click', '//input[@value="指示実行"]')],
-            'get_daily_sales_order_quota':
-            [('get', 'https://www.sbisec.co.jp/ETGate/'),
-             ('sleep', '0.8'),
-             ('click', '//input[@name="ACT_login"]'),
-             ('for', f'${{{trade.variables_section}:securities_codes}}',
-              [('send_keys', '//*[@id="top_stock_sec"]', 'element'),
-               ('send_keys', '//*[@id="top_stock_sec"]', 'enter'),
-               ('click', '//a[text()="信用売"]'),
-               ('exist', '//td[contains(text(), "一般/日計り売建受注枠")]',
-                [('text',
-                  '//td[contains(text(), "一般/日計り売建受注枠")]')])])],
             'get_order_status':
             [('get', 'https://www.sbisec.co.jp/ETGate/'),
              ('sleep', '0.8'),
@@ -553,45 +525,6 @@ def replace_datetime(match_object, section, now, tzinfo):
     elif timedelta_object > threshold:
         assumed_year = assumed_year - 1
     return f'{assumed_year}-{matched_month}-{matched_day} {matched_time}'
-
-
-def check_daily_sales_order_quota(trade, config, driver):
-    """Check the daily sales order quota and send an email if necessary."""
-    with open(config[trade.process]['watchlists'], encoding='utf-8') as f:
-        watchlists = json.load(f)
-
-    quota_watchlist = next(
-        (watchlist for watchlist in watchlists['list']
-         if watchlist['listName']
-         == config[trade.daily_sales_order_quota_section]['quota_watchlist']),
-        None)
-    if quota_watchlist is None:
-        print('No matching watchlist was found.')
-        sys.exit(1)
-
-    securities_codes = [item['secCd'] for item in quota_watchlist['secList']]
-    config[trade.variables_section]['securities_codes'] = (
-        ', '.join(securities_codes))
-
-    text = []
-    browser_driver.execute_action(
-        driver, config[trade.actions_section]['get_daily_sales_order_quota'],
-        text=text)
-
-    status = ''
-    for index, _ in enumerate(text):
-        if (not config[trade.daily_sales_order_quota_section]['sufficient']
-            in text[index]):
-            status += f'{securities_codes[index]}: {text[index]}\n'
-
-    print(status)
-
-    google_services.send_email_message(
-        os.path.join(trade.config_directory, 'token.json'),
-        trade.daily_sales_order_quota_section,
-        config['General']['email_message_from'],
-        config['General']['email_message_to'],
-        status)
 
 
 def check_web_page_send_email_message(trade, config, section):
