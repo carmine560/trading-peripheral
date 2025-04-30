@@ -182,8 +182,7 @@ def configure(trade, can_interpolate=True, can_override=True):
 
     config['General'] = {
         'headless': 'True',
-        'user_data_directory':
-        os.path.expandvars(r'%LOCALAPPDATA%\Google\Chrome\User Data'),
+        'user_data_directory': '',
         'profile_directory': 'Default',
         'implicitly_wait': '4',
         'email_message_from': '',
