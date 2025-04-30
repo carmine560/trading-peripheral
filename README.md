@@ -66,7 +66,7 @@ Quickstart*](https://developers.google.com/calendar/api/quickstart/python) and
 Quickstart*](https://developers.google.com/gmail/api/quickstart/python) web
 pages to obtain your `client_secret_*.json` file.
 
-[Create a non-default data directory for
+Create [a non-default data directory for
 Chrome](https://chromium.googlesource.com/chromium/src/+/main/docs/user_data_dir.md)
 and specify it as the value of the `user_data_directory` option, as shown
 below:
