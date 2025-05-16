@@ -217,6 +217,8 @@ def configure(trade, can_interpolate=True, can_override=True):
     config[trade.order_status_section] = {
         'output_columns': (),
         'table_identifier': '',
+        'order_status_column': '',
+        'order_canceled': '',
         'symbol_regex': '',
         'symbol_replacement': '',
         'margin_trading': '',
@@ -279,6 +281,8 @@ def configure(trade, can_interpolate=True, can_override=True):
         config[trade.order_status_section] = {
             'output_columns': (),
             'table_identifier': '注文種別',
+            'order_status_column': '1',
+            'order_canceled': '取消完了',
             'symbol_regex': r'^.* (\d{4}) 東証$$',
             'symbol_replacement': r'\1',
             'margin_trading': '信新',
@@ -560,16 +564,20 @@ def extract_order_status(trade, config, driver): # TODO: Make configurable.
         print(e)
         sys.exit(1)
 
-    index = 0
-    df = dfs[1]
+    index = 0                   # TODO: Make configurable.
+    df = dfs[1]                 # TODO: Make configurable.
+    order_status_column = int(section['order_status_column'])
+    execution_column = int(section['execution_column'])
     size_price = pd.DataFrame(columns=('size', 'price'))
     size_column = int(section['size_column'])
     price_column = int(section['price_column'])
-    execution_column = int(section['execution_column'])
     datetime_column = int(section['datetime_column'])
     output_columns = configuration.evaluate_value(section['output_columns'])
     results = pd.DataFrame(columns=output_columns)
     while index < len(df):
+        if df.iloc[index, order_status_column] == section['order_canceled']:
+            index += 2
+            continue
         if df.iloc[index, execution_column] == section['execution']:
             if len(size_price) == 0:
                 size_price.loc[0] = [df.iloc[index - 1, size_column],
