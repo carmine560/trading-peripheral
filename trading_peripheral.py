@@ -315,7 +315,7 @@ def configure(trade, can_interpolate=True, can_override=True):
             [('get', 'https://www.sbisec.co.jp/ETGate/'),
              ('sleep', '0.8'),
              ('click', '//input[@name="ACT_login"]'),
-             ('click', '//a[text()="ポートフォリオ"]'),
+             ('click', '//a[.//text()="ポートフォリオ"]'),
              ('click', '//a[text()="登録銘柄リストの追加・置き換え"]'),
              ('click',
               '//img[@alt="登録銘柄リストの追加・置き換え機能を利用する"]'),
@@ -330,7 +330,7 @@ def configure(trade, can_interpolate=True, can_override=True):
             [('get', 'https://www.sbisec.co.jp/ETGate/'),
              ('sleep', '0.8'),
              ('click', '//input[@name="ACT_login"]'),
-             ('click', '//a[text()="ポートフォリオ"]'),
+             ('click', '//a[.//text()="ポートフォリオ"]'),
              ('click', '//a[text()="登録銘柄リストの追加・置き換え"]'),
              ('click',
               '//img[@alt="登録銘柄リストの追加・置き換え機能を利用する"]'),
@@ -345,8 +345,9 @@ def configure(trade, can_interpolate=True, can_override=True):
             [('get', 'https://www.sbisec.co.jp/ETGate/'),
              ('sleep', '0.8'),
              ('click', '//input[@name="ACT_login"]'),
-             ('click', '//*[@id="link02M"]/ul/li[2]/a'),
-             ('click', '//a[.="注文照会"]')]}
+             ('click', '//a[.//text()="口座管理"]'),
+             ('click', '//a[text()="取引履歴"]'),
+             ('click', '//p/a[text()="注文照会"]')]}
 
         latest_modified_time = 0.0
         identifier = ''
