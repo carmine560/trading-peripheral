@@ -1,4 +1,4 @@
-# trading-peripheral #
+# trading-peripheral
 
 <!-- Python script that retrieves Hyper SBI 2 maintenance schedules and extracts order status from the SBI Securities web page -->
 
@@ -22,7 +22,7 @@ The `trading_peripheral.py` Python script can:
   * Take a snapshot of the `%APPDATA%\SBI Securities\HYPERSBI2` application
     data and restore it.
 
-## Prerequisites ##
+## Prerequisites
 
 `trading_peripheral.py` has been tested in [Python for
 Windows](https://www.python.org/downloads/windows/) with Hyper SBI 2 on Windows
@@ -57,7 +57,7 @@ python -m venv .venv
 python -m pip install -r requirements.txt -U
 ```
 
-## Usage ##
+## Usage
 
 The `-m` and `-q` options use the Google Calendar and Gmail APIs. Follow the
 [*Google Calendar API
@@ -83,7 +83,7 @@ specify a key fingerprint as the value of the `fingerprint` option using the
 The `%LOCALAPPDATA%\trading-peripheral\trading_peripheral.ini` configuration
 file stores these configurations.
 
-### Options ###
+### Options
 
   * `-P BROKERAGE PROCESS|EXECUTABLE_PATH`: set the brokerage and the process
     [defaults: `SBI Securities` and `HYPERSBI2`]
@@ -108,18 +108,24 @@ file stores these configurations.
   * `-A`: configure actions and exit
   * `-C`: check configuration changes and exit
 
-## Known Issue ##
+## Known Issue
 
   * The extraction of the order status assumes 1 to 10 pairs of orders for day
     trading on margin, with each pair consisting of a position order and a
     repayment order. It does not support multiple web pages of the order
     status.
 
-## License ##
+## To Do
+
+Visit the “[To
+Do](https://github.com/carmine560/trading-peripheral/wiki#to-do)” section in
+the wiki.
+
+## License
 
 [MIT](LICENSE.md)
 
-## Link ##
+## Link
 
   * [*Python Scripting to Serialize WebDriver Commands to Export Hyper SBI 2
     Watchlists*](https://carmine560.blogspot.com/2023/02/python-scripting-to-export-hyper-sbi-2.html):
