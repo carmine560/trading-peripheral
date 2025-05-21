@@ -346,7 +346,6 @@ def configure(trade, can_interpolate=True, can_override=True):
              ('sleep', '0.8'),
              ('click', '//input[@name="ACT_login"]'),
              ('click', '//a[.//text()="口座管理"]'),
-             ('click', '//a[text()="取引履歴"]'),
              ('click', '//p/a[text()="注文照会"]')]}
 
         latest_modified_time = 0.0
