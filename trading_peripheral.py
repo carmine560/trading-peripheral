@@ -219,18 +219,19 @@ def configure(trade, can_interpolate=True, can_override=True):
         'table_identifier': '',
         'order_status_column': '',
         'order_canceled': '',
+        'execution_column': '',
         'symbol_regex': '',
         'symbol_replacement': '',
         'margin_trading': '',
         'buying_on_margin': '',
-        'execution_column': '',
         'execution': '',
         'datetime_column': '',
         'datetime_regex': '',
         'date_replacement': '',
         'time_replacement': '',
         'size_column': '',
-        'price_column': ''}
+        'price_column': '',
+        'exclusion_prefixes': ()}
     config[trade.process] = {
         'application_data_directory': '',
         'watchlists': '',
@@ -283,11 +284,11 @@ def configure(trade, can_interpolate=True, can_override=True):
             'table_identifier': '注文種別',
             'order_status_column': '1',
             'order_canceled': '取消完了',
+            'execution_column': '3',
             'symbol_regex': r'^.* (\d{4}) 東証$$',
             'symbol_replacement': r'\1',
             'margin_trading': '信新',
             'buying_on_margin': '信新買',
-            'execution_column': '3',
             'execution': '約定',
             'datetime_column': '5',
             'datetime_regex': r'^(\d{2}/\d{2}) (\d{2}:\d{2}:\d{2})$$',
@@ -566,21 +567,22 @@ def extract_order_status(trade, config, driver): # TODO: Make configurable.
         print(e)
         sys.exit(1)
 
-    index = 0                   # TODO: Make configurable.
-    order_status_column = int(section['order_status_column'])
-    execution_column = int(section['execution_column'])
-    size_price = pd.DataFrame(columns=('size', 'price'))
+    execution_column = int(section['execution_column']) # TODO: Rename.
+    datetime_column = int(section['datetime_column'])
     size_column = int(section['size_column'])
     price_column = int(section['price_column'])
-    datetime_column = int(section['datetime_column'])
     output_columns = configuration.evaluate_value(section['output_columns'])
-    results = pd.DataFrame(columns=output_columns)
+
+    index = 0                   # TODO: Make configurable.
     df = dfs[1][                # TODO: Make configurable.
         ~dfs[1].iloc[:, execution_column].str.startswith(
             configuration.evaluate_value(section['exclusion_prefixes']))]
+    size_price = pd.DataFrame(columns=('size', 'price'))
+    results = pd.DataFrame(columns=output_columns)
 
     while index < len(df):
-        if df.iloc[index, order_status_column] == section['order_canceled']:
+        if (df.iloc[index, int(section['order_status_column'])]
+            == section['order_canceled']):
             index += 2
             continue
         if df.iloc[index, execution_column] == section['execution']:
