@@ -295,8 +295,8 @@ def configure(trade, can_interpolate=True, can_override=True):
             'time_replacement': r'\2',
             'size_column': '6',
             'price_column': '7',
-            'stop_order_condition': '逆指値：現在値が',
-            'stop_order_executed_condition': '逆指値執行済：現在値が'}
+            'exclusion_prefixes': ('逆指値：現在値が',
+                                   '逆指値執行済：現在値が')}
 
     if trade.process == 'HYPERSBI2':
         config[trade.release_notes_section] = {
@@ -577,8 +577,7 @@ def extract_order_status(trade, config, driver): # TODO: Make configurable.
     results = pd.DataFrame(columns=output_columns)
     df = dfs[1][                # TODO: Make configurable.
         ~dfs[1].iloc[:, execution_column].str.startswith(
-            (section['stop_order_condition'],
-             section['stop_order_executed_condition']))]
+            configuration.evaluate_value(section['exclusion_prefixes']))]
 
     while index < len(df):
         if df.iloc[index, order_status_column] == section['order_canceled']:
