@@ -294,7 +294,9 @@ def configure(trade, can_interpolate=True, can_override=True):
             'date_replacement': r'\1',
             'time_replacement': r'\2',
             'size_column': '6',
-            'price_column': '7'}
+            'price_column': '7',
+            'stop_order_condition': '逆指値：現在値が',
+            'stop_order_executed_condition': '逆指値執行済：現在値が'}
 
     if trade.process == 'HYPERSBI2':
         config[trade.release_notes_section] = {
@@ -565,7 +567,6 @@ def extract_order_status(trade, config, driver): # TODO: Make configurable.
         sys.exit(1)
 
     index = 0                   # TODO: Make configurable.
-    df = dfs[1]                 # TODO: Make configurable.
     order_status_column = int(section['order_status_column'])
     execution_column = int(section['execution_column'])
     size_price = pd.DataFrame(columns=('size', 'price'))
@@ -574,6 +575,11 @@ def extract_order_status(trade, config, driver): # TODO: Make configurable.
     datetime_column = int(section['datetime_column'])
     output_columns = configuration.evaluate_value(section['output_columns'])
     results = pd.DataFrame(columns=output_columns)
+    df = dfs[1][                # TODO: Make configurable.
+        ~dfs[1].iloc[:, execution_column].str.startswith(
+            (section['stop_order_condition'],
+             section['stop_order_executed_condition']))]
+
     while index < len(df):
         if df.iloc[index, order_status_column] == section['order_canceled']:
             index += 2
@@ -619,11 +625,9 @@ def extract_order_status(trade, config, driver): # TODO: Make configurable.
                 entry_time = re.sub(section['datetime_regex'],
                                     section['time_replacement'],
                                     df.iloc[index + 2, datetime_column])
-                if (section['buying_on_margin']
-                    in df.iloc[index + 1, execution_column]):
-                    trade_type = 'long'
-                else:
-                    trade_type = 'short'
+                trade_type = ('long' if section['buying_on_margin']
+                              in df.iloc[index + 1, execution_column]
+                              else 'short')
 
                 entry_price = df.iloc[index + 2, price_column]
             else:
