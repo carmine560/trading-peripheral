@@ -217,8 +217,7 @@ def configure(trade, can_interpolate=True, can_override=True):
     config[trade.order_status_section] = {
         'output_columns': (),
         'table_identifier': '',
-        'order_status_column': '',
-        'order_canceled': '',
+        'exclusion': {},
         'execution_column': '',
         'symbol_regex': '',
         'symbol_replacement': '',
@@ -230,8 +229,7 @@ def configure(trade, can_interpolate=True, can_override=True):
         'date_replacement': '',
         'time_replacement': '',
         'size_column': '',
-        'price_column': '',
-        'exclusion_prefixes': ()}
+        'price_column': ''}
     config[trade.process] = {
         'application_data_directory': '',
         'watchlists': '',
@@ -282,8 +280,10 @@ def configure(trade, can_interpolate=True, can_override=True):
         config[trade.order_status_section] = {
             'output_columns': (),
             'table_identifier': '注文種別',
-            'order_status_column': '1',
-            'order_canceled': '取消完了',
+            'exclusion': {'equals': ('1', ('取消完了',)),
+                          'startswith': ('${execution_column}',
+                                         ('逆指値：現在値が',
+                                          '逆指値執行済：現在値が'))},
             'execution_column': '3',
             'symbol_regex': r'^.* (\d{4}) 東証$$',
             'symbol_replacement': r'\1',
@@ -295,9 +295,7 @@ def configure(trade, can_interpolate=True, can_override=True):
             'date_replacement': r'\1',
             'time_replacement': r'\2',
             'size_column': '6',
-            'price_column': '7',
-            'exclusion_prefixes': ('逆指値：現在値が',
-                                   '逆指値執行済：現在値が')}
+            'price_column': '7'}
 
     if trade.process == 'HYPERSBI2':
         config[trade.release_notes_section] = {
@@ -567,6 +565,7 @@ def extract_order_status(trade, config, driver): # TODO: Make configurable.
         print(e)
         sys.exit(1)
 
+    exclusion = configuration.evaluate_value(section['exclusion'])
     execution_column = int(section['execution_column']) # TODO: Rename.
     datetime_column = int(section['datetime_column'])
     size_column = int(section['size_column'])
@@ -575,16 +574,14 @@ def extract_order_status(trade, config, driver): # TODO: Make configurable.
 
     index = 0                   # TODO: Make configurable.
     df = dfs[1][                # TODO: Make configurable.
-        ~dfs[1].iloc[:, execution_column].str.startswith(
-            configuration.evaluate_value(section['exclusion_prefixes']))]
+        ~dfs[1].iloc[:, int(exclusion['equals'][0])].isin(
+            exclusion['equals'][1])
+        & ~dfs[1].iloc[:, int(exclusion['startswith'][0])].str.startswith(
+            exclusion['startswith'][1])]
     size_price = pd.DataFrame(columns=('size', 'price'))
     results = pd.DataFrame(columns=output_columns)
 
     while index < len(df):
-        if (df.iloc[index, int(section['order_status_column'])]
-            == section['order_canceled']):
-            index += 2
-            continue
         if df.iloc[index, execution_column] == section['execution']:
             if len(size_price) == 0:
                 size_price.loc[0] = [df.iloc[index - 1, size_column],
