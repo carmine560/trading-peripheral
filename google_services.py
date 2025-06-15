@@ -77,7 +77,7 @@ def extract_string_from_email(credentials_path, email_message_from,
         ).execute()
     except HttpError as e:
         print(e)
-        sys.exit(1)
+        return None
 
     for summary in result.get('messages', []):
         try:
@@ -85,7 +85,7 @@ def extract_string_from_email(credentials_path, email_message_from,
                 userId='me', id=summary['id'], format='full').execute()
         except HttpError as e:
             print(e)
-            sys.exit(1)
+            return None
 
         payload = message['payload']
 

@@ -66,6 +66,8 @@ def main():
                                           trade.release_notes_section)
     if args.m:
         insert_maintenance_schedules(trade, config)
+    if args.a:
+        update_authentication_code_from_email(trade, config)
     if any((args.s, args.S, args.o)):
         driver = browser_driver.initialize(
             headless=config['General'].getboolean('headless'),
@@ -94,22 +96,21 @@ def main():
         if process_utilities.is_running(trade.process):
             print(trade.process, 'is running.')
             sys.exit(1)
-        else:
-            application_data_directory = config[trade.process][
-                'application_data_directory']
-            snapshot_directory = config[trade.process]['snapshot_directory']
-            fingerprint = config['General']['fingerprint']
-            if args.d:
-                file_utilities.archive_encrypt_directory(
-                    application_data_directory, snapshot_directory,
-                    fingerprint=fingerprint)
-            if args.D:
-                snapshot = os.path.join(
-                    snapshot_directory,
-                    os.path.basename(application_data_directory)
-                    + '.tar.xz.gpg')
-                output_directory = os.path.dirname(application_data_directory)
-                file_utilities.decrypt_extract_file(snapshot, output_directory)
+
+        application_data_directory = config[trade.process][
+            'application_data_directory']
+        snapshot_directory = config[trade.process]['snapshot_directory']
+        fingerprint = config['General']['fingerprint']
+        if args.d:
+            file_utilities.archive_encrypt_directory(
+                application_data_directory, snapshot_directory,
+                fingerprint=fingerprint)
+        if args.D:
+            snapshot = os.path.join(
+                snapshot_directory,
+                os.path.basename(application_data_directory) + '.tar.xz.gpg')
+            output_directory = os.path.dirname(application_data_directory)
+            file_utilities.decrypt_extract_file(snapshot, output_directory)
 
 
 def get_arguments():
@@ -140,6 +141,10 @@ def get_arguments():
         '-S', action='store_true',
         help='replace the PROCESS watchlists'
         ' with watchlists on the BROKERAGE website')
+    parser.add_argument(
+        '-a', action='store_true',
+        help='extract the latest authentication code from Gmail messages'
+        " and update 'trading_assistant.ini.gpg' for 'trading_assistant.py'")
     parser.add_argument(
         '-o', action='store_true',
         help='extract the order status'
@@ -552,6 +557,35 @@ def check_web_page_send_email_message(trade, config, section):
 
     config[section]['latest_news_text'] = latest_news_text
     configuration.write_config(config, trade.config_path)
+
+
+def update_authentication_code_from_email(trade, config):
+    """Extract the authentication code from email and update the config."""
+    if process_utilities.is_running(trade.process):
+        print(trade.process, 'is running.')
+        sys.exit(1)
+
+    authentication_code_regex = r'認証コード\s*([A-Z0-9]{5})'
+    email_message_from = 'info@sbisec.co.jp'
+    authentication_code = google_services.extract_string_from_email(
+        os.path.join(trade.config_directory, 'token.json'),
+        email_message_from, authentication_code_regex)
+    if authentication_code:
+        trading_assistant_config = configparser.ConfigParser(
+            interpolation=configparser.ExtendedInterpolation())
+        trading_assistant_config_path = os.path.join(
+            os.path.expandvars('%LOCALAPPDATA%'),
+            r'trading-assistant\trading_assistant.ini')
+        configuration.read_config(trading_assistant_config,
+                                  trading_assistant_config_path,
+                                  is_encrypted=True)
+        trading_assistant_config[trade.process]['authentication_code'] = (
+            authentication_code)
+        file_utilities.backup_file(trading_assistant_config_path,
+                                   number_of_backups=8)
+        configuration.write_config(trading_assistant_config,
+                                   trading_assistant_config_path,
+                                   is_encrypted=True)
 
 
 def extract_order_status(trade, config, driver): # TODO: Make configurable.
