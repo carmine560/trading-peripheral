@@ -3,6 +3,7 @@
 from email.message import EmailMessage
 import base64
 import os
+import re
 import sys
 
 from google.auth.transport.requests import Request
@@ -44,8 +45,8 @@ def send_email_message(credentials_path, subject, email_message_from,
                        email_message_to, content):
     """Send an email message via Gmail."""
     if email_message_from and email_message_to and content:
-        resource = build('gmail', 'v1', credentials=get_credentials(
-            credentials_path))
+        resource = build('gmail', 'v1',
+                         credentials=get_credentials(credentials_path))
 
         email_message = EmailMessage()
         email_message['Subject'] = subject
@@ -62,9 +63,56 @@ def send_email_message(credentials_path, subject, email_message_from,
             sys.exit(1)
 
 
+def extract_string_from_email(credentials_path, email_message_from,
+                              string_regex):
+    """Extract the latest matching string from Gmail messages."""
+    if not all((credentials_path, email_message_from, string_regex)):
+        return None
+
+    resource = build('gmail', 'v1',
+                     credentials=get_credentials(credentials_path))
+    try:
+        result = resource.users().messages().list(
+            userId='me', q=f'from:{email_message_from}', maxResults=5
+        ).execute()
+    except HttpError as e:
+        print(e)
+        sys.exit(1)
+
+    for summary in result.get('messages', []):
+        try:
+            message = resource.users().messages().get(
+                userId='me', id=summary['id'], format='full').execute()
+        except HttpError as e:
+            print(e)
+            sys.exit(1)
+
+        payload = message['payload']
+
+        # Try the single-part body first.
+        data = payload.get('body', {}).get('data')
+        if data:
+            decoded_data = base64.urlsafe_b64decode(data).decode()
+            match = re.search(string_regex, decoded_data)
+            if match:
+                return match.group(1)
+
+        # Try multipart parts if the single-part body is missing.
+        for part in payload.get('parts', []):
+            part_data = part.get('body', {}).get('data')
+            if part_data:
+                decoded_data = base64.urlsafe_b64decode(part_data).decode()
+                match = re.search(string_regex, decoded_data)
+                if match:
+                    return match.group(1)
+
+    return None
+
+
 def get_credentials(token_json):
     """Obtain valid Google API credentials from a JSON token file."""
     scopes = ['https://www.googleapis.com/auth/calendar',
+              'https://www.googleapis.com/auth/gmail.readonly',
               'https://www.googleapis.com/auth/gmail.send']
     credentials = None
     if os.path.isfile(token_json):
