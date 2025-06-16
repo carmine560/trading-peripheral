@@ -192,7 +192,10 @@ def configure(trade, can_interpolate=True, can_override=True):
         'implicitly_wait': '4',
         'email_message_from': '',
         'email_message_to': '',
-        'fingerprint': ''}
+        'fingerprint': '',
+        'trading_assistant_config_path':
+        os.path.join(os.path.expandvars('%LOCALAPPDATA%'),
+                     r'trading-assistant\trading_assistant.ini')}
     config[trade.investment_tools_news_section] = {
         'url': '',
         'latest_news_xpath': '',
@@ -239,7 +242,9 @@ def configure(trade, can_interpolate=True, can_override=True):
         'application_data_directory': '',
         'watchlists': '',
         'backup_directory': '',
-        'snapshot_directory': ''}
+        'snapshot_directory': '',
+        'authentication_email_message_from': '',
+        'authentication_code_regex': ''}
     config[trade.actions_section] = {
         f'replace_{trade.vendor}_watchlists': [()],
         f'replace_{trade.process}_watchlists': [()],
@@ -315,7 +320,9 @@ def configure(trade, can_interpolate=True, can_override=True):
             'watchlists': '',
             'backup_directory': '',
             'snapshot_directory':
-            os.path.join(os.path.expanduser('~'), 'Downloads')}
+            os.path.join(os.path.expanduser('~'), 'Downloads'),
+            'authentication_email_message_from': 'info@sbisec.co.jp',
+            'authentication_code_regex': r'認証コード\s*([A-Z0-9]{5})'}
         config[trade.actions_section] = {
             f'replace_{trade.vendor}_watchlists':
             [('get', 'https://www.sbisec.co.jp/ETGate/'),
@@ -565,17 +572,15 @@ def update_authentication_code_from_email(trade, config):
         print(trade.process, 'is running.')
         sys.exit(1)
 
-    authentication_code_regex = r'認証コード\s*([A-Z0-9]{5})'
-    email_message_from = 'info@sbisec.co.jp'
     authentication_code = google_services.extract_string_from_email(
         os.path.join(trade.config_directory, 'token.json'),
-        email_message_from, authentication_code_regex)
+        config[trade.process]['authentication_email_message_from'],
+        config[trade.process]['authentication_code_regex'])
     if authentication_code:
         trading_assistant_config = configparser.ConfigParser(
             interpolation=configparser.ExtendedInterpolation())
-        trading_assistant_config_path = os.path.join(
-            os.path.expandvars('%LOCALAPPDATA%'),
-            r'trading-assistant\trading_assistant.ini')
+        trading_assistant_config_path = config['General'][
+            'trading_assistant_config_path']
         configuration.read_config(trading_assistant_config,
                                   trading_assistant_config_path,
                                   is_encrypted=True)
