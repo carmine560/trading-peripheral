@@ -567,19 +567,22 @@ def check_web_page_send_email_message(trade, config, section):
 
 
 def update_authentication_code_from_email(trade, config):
-    """Extract the authentication code from email and update the config."""
+    """Extract the authentication code and update the configuration file."""
     if process_utilities.is_running(trade.process):
         print(trade.process, 'is running.')
+        sys.exit(1)
+
+    trading_assistant_config_path = config['General'][
+        'trading_assistant_config_path']
+    if not os.path.isfile(f'{trading_assistant_config_path}.gpg'):
+        print(f'The {trading_assistant_config_path}.gpg file does not exist.')
         sys.exit(1)
 
     authentication_code = google_services.extract_string_from_email(
         os.path.join(trade.config_directory, 'token.json'),
         config[trade.process]['authentication_email_message_from'],
         config[trade.process]['authentication_code_regex'])
-    trading_assistant_config_path = config['General'][
-        'trading_assistant_config_path']
-    if (authentication_code
-        and os.path.isfile(f'{trading_assistant_config_path}.gpg')):
+    if authentication_code:
         trading_assistant_config = configparser.ConfigParser(
             interpolation=configparser.ExtendedInterpolation())
         configuration.read_config(trading_assistant_config,
@@ -592,6 +595,8 @@ def update_authentication_code_from_email(trade, config):
         configuration.write_config(trading_assistant_config,
                                    trading_assistant_config_path,
                                    is_encrypted=True)
+    else:
+        print('The authentication code was not found.')
 
 
 def extract_order_status(trade, config, driver): # TODO: Make configurable.
