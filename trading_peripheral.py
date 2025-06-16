@@ -576,11 +576,12 @@ def update_authentication_code_from_email(trade, config):
         os.path.join(trade.config_directory, 'token.json'),
         config[trade.process]['authentication_email_message_from'],
         config[trade.process]['authentication_code_regex'])
-    if authentication_code:
+    trading_assistant_config_path = config['General'][
+        'trading_assistant_config_path']
+    if (authentication_code
+        and os.path.isfile(f'{trading_assistant_config_path}.gpg')):
         trading_assistant_config = configparser.ConfigParser(
             interpolation=configparser.ExtendedInterpolation())
-        trading_assistant_config_path = config['General'][
-            'trading_assistant_config_path']
         configuration.read_config(trading_assistant_config,
                                   trading_assistant_config_path,
                                   is_encrypted=True)
