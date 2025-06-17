@@ -569,7 +569,7 @@ def check_web_page_send_email_message(trade, config, section):
 def update_authentication_code_from_email(trade, config):
     """Extract the authentication code and update the configuration file."""
     if process_utilities.is_running(trade.process):
-        print(trade.process, 'is running.')
+        print(f"'{trade.process}' is running.")
         sys.exit(1)
 
     trading_assistant_config_path = config['General'][
