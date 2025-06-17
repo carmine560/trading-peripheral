@@ -92,7 +92,7 @@ def main():
             backup_directory=config[trade.process]['backup_directory'])
     if args.d or args.D:
         if process_utilities.is_running(trade.process):
-            print(trade.process, 'is running.')
+            print(f"'{trade.process}' is running.")
             sys.exit(1)
         else:
             application_data_directory = config[trade.process][
