@@ -28,6 +28,10 @@ import process_utilities
 import web_utilities
 
 
+TRADING_ASSISTANT_DIRECTORY = 'trading-assistant'
+TRADING_ASSISTANT_BASE = 'trading_assistant'
+
+
 class Trade(initializer.Initializer):
     """Represent a trade process for a specific vendor."""
 
@@ -144,7 +148,8 @@ def get_arguments():
     parser.add_argument(
         '-a', action='store_true',
         help='extract the latest authentication code from Gmail messages'
-        " and update 'trading_assistant.ini.gpg' for 'trading_assistant.py'")
+        f" and update '{TRADING_ASSISTANT_BASE}.ini.gpg'"
+        f" for '{TRADING_ASSISTANT_BASE}.py'")
     parser.add_argument(
         '-o', action='store_true',
         help='extract the order status'
@@ -194,8 +199,9 @@ def configure(trade, can_interpolate=True, can_override=True):
         'email_message_to': '',
         'fingerprint': '',
         'trading_assistant_config_path':
-        os.path.join(os.path.expandvars('%LOCALAPPDATA%'),
-                     r'trading-assistant\trading_assistant.ini')}
+        os.path.join(
+            os.path.expandvars('%LOCALAPPDATA%'),
+            fr'{TRADING_ASSISTANT_DIRECTORY}\{TRADING_ASSISTANT_BASE}.ini')}
     config[trade.investment_tools_news_section] = {
         'url': '',
         'latest_news_xpath': '',
