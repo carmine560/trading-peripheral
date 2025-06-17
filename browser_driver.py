@@ -96,6 +96,6 @@ def execute_action(driver, action, element=None, text=None):
                 time.sleep(1)
 
         else:
-            print(command, 'is not a recognized command.')
+            print(f"'{command}' is not a recognized command.")
             return False
     return True
