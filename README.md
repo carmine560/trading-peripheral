@@ -98,7 +98,7 @@ file stores these configurations.
     website
   * `-a`: extract the latest authentication code from Gmail messages and update
     `trading_assistant.ini.gpg` for
-    [`trading_assistant.py`](https://github.com/carmine560/trading-assistant)
+    [`trading-assistant`](https://github.com/carmine560/trading-assistant)
   * `-o`: extract the order status from the BROKERAGE order status web page and
     copy it to the clipboard
   * `-w`: backup the PROCESS watchlists

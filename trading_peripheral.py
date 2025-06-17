@@ -149,7 +149,7 @@ def get_arguments():
         '-a', action='store_true',
         help='extract the latest authentication code from Gmail messages'
         f" and update '{TRADING_ASSISTANT_BASE}.ini.gpg'"
-        f" for '{TRADING_ASSISTANT_BASE}.py'")
+        f" for '{TRADING_ASSISTANT_DIRECTORY}'")
     parser.add_argument(
         '-o', action='store_true',
         help='extract the order status'
