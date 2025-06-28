@@ -28,10 +28,6 @@ import process_utilities
 import web_utilities
 
 
-TRADING_ASSISTANT_DIRECTORY = 'trading-assistant'
-TRADING_ASSISTANT_BASE = 'trading_assistant'
-
-
 class Trade(initializer.Initializer):
     """Represent a trade process for a specific vendor."""
 
@@ -70,8 +66,6 @@ def main():
                                           trade.release_notes_section)
     if args.m:
         insert_maintenance_schedules(trade, config)
-    if args.a:
-        update_authentication_code_from_email(trade, config)
     if any((args.s, args.S, args.o)):
         driver = browser_driver.initialize(
             headless=config['General'].getboolean('headless'),
@@ -146,11 +140,6 @@ def get_arguments():
         help='replace the PROCESS watchlists'
         ' with watchlists on the BROKERAGE website')
     parser.add_argument(
-        '-a', action='store_true',
-        help='extract the latest authentication code from Gmail messages'
-        f" and update '{TRADING_ASSISTANT_BASE}.ini.gpg'"
-        f" for '{TRADING_ASSISTANT_DIRECTORY}'")
-    parser.add_argument(
         '-o', action='store_true',
         help='extract the order status'
         ' from the BROKERAGE order status web page'
@@ -197,11 +186,7 @@ def configure(trade, can_interpolate=True, can_override=True):
         'implicitly_wait': '4',
         'email_message_from': '',
         'email_message_to': '',
-        'fingerprint': '',
-        'trading_assistant_config_path':
-        os.path.join(
-            os.path.expandvars('%LOCALAPPDATA%'),
-            fr'{TRADING_ASSISTANT_DIRECTORY}\{TRADING_ASSISTANT_BASE}.ini')}
+        'fingerprint': ''}
     config[trade.investment_tools_news_section] = {
         'url': '',
         'latest_news_xpath': '',
@@ -248,9 +233,7 @@ def configure(trade, can_interpolate=True, can_override=True):
         'application_data_directory': '',
         'watchlists': '',
         'backup_directory': '',
-        'snapshot_directory': '',
-        'authentication_email_message_from': '',
-        'authentication_code_regex': ''}
+        'snapshot_directory': ''}
     config[trade.actions_section] = {
         f'replace_{trade.vendor}_watchlists': [()],
         f'replace_{trade.process}_watchlists': [()],
@@ -326,9 +309,7 @@ def configure(trade, can_interpolate=True, can_override=True):
             'watchlists': '',
             'backup_directory': '',
             'snapshot_directory':
-            os.path.join(os.path.expanduser('~'), 'Downloads'),
-            'authentication_email_message_from': 'info@sbisec.co.jp',
-            'authentication_code_regex': r'認証コード\s*([A-Z0-9]{5})'}
+            os.path.join(os.path.expanduser('~'), 'Downloads')}
         config[trade.actions_section] = {
             f'replace_{trade.vendor}_watchlists':
             [('get', 'https://www.sbisec.co.jp/ETGate/'),
@@ -570,39 +551,6 @@ def check_web_page_send_email_message(trade, config, section):
 
     config[section]['latest_news_text'] = latest_news_text
     configuration.write_config(config, trade.config_path)
-
-
-def update_authentication_code_from_email(trade, config):
-    """Extract the authentication code and update the configuration file."""
-    if process_utilities.is_running(trade.process):
-        print(f"'{trade.process}' is running.")
-        sys.exit(1)
-
-    trading_assistant_config_path = config['General'][
-        'trading_assistant_config_path']
-    if not os.path.isfile(f'{trading_assistant_config_path}.gpg'):
-        print(f'The {trading_assistant_config_path}.gpg file does not exist.')
-        sys.exit(1)
-
-    authentication_code = google_services.extract_string_from_email(
-        os.path.join(trade.config_directory, 'token.json'),
-        config[trade.process]['authentication_email_message_from'],
-        config[trade.process]['authentication_code_regex'])
-    if authentication_code:
-        trading_assistant_config = configparser.ConfigParser(
-            interpolation=configparser.ExtendedInterpolation())
-        configuration.read_config(trading_assistant_config,
-                                  trading_assistant_config_path,
-                                  is_encrypted=True)
-        trading_assistant_config[trade.process]['authentication_code'] = (
-            authentication_code)
-        file_utilities.backup_file(trading_assistant_config_path,
-                                   number_of_backups=8)
-        configuration.write_config(trading_assistant_config,
-                                   trading_assistant_config_path,
-                                   is_encrypted=True)
-    else:
-        print('The authentication code was not found.')
 
 
 def extract_order_status(trade, config, driver): # TODO: Make configurable.
