@@ -96,6 +96,9 @@ file stores these configurations.
     watchlists
   * `-S`: replace the PROCESS watchlists with watchlists on the BROKERAGE
     website
+  * `-a`: extract the latest authentication code from Gmail messages and update
+    `trading_assistant.ini.gpg` for
+    [`trading-assistant`](https://github.com/carmine560/trading-assistant)
   * `-o`: extract the order status from the BROKERAGE order status web page and
     copy it to the clipboard
   * `-w`: backup the PROCESS watchlists

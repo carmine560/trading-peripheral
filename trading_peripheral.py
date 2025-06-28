@@ -94,22 +94,21 @@ def main():
         if process_utilities.is_running(trade.process):
             print(f"'{trade.process}' is running.")
             sys.exit(1)
-        else:
-            application_data_directory = config[trade.process][
-                'application_data_directory']
-            snapshot_directory = config[trade.process]['snapshot_directory']
-            fingerprint = config['General']['fingerprint']
-            if args.d:
-                file_utilities.archive_encrypt_directory(
-                    application_data_directory, snapshot_directory,
-                    fingerprint=fingerprint)
-            if args.D:
-                snapshot = os.path.join(
-                    snapshot_directory,
-                    os.path.basename(application_data_directory)
-                    + '.tar.xz.gpg')
-                output_directory = os.path.dirname(application_data_directory)
-                file_utilities.decrypt_extract_file(snapshot, output_directory)
+
+        application_data_directory = config[trade.process][
+            'application_data_directory']
+        snapshot_directory = config[trade.process]['snapshot_directory']
+        fingerprint = config['General']['fingerprint']
+        if args.d:
+            file_utilities.archive_encrypt_directory(
+                application_data_directory, snapshot_directory,
+                fingerprint=fingerprint)
+        if args.D:
+            snapshot = os.path.join(
+                snapshot_directory,
+                os.path.basename(application_data_directory) + '.tar.xz.gpg')
+            output_directory = os.path.dirname(application_data_directory)
+            file_utilities.decrypt_extract_file(snapshot, output_directory)
 
 
 def get_arguments():
