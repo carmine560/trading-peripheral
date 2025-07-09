@@ -112,10 +112,10 @@ file stores these configurations.
 
 ## Known Issue
 
-  * The extraction of the order status assumes 1 to 10 pairs of orders for day
-    trading on margin, with each pair consisting of a position order and a
-    repayment order. It does not support multiple web pages of the order
-    status.
+  * The extraction of the order status assumes up to 100 orders for day trading
+    on margin. These orders include paired orders (consisting of a position
+    order and a repayment order) and canceled orders. It does not support
+    multiple web pages of the order status.
 
 ## To Do
 
