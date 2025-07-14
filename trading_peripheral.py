@@ -83,7 +83,11 @@ def main():
         if args.o:
             browser_driver.execute_action(
                 driver, config[trade.actions_section]['get_order_status'])
-            extract_order_status(trade, config, driver)
+            if trade.vendor in BROKERAGE_ORDER_STATUS_FUNCTIONS:
+                BROKERAGE_ORDER_STATUS_FUNCTIONS[trade.vendor](
+                    trade, config, driver)
+            else:
+                extract_unsupported_brokerage_order_status(trade.vendor)
 
         driver.quit()
     if args.w:
@@ -187,59 +191,6 @@ def configure(trade, can_interpolate=True, can_override=True):
         'email_message_from': '',
         'email_message_to': '',
         'fingerprint': ''}
-    config[trade.investment_tools_news_section] = {
-        'url': '',
-        'latest_news_xpath': '',
-        'latest_news_text': ''}
-    config[trade.release_notes_section] = {
-        'url': '',
-        'latest_news_xpath': '',
-        'latest_news_text': ''}
-    config[trade.maintenance_schedules_section] = {
-        'url': '',
-        'timezone': '',
-        'last_inserted': '',
-        'calendar_id': '',
-        'all_service_xpath': '',
-        'all_service_name': '',
-        'services': '',
-        'service_xpath': '',
-        'function_xpath': '',
-        'datetime_xpath': '',
-        'range_splitter_regex': '',
-        'datetime_regex': '',
-        'year_group': '',
-        'month_group': '',
-        'day_group': '',
-        'time_group': '',
-        'previous_bodies': {}}
-    config[trade.order_status_section] = {
-        'output_columns': (),
-        'table_identifier': '',
-        'exclusion': {},
-        'execution_column': '',
-        'symbol_regex': '',
-        'symbol_replacement': '',
-        'margin_trading': '',
-        'buying_on_margin': '',
-        'execution': '',
-        'datetime_column': '',
-        'datetime_regex': '',
-        'date_replacement': '',
-        'time_replacement': '',
-        'size_column': '',
-        'price_column': ''}
-    config[trade.process] = {
-        'application_data_directory': '',
-        'watchlists': '',
-        'backup_directory': '',
-        'snapshot_directory': ''}
-    config[trade.actions_section] = {
-        f'replace_{trade.vendor}_watchlists': [()],
-        f'replace_{trade.process}_watchlists': [()],
-        'get_order_status': [()]}
-    config[trade.variables_section] = {
-        'securities_codes': ''}
 
     if trade.vendor == 'SBI Securities':
         config[trade.investment_tools_news_section] = {
@@ -402,8 +353,7 @@ def configure_exit(args, trade):
     elif args.C:
         configuration.check_config_changes(
             configure(trade, can_interpolate=False, can_override=False),
-            trade.config_path, excluded_sections=(trade.variables_section,),
-            backup_parameters=backup_parameters)
+            trade.config_path, backup_parameters=backup_parameters)
         sys.exit()
 
 
@@ -553,7 +503,7 @@ def check_web_page_send_email_message(trade, config, section):
     configuration.write_config(config, trade.config_path)
 
 
-def extract_order_status(trade, config, driver): # TODO: Make configurable.
+def extract_sbi_securities_order_status(trade, config, driver):
     """Extract order status from a webpage and copy it to the clipboard."""
     section = config[trade.order_status_section]
 
@@ -656,6 +606,15 @@ def extract_order_status(trade, config, driver): # TODO: Make configurable.
 
     results.to_clipboard(index=False, header=False)
 
+
+def extract_unsupported_brokerage_order_status(brokerage):
+    """Handle order status requests for unsupported brokerages."""
+    print(f"Order status extraction for '{brokerage}' is not implemented.")
+    return None
+
+
+BROKERAGE_ORDER_STATUS_FUNCTIONS = {
+    'SBI Securities': extract_sbi_securities_order_status}
 
 if __name__ == '__main__':
     main()
