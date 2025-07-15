@@ -17,6 +17,7 @@ import pandas as pd
 import pytz
 import requests
 
+from configuration import ConfigError
 import browser_driver
 import configuration
 import data_utilities
@@ -58,61 +59,71 @@ def main():
 
     config = configure(trade)
 
-    if args.t:
-        check_web_page_send_email_message(trade, config,
-                                          trade.investment_tools_news_section)
-    if args.r:
-        check_web_page_send_email_message(trade, config,
-                                          trade.release_notes_section)
-    if args.m:
-        insert_maintenance_schedules(trade, config)
-    if any((args.s, args.S, args.o)):
-        driver = browser_driver.initialize(
-            headless=config['General'].getboolean('headless'),
-            user_data_directory=config['General']['user_data_directory'],
-            profile_directory=config['General']['profile_directory'],
-            implicitly_wait=float(config['General']['implicitly_wait']))
-        if args.s:
-            browser_driver.execute_action(
-                driver, config[trade.actions_section][
-                    f'replace_{trade.vendor}_watchlists'])
-        if args.S:
-            browser_driver.execute_action(
-                driver, config[trade.actions_section][
-                    f'replace_{trade.process}_watchlists'])
-        if args.o:
-            browser_driver.execute_action(
-                driver, config[trade.actions_section]['get_order_status'])
-            if trade.vendor in BROKERAGE_ORDER_STATUS_FUNCTIONS:
-                BROKERAGE_ORDER_STATUS_FUNCTIONS[trade.vendor](
-                    trade, config, driver)
-            else:
-                extract_unsupported_brokerage_order_status(trade.vendor)
+    try:
+        if args.t:
+            check_web_page_send_email_message(
+                trade, config, trade.investment_tools_news_section
+            )
+        if args.r:
+            check_web_page_send_email_message(
+                trade, config, trade.release_notes_section
+            )
+        if args.m:
+            insert_maintenance_schedules(trade, config)
+        if any((args.s, args.S, args.o)):
+            configuration.is_section_missing(config, trade.actions_section)
+            driver = browser_driver.initialize(
+                headless=config['General'].getboolean('headless'),
+                user_data_directory=config['General']['user_data_directory'],
+                profile_directory=config['General']['profile_directory'],
+                implicitly_wait=float(config['General']['implicitly_wait']))
+            if args.s:
+                browser_driver.execute_action(
+                    driver, config[trade.actions_section][
+                        f'replace_{trade.vendor}_watchlists'])
+            if args.S:
+                browser_driver.execute_action(
+                    driver, config[trade.actions_section][
+                        f'replace_{trade.process}_watchlists'])
+            if args.o:
+                browser_driver.execute_action(
+                    driver, config[trade.actions_section]['get_order_status'])
+                if trade.vendor in BROKERAGE_ORDER_STATUS_FUNCTIONS:
+                    BROKERAGE_ORDER_STATUS_FUNCTIONS[trade.vendor](
+                        trade, config, driver)
+                else:
+                    extract_unsupported_brokerage_order_status(trade.vendor)
 
-        driver.quit()
-    if args.w:
-        file_utilities.backup_file(
-            config[trade.process]['watchlists'],
-            backup_directory=config[trade.process]['backup_directory'])
-    if args.d or args.D:
-        if process_utilities.is_running(trade.process):
-            print(f"'{trade.process}' is running.")
-            sys.exit(1)
+            driver.quit()
+        if args.w:
+            configuration.is_section_missing(config, trade.process)
+            file_utilities.backup_file(
+                config[trade.process]['watchlists'],
+                backup_directory=config[trade.process]['backup_directory'])
+        if args.d or args.D:
+            configuration.is_section_missing(config, trade.process)
+            if process_utilities.is_running(trade.process):
+                print(f"'{trade.process}' is running.")
+                sys.exit(1)
 
-        application_data_directory = config[trade.process][
-            'application_data_directory']
-        snapshot_directory = config[trade.process]['snapshot_directory']
-        fingerprint = config['General']['fingerprint']
-        if args.d:
-            file_utilities.archive_encrypt_directory(
-                application_data_directory, snapshot_directory,
-                fingerprint=fingerprint)
-        if args.D:
-            snapshot = os.path.join(
-                snapshot_directory,
-                os.path.basename(application_data_directory) + '.tar.xz.gpg')
-            output_directory = os.path.dirname(application_data_directory)
-            file_utilities.decrypt_extract_file(snapshot, output_directory)
+            application_data_directory = config[trade.process][
+                'application_data_directory']
+            snapshot_directory = config[trade.process]['snapshot_directory']
+            fingerprint = config['General']['fingerprint']
+            if args.d:
+                file_utilities.archive_encrypt_directory(
+                    application_data_directory, snapshot_directory,
+                    fingerprint=fingerprint)
+            if args.D:
+                snapshot = os.path.join(
+                    snapshot_directory,
+                    os.path.basename(application_data_directory)
+                    + '.tar.xz.gpg')
+                output_directory = os.path.dirname(application_data_directory)
+                file_utilities.decrypt_extract_file(snapshot, output_directory)
+    except ConfigError as e:
+        print(e)
+        sys.exit(1)
 
 
 def get_arguments():
@@ -359,6 +370,10 @@ def configure_exit(args, trade):
 
 def insert_maintenance_schedules(trade, config):
     """Insert maintenance schedules into a Google Calendar."""
+    configuration.is_section_missing(
+        config, trade.maintenance_schedules_section
+    )
+
     section = config[trade.maintenance_schedules_section]
     tzinfo = pytz.timezone(section['timezone'])
     now = datetime.now(tzinfo)
@@ -482,6 +497,8 @@ def replace_datetime(match_object, section, now, tzinfo):
 
 def check_web_page_send_email_message(trade, config, section):
     """Check the web page and send an email message if an update is found."""
+    configuration.is_section_missing(config, section)
+
     response = requests.get(config[section]['url'], timeout=5)
     response.encoding = chardet.detect(response.content)['encoding']
     root = html.fromstring(response.text)
