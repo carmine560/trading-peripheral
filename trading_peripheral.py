@@ -74,7 +74,7 @@ def main():
         if args.m:
             insert_maintenance_schedules(trade, config)
         if any((args.s, args.S, args.o)):
-            configuration.is_section_missing(config, trade.actions_section)
+            configuration.ensure_section_exists(config, trade.actions_section)
             driver = browser_driver.initialize(
                 headless=config["General"].getboolean("headless"),
                 user_data_directory=config["General"]["user_data_directory"],
@@ -108,13 +108,13 @@ def main():
 
             driver.quit()
         if args.w:
-            configuration.is_section_missing(config, trade.process)
+            configuration.ensure_section_exists(config, trade.process)
             file_utilities.backup_file(
                 config[trade.process]["watchlists"],
                 backup_directory=config[trade.process]["backup_directory"],
             )
         if args.d or args.D:
-            configuration.is_section_missing(config, trade.process)
+            configuration.ensure_section_exists(config, trade.process)
             if process_utilities.is_running(trade.process):
                 print(f"'{trade.process}' is running.")
                 sys.exit(1)
@@ -478,7 +478,7 @@ def configure_exit(args, trade):
 
 def insert_maintenance_schedules(trade, config):
     """Insert maintenance schedules into a Google Calendar."""
-    configuration.is_section_missing(
+    configuration.ensure_section_exists(
         config, trade.maintenance_schedules_section
     )
 
@@ -642,7 +642,7 @@ def replace_datetime(match_object, section, now, tzinfo):
 
 def check_web_page_send_email_message(trade, config, section):
     """Check the web page and send an email message if an update is found."""
-    configuration.is_section_missing(config, section)
+    configuration.ensure_section_exists(config, section)
 
     response = requests.get(config[section]["url"], timeout=5)
     response.encoding = chardet.detect(response.content)["encoding"]
