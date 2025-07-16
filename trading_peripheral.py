@@ -17,7 +17,6 @@ import pandas as pd
 import pytz
 import requests
 
-from configuration import ConfigError
 import browser_driver
 import configuration
 import data_utilities
@@ -61,9 +60,9 @@ def main():
     file_utilities.create_launchers_exit(args, __file__)
     configure_exit(args, trade)
 
-    config = configure(trade)
-
     try:
+        config = configure(trade)
+
         if args.t:
             check_web_page_send_email_message(
                 trade, config, trade.investment_tools_news_section
@@ -139,8 +138,11 @@ def main():
                 )
                 output_directory = os.path.dirname(application_data_directory)
                 file_utilities.decrypt_extract_file(snapshot, output_directory)
-    except ConfigError as e:
-        print(e)
+    except configuration.ConfigError as e:
+        print(f"Configuration error: {e}")
+        sys.exit(1)
+    except Exception as e:
+        print(f"An unexpected error: {e}")
         sys.exit(1)
 
 
