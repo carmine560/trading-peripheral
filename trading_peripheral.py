@@ -161,51 +161,51 @@ def get_arguments():
     parser.add_argument(
         "-t",
         action="store_true",
-        help="check the BROKERAGE investment tools web page"
+        help="check the 'BROKERAGE' investment tools web page"
         " and send a notification via Gmail if it is updated",
     )
     parser.add_argument(
         "-r",
         action="store_true",
-        help="check the PROCESS release notes"
+        help="check the 'PROCESS' release notes"
         " and send a notification via Gmail if they are updated",
     )
     parser.add_argument(
         "-m",
         action="store_true",
-        help="insert PROCESS maintenance schedules into Google Calendar",
+        help="insert 'PROCESS' maintenance schedules into Google Calendar",
     )
     parser.add_argument(
         "-s",
         action="store_true",
-        help="replace watchlists on the BROKERAGE website"
-        " with the PROCESS watchlists",
+        help="replace watchlists on the 'BROKERAGE' website"
+        " with the 'PROCESS' watchlists",
     )
     parser.add_argument(
         "-S",
         action="store_true",
-        help="replace the PROCESS watchlists"
-        " with watchlists on the BROKERAGE website",
+        help="replace the 'PROCESS' watchlists"
+        " with watchlists on the 'BROKERAGE' website",
     )
     parser.add_argument(
         "-o",
         action="store_true",
         help="extract the order status"
-        " from the BROKERAGE order status web page"
+        " from the 'BROKERAGE' order status web page"
         " and copy it to the clipboard",
     )
     parser.add_argument(
-        "-w", action="store_true", help="backup the PROCESS watchlists"
+        "-w", action="store_true", help="backup the 'PROCESS' watchlists"
     )
     parser.add_argument(
         "-d",
         action="store_true",
-        help="take a snapshot of the PROCESS application data",
+        help="take a snapshot of the 'PROCESS' application data",
     )
     parser.add_argument(
         "-D",
         action="store_true",
-        help="restore the PROCESS application data from a snapshot",
+        help="restore the 'PROCESS' application data from a snapshot",
     )
 
     file_utilities.add_launcher_options(group)

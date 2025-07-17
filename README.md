@@ -87,20 +87,20 @@ file stores these configurations.
 
   * `-P BROKERAGE PROCESS|EXECUTABLE_PATH`: set the brokerage and the process
     [defaults: `SBI Securities` and `HYPERSBI2`]
-  * `-t`: check the BROKERAGE investment tools web page and send a notification
-    via Gmail if it is updated
-  * `-r`: check the PROCESS release notes and send a notification via Gmail if
-    they are updated
-  * `-m`: insert PROCESS maintenance schedules into Google Calendar
-  * `-s`: replace watchlists on the BROKERAGE website with the PROCESS
+  * `-t`: check the `BROKERAGE` investment tools web page and send a
+    notification via Gmail if it is updated
+  * `-r`: check the `PROCESS` release notes and send a notification via Gmail
+    if they are updated
+  * `-m`: insert `PROCESS` maintenance schedules into Google Calendar
+  * `-s`: replace watchlists on the `BROKERAGE` website with the `PROCESS`
     watchlists
-  * `-S`: replace the PROCESS watchlists with watchlists on the BROKERAGE
+  * `-S`: replace the `PROCESS` watchlists with watchlists on the `BROKERAGE`
     website
-  * `-o`: extract the order status from the BROKERAGE order status web page and
-    copy it to the clipboard
-  * `-w`: backup the PROCESS watchlists
-  * `-d`: take a snapshot of the PROCESS application data
-  * `-D`: restore the PROCESS application data from a snapshot
+  * `-o`: extract the order status from the `BROKERAGE` order status web page
+    and copy it to the clipboard
+  * `-w`: backup the `PROCESS` watchlists
+  * `-d`: take a snapshot of the `PROCESS` application data
+  * `-D`: restore the `PROCESS` application data from a snapshot
   * `-BS`: save a WSL Bash script to `%USERPROFILE%\Downloads` to launch this
     script and exit
   * `-PS`: save a PowerShell 7 script to `%USERPROFILE%\Downloads` to launch
