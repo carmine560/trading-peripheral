@@ -6,21 +6,21 @@ The `trading_peripheral.py` Python script can:
 
   * Check the [*SBI Securities Investment
     Tools*](https://site2.sbisec.co.jp/ETGate/?_ControlID=WPLETmgR001Control&_PageID=WPLETmgR001Mdtl20&_DataStoreID=DSWPLETmgR001Control&_ActionID=DefaultAID&burl=search_home&cat1=home&cat2=tool&dir=tool%2F&file=home_tool.html&getFlg=on&OutSide=on#)
-    web page and send a notification via Gmail if it is updated,
+    web page and send a notification via Gmail if it is updated
   * Check the [*Hyper SBI 2 Release
     Notes*](https://go.sbisec.co.jp/lp/lp_hyper_sbi2_211112_update.html) and
-    send a notification via Gmail if they are updated,
+    send a notification via Gmail if they are updated
   * Check the [*SBI Securities Maintenance
     Schedules*](https://search.sbisec.co.jp/v2/popwin/info/home/pop6040_maintenance.html)
     web page and insert [Hyper SBI
     2](https://go.sbisec.co.jp/lp/lp_hyper_sbi2_211112.html) maintenance
-    schedules into Google Calendar,
+    schedules into Google Calendar
   * Replace watchlists on the SBI Securities website with Hyper SBI 2
-    watchlists,
+    watchlists
   * Extract the order status from the SBI Securities order status web page and
-    copy it to the clipboard,
+    copy it to the clipboard
   * Take a snapshot of the `%APPDATA%\SBI Securities\HYPERSBI2` application
-    data and restore it.
+    data and restore it
 
 ## Prerequisites
 
