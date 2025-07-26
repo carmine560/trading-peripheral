@@ -298,24 +298,32 @@ def configure(trade, can_interpolate=True, can_override=True):
             "output_columns": (),
             "table_identifier": "注文種別",
             "exclusion": {
-                "equals": ("1", ("取消完了",)),
+                "equals": ("${order_status_column}", ("取消完了",)),
                 "startswith": (
-                    "${execution_column}",
+                    "${condition_column}",
                     ("逆指値：現在値が", "逆指値執行済：現在値が"),
                 ),
             },
-            "execution_column": "3",
+            "order_status_column": "1",
+            "order_trigger_column": "2",
+            "stop_order": "逆指値注文",
+            "symbol_column": "3",
             "symbol_regex": r"^.* (\d{4}) 東証$$",
             "symbol_replacement": r"\1",
-            "margin_trading": "信新",
+            "trade_type_column": "${symbol_column}",
+            "margin_entry_prefix": "信新",
             "buying_on_margin": "信新買",
+            "order_type_column": "7",
+            "market_order": "成行",
+            "condition_column": "${symbol_column}",
+            "execution_column": "${symbol_column}",
             "execution": "約定",
             "datetime_column": "5",
             "datetime_regex": r"^(\d{2}/\d{2}) (\d{2}:\d{2}:\d{2})$$",
             "date_replacement": r"\1",
             "time_replacement": r"\2",
             "size_column": "6",
-            "price_column": "7",
+            "price_column": "${order_type_column}",
         }
 
     if trade.process == "HYPERSBI2":
@@ -685,13 +693,7 @@ def extract_sbi_securities_order_status(trade, config, driver):
         sys.exit(1)
 
     exclusion = configuration.evaluate_value(section["exclusion"])
-    execution_column = int(section["execution_column"])  # TODO: Rename.
-    datetime_column = int(section["datetime_column"])
-    size_column = int(section["size_column"])
-    price_column = int(section["price_column"])
-    output_columns = configuration.evaluate_value(section["output_columns"])
 
-    index = 0  # TODO: Make configurable.
     df = dfs[1][  # TODO: Make configurable.
         ~dfs[1]
         .iloc[:, int(exclusion["equals"][0])]
@@ -700,7 +702,25 @@ def extract_sbi_securities_order_status(trade, config, driver):
         .iloc[:, int(exclusion["startswith"][0])]
         .str.startswith(exclusion["startswith"][1])
     ]
+
+    # df = dfs[1][  # TODO: Make configurable.
+    #     ~dfs[1]
+    #     .iloc[:, int(exclusion["startswith"][0])]
+    #     .str.startswith(exclusion["startswith"][1])
+    # ]
+
     size_price = pd.DataFrame(columns=("size", "price"))
+
+    index = 0  # TODO: Use 'offset'.
+    order_trigger_column = int(section["order_trigger_column"])
+    symbol_column = int(section["symbol_column"])
+    trade_type_column = int(section["trade_type_column"])
+    order_type_column = int(section["order_type_column"])
+    execution_column = int(section["execution_column"])
+    datetime_column = int(section["datetime_column"])
+    size_column = int(section["size_column"])
+    price_column = int(section["price_column"])
+    output_columns = configuration.evaluate_value(section["output_columns"])
     results = pd.DataFrame(columns=output_columns)
 
     while index < len(df):
@@ -730,10 +750,9 @@ def extract_sbi_securities_order_status(trade, config, driver):
                     size_price_index += 1
 
                 average_price = summation / size_price["size"].sum()
-                if (
-                    section["margin_trading"]
-                    in df.iloc[index - len(size_price), execution_column]
-                ):
+                if df.iloc[
+                    index - len(size_price), trade_type_column
+                ].startswith(section["margin_entry_prefix"]):
                     entry_price = average_price
                 else:
                     results.loc[len(results) - 1, "exit_price"] = average_price
@@ -745,13 +764,12 @@ def extract_sbi_securities_order_status(trade, config, driver):
             symbol = re.sub(
                 section["symbol_regex"],
                 section["symbol_replacement"],
-                df.iloc[index, execution_column],
+                df.iloc[index, symbol_column],
             )
             size = df.iloc[index + 1, size_column]
             trade_style = "day"  # TODO: Make configurable.
-            if (
-                section["margin_trading"]
-                in df.iloc[index + 1, execution_column]
+            if df.iloc[index + 1, trade_type_column].startswith(
+                section["margin_entry_prefix"]
             ):
                 entry_date = re.sub(
                     section["datetime_regex"],
@@ -765,10 +783,29 @@ def extract_sbi_securities_order_status(trade, config, driver):
                 )
                 trade_type = (
                     "long"
-                    if section["buying_on_margin"]
-                    in df.iloc[index + 1, execution_column]
+                    if df.iloc[index + 1, trade_type_column].startswith(
+                        section["buying_on_margin"]
+                    )
                     else "short"
                 )
+                order_trigger = (
+                    "stop"
+                    if df.iloc[index, order_trigger_column]
+                    == section["stop_order"]
+                    else ""
+                )
+                order_type = (
+                    "market"
+                    if df.iloc[index + 1, order_type_column]
+                    == section["market_order"]
+                    else "limit"
+                )
+                full_order_type = " ".join(
+                    part
+                    for part in [trade_type, order_trigger, order_type]
+                    if part
+                )
+                print(full_order_type)
 
                 entry_price = df.iloc[index + 2, price_column]
             else:
