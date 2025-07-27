@@ -113,9 +113,9 @@ file stores these configurations.
 ## Known Issue
 
   * The extraction of the order status assumes up to 100 orders for day trading
-    on margin. These orders include paired orders (consisting of a position
-    order and a repayment order) and canceled orders. It does not support
-    multiple web pages of the order status.
+    on margin. These orders include sequentially paired orders (each consisting
+    of a position order followed by its repayment order) and canceled orders.
+    It does not support multiple web pages of the order status.
 
 ## License
 
