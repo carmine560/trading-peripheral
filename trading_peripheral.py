@@ -441,7 +441,6 @@ def configure_exit(args, trade):
                         "size",
                         "order_specification",
                         "entry_price",
-                        "exit_date",
                         "exit_time",
                         "exit_price",
                     ),
@@ -814,11 +813,6 @@ def extract_sbi_securities_order_status(trade, config, driver):
 
                 entry_price = df.iloc[index + 2, price_column]
             else:
-                exit_date = re.sub(
-                    section["datetime_regex"],
-                    section["date_replacement"],
-                    df.iloc[index + 2, datetime_column],
-                )
                 exit_time = re.sub(
                     section["datetime_regex"],
                     section["time_replacement"],
@@ -834,7 +828,6 @@ def extract_sbi_securities_order_status(trade, config, driver):
                         "size": size,
                         "order_specification": order_specification,
                         "entry_price": entry_price,
-                        "exit_date": exit_date,
                         "exit_time": exit_time,
                         "exit_price": exit_price,
                     }.get(column)
