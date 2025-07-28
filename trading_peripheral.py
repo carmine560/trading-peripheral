@@ -691,7 +691,6 @@ def extract_sbi_securities_order_status(trade, config, driver):
         sys.exit(1)
 
     exclusion = configuration.evaluate_value(section["exclusion"])
-
     df = dfs[1][  # TODO: Make configurable.
         ~dfs[1]
         .iloc[:, int(exclusion["equals"][0])]
@@ -700,13 +699,6 @@ def extract_sbi_securities_order_status(trade, config, driver):
         .iloc[:, int(exclusion["startswith"][0])]
         .str.startswith(exclusion["startswith"][1])
     ]
-
-    # df = dfs[1][  # TODO: Make configurable.
-    #     ~dfs[1]
-    #     .iloc[:, int(exclusion["startswith"][0])]
-    #     .str.startswith(exclusion["startswith"][1])
-    # ]
-
     size_price = pd.DataFrame(columns=("size", "price"))
 
     index = 0  # TODO: Use 'offset'.
@@ -721,6 +713,10 @@ def extract_sbi_securities_order_status(trade, config, driver):
     size_column = int(section["size_column"])
     price_column = int(section["price_column"])
     output_columns = configuration.evaluate_value(section["output_columns"])
+    entry_date = None
+    entry_time = None
+    order_specification = None
+    entry_price = None
     results = pd.DataFrame(columns=output_columns)
 
     while index < len(df):
@@ -761,16 +757,12 @@ def extract_sbi_securities_order_status(trade, config, driver):
 
             index += 1
         else:
-            entry_date = None
-            entry_time = None
             symbol = re.sub(
                 section["symbol_regex"],
                 section["symbol_replacement"],
                 df.iloc[index, symbol_column],
             )
             size = df.iloc[index + 1, size_column]
-            position = None
-            entry_price = None
             if df.iloc[index + 1, margin_transaction_type_column].startswith(
                 section["margin_entry_prefix"]
             ):
@@ -784,6 +776,7 @@ def extract_sbi_securities_order_status(trade, config, driver):
                     section["time_replacement"],
                     df.iloc[index + 2, datetime_column],
                 )
+
                 position = (
                     "long"
                     if df.iloc[
@@ -798,18 +791,18 @@ def extract_sbi_securities_order_status(trade, config, driver):
                     else ""
                 )
                 order_type = (
-                    "market"
+                    "market order"
                     if df.iloc[index + 1, order_type_column]
                     == section["market_order"]
-                    else "limit"
+                    else "limit order"
                 )
+                # LSPs like 'lsp-find-definition' may not trace this to the
+                # earlier 'order_specification = None' due to nesting.
                 order_specification = " ".join(
                     part
                     for part in [position, order_trigger, order_type]
                     if part
                 )
-
-                print(order_specification)
 
                 entry_price = df.iloc[index + 2, price_column]
             else:
