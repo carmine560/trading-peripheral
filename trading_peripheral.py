@@ -691,13 +691,12 @@ def extract_sbi_securities_order_status(trade, config, driver):
         sys.exit(1)
 
     exclusion = configuration.evaluate_value(section["exclusion"])
-    df = dfs[1][  # TODO: Make configurable.
-        ~dfs[1]
-        .iloc[:, int(exclusion["equals"][0])]
-        .isin(exclusion["equals"][1])
-        & ~dfs[1]
-        .iloc[:, int(exclusion["startswith"][0])]
-        .str.startswith(exclusion["startswith"][1])
+    df = min(dfs, key=lambda d: d.shape[0])
+    df = df[
+        ~df.iloc[:, int(exclusion["equals"][0])].isin(exclusion["equals"][1])
+        & ~df.iloc[:, int(exclusion["startswith"][0])].str.startswith(
+            exclusion["startswith"][1]
+        )
     ]
     size_price = pd.DataFrame(columns=("size", "price"))
 
