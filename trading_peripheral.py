@@ -700,7 +700,7 @@ def extract_sbi_securities_order_status(trade, config, driver):
     ]
     size_price = pd.DataFrame(columns=("size", "price"))
 
-    index = 0  # TODO: Use 'offset'.
+    index = 0
     order_trigger_column = int(section["order_trigger_column"])
     symbol_column = int(section["symbol_column"])
     margin_transaction_type_column = int(
