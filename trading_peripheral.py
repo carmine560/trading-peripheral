@@ -832,7 +832,7 @@ def extract_sbi_securities_order_status(trade, config, driver):
     if len(results) == 1:
         results = results.reindex([0, 1])
 
-    results.to_clipboard(index=False, header=False)
+    results.to_clipboard(sep=",", header=False, index=False, quoting=1)
 
 
 def extract_unsupported_brokerage_order_status(brokerage):
