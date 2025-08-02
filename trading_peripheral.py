@@ -17,15 +17,15 @@ import pandas as pd
 import pytz
 import requests
 
-from shared_utilities import browser_driver
-from shared_utilities import configuration
-from shared_utilities import data_utilities
-from shared_utilities import datetime_utilities
-from shared_utilities import file_utilities
-from shared_utilities import google_services
-from shared_utilities import initializer
-from shared_utilities import process_utilities
-from shared_utilities import web_utilities
+from core_utilities import (
+    configuration,
+    data_utilities,
+    datetime_utilities,
+    file_utilities,
+    initializer,
+    process_utilities,
+)
+from web_utilities import browser_driver, google_services, web_utilities
 
 
 class Trade(initializer.Initializer):

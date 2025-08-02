@@ -1,3 +1,6 @@
-[submodule "shared_utilities"]
-	path = shared_utilities
-	url = git@github.com:carmine560/shared-utilities.git
+[submodule "core_utilities"]
+	path = core_utilities
+	url = git@github.com:carmine560/core-utilities.git
+[submodule "web_utilities"]
+	path = web_utilities
+	url = git@github.com:carmine560/web-utilities.git
