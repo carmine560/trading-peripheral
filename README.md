@@ -24,9 +24,9 @@ The `trading_peripheral.py` Python script can:
 
 ## Prerequisites
 
-`trading_peripheral.py` has been tested in [Python for
-Windows](https://www.python.org/downloads/windows/) with Hyper SBI 2 on Windows
-10 and requires the following web browser and packages:
+`trading_peripheral.py` has been tested in [Python
+3.13.8](https://www.python.org/downloads/release/python-3138/) for Windows with
+Hyper SBI 2 on Windows 10 and requires the following packages:
 
   * [`google-api-python-client`](https://github.com/googleapis/google-api-python-client/)
     and
