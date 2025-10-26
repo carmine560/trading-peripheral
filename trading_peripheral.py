@@ -37,11 +37,12 @@ class Trade(initializer.Initializer):
         self.investment_tools_news_section = (
             f"{self.vendor} Investment Tools News"
         )
-        self.release_notes_section = f"{self.process} Release Notes"
         self.maintenance_schedules_section = (
             f"{self.vendor} Maintenance Schedules"
         )
         self.order_status_section = f"{self.vendor} Order Status"
+        self.brokerage_variables_section = f"{self.vendor} Variables"
+        self.release_notes_section = f"{self.process} Release Notes"
         self.instruction_items = {
             "all_keys": initializer.extract_commands(
                 inspect.getsource(browser_driver.execute_action)
@@ -325,6 +326,10 @@ def configure(trade, can_interpolate=True, can_override=True):
             "size_column": "6",
             "price_column": "${order_type_column}",
         }
+        config[trade.brokerage_variables_section] = {
+            "username": "",
+            "password": "",
+        }
 
     if trade.process == "HYPERSBI2":
         config[trade.release_notes_section] = {
@@ -346,9 +351,19 @@ def configure(trade, can_interpolate=True, can_override=True):
         }
         config[trade.actions_section] = {
             f"replace_{trade.vendor}_watchlists": [
-                ("get", "https://www.sbisec.co.jp/ETGate/"),
+                ("get", "https://login.sbisec.co.jp/login/entry"),
                 ("sleep", "0.8"),
-                ("click", '//input[@name="ACT_login"]'),
+                (
+                    "send_keys",
+                    '//input[@name="username"]',
+                    f"${{{trade.brokerage_variables_section}:username}}",
+                ),
+                (
+                    "send_keys",
+                    '//input[@name="password"]',
+                    f"${{{trade.brokerage_variables_section}:password}}",
+                ),
+                ("click", '//button[@id="pw-btn"]'),
                 ("click", '//a[.//text()="ポートフォリオ"]'),
                 ("click", '//a[text()="登録銘柄リストの追加・置き換え"]'),
                 (
@@ -364,9 +379,19 @@ def configure(trade, can_interpolate=True, can_override=True):
                 ("click", '//input[@value="指示実行"]'),
             ],
             f"replace_{trade.process}_watchlists": [
-                ("get", "https://www.sbisec.co.jp/ETGate/"),
+                ("get", "https://login.sbisec.co.jp/login/entry"),
                 ("sleep", "0.8"),
-                ("click", '//input[@name="ACT_login"]'),
+                (
+                    "send_keys",
+                    '//input[@name="username"]',
+                    f"${{{trade.brokerage_variables_section}:username}}",
+                ),
+                (
+                    "send_keys",
+                    '//input[@name="password"]',
+                    f"${{{trade.brokerage_variables_section}:password}}",
+                ),
+                ("click", '//button[@id="pw-btn"]'),
                 ("click", '//a[.//text()="ポートフォリオ"]'),
                 ("click", '//a[text()="登録銘柄リストの追加・置き換え"]'),
                 (
@@ -382,9 +407,19 @@ def configure(trade, can_interpolate=True, can_override=True):
                 ("click", '//input[@value="指示実行"]'),
             ],
             "get_order_status": [
-                ("get", "https://www.sbisec.co.jp/ETGate/"),
+                ("get", "https://login.sbisec.co.jp/login/entry"),
                 ("sleep", "0.8"),
-                ("click", '//input[@name="ACT_login"]'),
+                (
+                    "send_keys",
+                    '//input[@name="username"]',
+                    f"${{{trade.brokerage_variables_section}:username}}",
+                ),
+                (
+                    "send_keys",
+                    '//input[@name="password"]',
+                    f"${{{trade.brokerage_variables_section}:password}}",
+                ),
+                ("click", '//button[@id="pw-btn"]'),
                 ("click", '//a[.//text()="口座管理"]'),
                 ("click", '//p/a[text()="注文照会"]'),
             ],
@@ -415,7 +450,7 @@ def configure(trade, can_interpolate=True, can_override=True):
             sys.exit(1)
 
     if can_override:
-        config.read(trade.config_path, encoding="utf-8")
+        configuration.read_config(config, trade.config_path, is_encrypted=True)
 
     return config
 
@@ -469,6 +504,7 @@ def configure_exit(args, trade):
                     prompts=prompts,
                     items=items,
                     all_values=all_values,
+                    is_encrypted=True,
                 )
                 break
 
@@ -477,7 +513,9 @@ def configure_exit(args, trade):
         configuration.check_config_changes(
             configure(trade, can_interpolate=False, can_override=False),
             trade.config_path,
+            excluded_sections=(trade.brokerage_variables_section,),
             backup_parameters=backup_parameters,
+            is_encrypted=True,
         )
         sys.exit()
 
@@ -616,7 +654,7 @@ def insert_maintenance_schedules(trade, config):
                     section["previous_bodies"] = str(previous_bodies)
 
     section["last_inserted"] = now.isoformat()
-    configuration.write_config(config, trade.config_path)
+    configuration.write_config(config, trade.config_path, is_encrypted=True)
 
 
 def replace_datetime(match_object, section, now, tzinfo):
@@ -673,7 +711,7 @@ def check_web_page_send_email_message(trade, config, section):
     )
 
     config[section]["latest_news_text"] = latest_news_text
-    configuration.write_config(config, trade.config_path)
+    configuration.write_config(config, trade.config_path, is_encrypted=True)
 
 
 def extract_sbi_securities_order_status(trade, config, driver):

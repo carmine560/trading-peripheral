@@ -42,8 +42,8 @@ Hyper SBI 2 on Windows 10 with ESU and requires the following packages:
     [`pandas`](https://pandas.pydata.org/), and
     [`pyarrow`](https://arrow.apache.org/) to extract data from the web pages
   * [`python-gnupg`](https://github.com/vsajip/python-gnupg) to invoke
-    [GnuPG](https://gnupg.org/index.html) to encrypt and decrypt a snapshot of
-    the Hyper SBI 2 application data
+    [GnuPG](https://gnupg.org/index.html) to encrypt and decrypt the
+    configuration file and a snapshot of the Hyper SBI 2 application data
   * [`prompt_toolkit`](https://github.com/prompt-toolkit/python-prompt-toolkit)
     to complete possible values or a previous value in configuring
 
@@ -79,13 +79,15 @@ below:
 python trading_peripheral.py -G
 ```
 
-The `-d` option encrypts a snapshot of the Hyper SBI 2 application data using
-GnuPG. By default, it uses the default key pair of GnuPG. However, you can also
-specify a key fingerprint as the value of the `fingerprint` option using the
-`-G` option.
+### Encrypt Configuration File and Snapshot of Hyper SBI 2 Application Data
 
-The `%LOCALAPPDATA%\trading-peripheral\trading_peripheral.ini` configuration
-file stores these configurations.
+This script stores its configuration in a GnuPG-encrypted file at
+`%LOCALAPPDATA%\trading-peripheral\trading_peripheral.ini.gpg`. The `-d` option
+creates a snapshot of the Hyper SBI 2 application data and encrypts it using
+GnuPG.
+
+By default, the script uses your default GnuPG key. To use a different key,
+specify its fingerprint with the `-G` option.
 
 ### Options
 
