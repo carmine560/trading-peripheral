@@ -81,7 +81,7 @@ python trading_peripheral.py -G
 
 ### Encrypt Configuration File and Snapshot of Hyper SBI 2 Application Data
 
-This script stores its configuration in a GnuPG-encrypted file at
+This script stores its configuration in a GnuPG-encrypted file located at
 `%LOCALAPPDATA%\trading-peripheral\trading_peripheral.ini.gpg`. The `-d` option
 creates a snapshot of the Hyper SBI 2 application data and encrypts it using
 GnuPG.
