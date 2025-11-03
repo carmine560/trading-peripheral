@@ -89,6 +89,11 @@ GnuPG.
 By default, the script uses your default GnuPG key. To use a different key,
 specify its fingerprint with the `-G` option.
 
+#### SBI Securities Login Credentials
+
+This script stores your username and password for logging in to SBI Securities
+in the `SBI Securities Variables` section of the configuration file.
+
 ### Options
 
   * `-P BROKERAGE PROCESS|EXECUTABLE_PATH`: set the brokerage and the process
