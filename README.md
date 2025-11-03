@@ -91,8 +91,9 @@ specify its fingerprint with the `-G` option.
 
 #### SBI Securities Login Credentials
 
-This script stores your username and password for logging in to SBI Securities
-in the `SBI Securities Variables` section of the configuration file.
+Enter your SBI Securities username and password in the `SBI Securities
+Variables` section of the configuration file. These values are used for
+automated login.
 
 ### Options
 
