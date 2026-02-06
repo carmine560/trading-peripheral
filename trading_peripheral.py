@@ -61,90 +61,82 @@ def main():
     file_utilities.create_launchers_exit(args, __file__)
     configure_exit(args, trade)
 
-    try:
-        config = configure(trade)
+    config = configure(trade)
 
-        if args.t:
-            check_web_page_send_email_message(
-                trade, config, trade.investment_tools_news_section
+    if args.t:
+        check_web_page_send_email_message(
+            trade, config, trade.investment_tools_news_section
+        )
+    if args.r:
+        check_web_page_send_email_message(
+            trade, config, trade.release_notes_section
+        )
+    if args.m:
+        insert_maintenance_schedules(trade, config)
+    if any((args.s, args.S, args.o)):
+        configuration.ensure_section_exists(config, trade.actions_section)
+        driver = browser_driver.initialize(
+            headless=config["General"].getboolean("headless"),
+            user_data_directory=config["General"]["user_data_directory"],
+            profile_directory=config["General"]["profile_directory"],
+            implicitly_wait=float(config["General"]["implicitly_wait"]),
+        )
+        if args.s:
+            browser_driver.execute_action(
+                driver,
+                config[trade.actions_section][
+                    f"replace_{trade.vendor}_watchlists"
+                ],
             )
-        if args.r:
-            check_web_page_send_email_message(
-                trade, config, trade.release_notes_section
+        if args.S:
+            browser_driver.execute_action(
+                driver,
+                config[trade.actions_section][
+                    f"replace_{trade.process}_watchlists"
+                ],
             )
-        if args.m:
-            insert_maintenance_schedules(trade, config)
-        if any((args.s, args.S, args.o)):
-            configuration.ensure_section_exists(config, trade.actions_section)
-            driver = browser_driver.initialize(
-                headless=config["General"].getboolean("headless"),
-                user_data_directory=config["General"]["user_data_directory"],
-                profile_directory=config["General"]["profile_directory"],
-                implicitly_wait=float(config["General"]["implicitly_wait"]),
+        if args.o:
+            browser_driver.execute_action(
+                driver, config[trade.actions_section]["get_order_status"]
             )
-            if args.s:
-                browser_driver.execute_action(
-                    driver,
-                    config[trade.actions_section][
-                        f"replace_{trade.vendor}_watchlists"
-                    ],
+            if trade.vendor in BROKERAGE_ORDER_STATUS_FUNCTIONS:
+                BROKERAGE_ORDER_STATUS_FUNCTIONS[trade.vendor](
+                    trade, config, driver
                 )
-            if args.S:
-                browser_driver.execute_action(
-                    driver,
-                    config[trade.actions_section][
-                        f"replace_{trade.process}_watchlists"
-                    ],
-                )
-            if args.o:
-                browser_driver.execute_action(
-                    driver, config[trade.actions_section]["get_order_status"]
-                )
-                if trade.vendor in BROKERAGE_ORDER_STATUS_FUNCTIONS:
-                    BROKERAGE_ORDER_STATUS_FUNCTIONS[trade.vendor](
-                        trade, config, driver
-                    )
-                else:
-                    extract_unsupported_brokerage_order_status(trade.vendor)
+            else:
+                extract_unsupported_brokerage_order_status(trade.vendor)
 
-            driver.quit()
-        if args.w:
-            configuration.ensure_section_exists(config, trade.process)
-            file_utilities.backup_file(
-                config[trade.process]["watchlists"],
-                backup_directory=config[trade.process]["backup_directory"],
-            )
-        if args.d or args.D:
-            configuration.ensure_section_exists(config, trade.process)
-            if process_utilities.is_running(trade.process):
-                print(f"'{trade.process}' is running.")
-                sys.exit(1)
+        driver.quit()
+    if args.w:
+        configuration.ensure_section_exists(config, trade.process)
+        file_utilities.backup_file(
+            config[trade.process]["watchlists"],
+            backup_directory=config[trade.process]["backup_directory"],
+        )
+    if args.d or args.D:
+        configuration.ensure_section_exists(config, trade.process)
+        if process_utilities.is_running(trade.process):
+            print(f"'{trade.process}' is running.")
+            sys.exit(1)
 
-            application_data_directory = config[trade.process][
-                "application_data_directory"
-            ]
-            snapshot_directory = config[trade.process]["snapshot_directory"]
-            fingerprint = config["General"]["fingerprint"]
-            if args.d:
-                file_utilities.archive_encrypt_directory(
-                    application_data_directory,
-                    snapshot_directory,
-                    fingerprint=fingerprint,
-                )
-            if args.D:
-                snapshot = os.path.join(
-                    snapshot_directory,
-                    os.path.basename(application_data_directory)
-                    + ".tar.xz.gpg",
-                )
-                output_directory = os.path.dirname(application_data_directory)
-                file_utilities.decrypt_extract_file(snapshot, output_directory)
-    except configuration.ConfigError as e:
-        print(f"Configuration error: {e}")
-        sys.exit(1)
-    except Exception as e:
-        print(f"An unexpected error: {e}")
-        sys.exit(1)
+        application_data_directory = config[trade.process][
+            "application_data_directory"
+        ]
+        snapshot_directory = config[trade.process]["snapshot_directory"]
+        fingerprint = config["General"]["fingerprint"]
+        if args.d:
+            file_utilities.archive_encrypt_directory(
+                application_data_directory,
+                snapshot_directory,
+                fingerprint=fingerprint,
+            )
+        if args.D:
+            snapshot = os.path.join(
+                snapshot_directory,
+                os.path.basename(application_data_directory) + ".tar.xz.gpg",
+            )
+            output_directory = os.path.dirname(application_data_directory)
+            file_utilities.decrypt_extract_file(snapshot, output_directory)
 
 
 def get_arguments():
@@ -883,4 +875,11 @@ BROKERAGE_ORDER_STATUS_FUNCTIONS = {
 }
 
 if __name__ == "__main__":
-    main()
+    try:
+        main()
+    except configuration.ConfigError as e:
+        print(f"Configuration error: {e}")
+        sys.exit(1)
+    except Exception as e:
+        print(f"An unexpected error: {e}")
+        sys.exit(1)
