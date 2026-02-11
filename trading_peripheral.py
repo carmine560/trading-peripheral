@@ -53,6 +53,9 @@ class Trade(initializer.Initializer):
         }
 
 
+# Entry Point
+
+
 def main():
     """Execute the main program based on command-line arguments."""
     args = get_arguments()
@@ -137,6 +140,9 @@ def main():
             )
             output_directory = os.path.dirname(application_data_directory)
             file_utilities.decrypt_extract_file(snapshot, output_directory)
+
+
+# CLI and Configuration
 
 
 def get_arguments():
@@ -512,6 +518,42 @@ def configure_exit(args, trade):
         sys.exit()
 
 
+# Web Monitoring and Notifications
+
+
+def check_web_page_send_email_message(trade, config, section):
+    """Check the web page and send an email message if an update is found."""
+    configuration.ensure_section_exists(config, section)
+
+    response = requests.get(config[section]["url"], timeout=5)
+    response.encoding = chardet.detect(response.content)["encoding"]
+    root = html.fromstring(response.text)
+
+    latest_news_text = (
+        root.xpath(config[section]["latest_news_xpath"])[0]
+        .text_content()
+        .strip()
+    )
+    if latest_news_text == config[section]["latest_news_text"]:
+        return
+
+    print(latest_news_text)
+
+    google_services.send_email_message(
+        os.path.join(trade.config_directory, "token.json"),
+        section,
+        config["General"]["email_message_from"],
+        config["General"]["email_message_to"],
+        f"{latest_news_text}\n{config[section]['url']}",
+    )
+
+    config[section]["latest_news_text"] = latest_news_text
+    configuration.write_config(config, trade.config_path, is_encrypted=True)
+
+
+# Maintenance Scheduling
+
+
 def insert_maintenance_schedules(trade, config):
     """Insert maintenance schedules into a Google Calendar."""
     configuration.ensure_section_exists(
@@ -676,34 +718,7 @@ def replace_datetime(match_object, section, now, tzinfo):
     return f"{assumed_year}-{matched_month}-{matched_day} {matched_time}"
 
 
-def check_web_page_send_email_message(trade, config, section):
-    """Check the web page and send an email message if an update is found."""
-    configuration.ensure_section_exists(config, section)
-
-    response = requests.get(config[section]["url"], timeout=5)
-    response.encoding = chardet.detect(response.content)["encoding"]
-    root = html.fromstring(response.text)
-
-    latest_news_text = (
-        root.xpath(config[section]["latest_news_xpath"])[0]
-        .text_content()
-        .strip()
-    )
-    if latest_news_text == config[section]["latest_news_text"]:
-        return
-
-    print(latest_news_text)
-
-    google_services.send_email_message(
-        os.path.join(trade.config_directory, "token.json"),
-        section,
-        config["General"]["email_message_from"],
-        config["General"]["email_message_to"],
-        f"{latest_news_text}\n{config[section]['url']}",
-    )
-
-    config[section]["latest_news_text"] = latest_news_text
-    configuration.write_config(config, trade.config_path, is_encrypted=True)
+# Order Status Extraction
 
 
 def extract_sbi_securities_order_status(trade, config, driver):
