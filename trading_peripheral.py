@@ -723,6 +723,11 @@ def replace_datetime(match_object, section, now, tzinfo):
 
 def extract_sbi_securities_order_status(trade, config, driver):
     """Extract order status from a webpage and copy it to the clipboard."""
+    # The SBI order status consists of a summary row, an order detail row, and
+    # an execution row.
+    ORDER_DETAIL_ROW_OFFSET = 1
+    EXECUTION_ROW_OFFSET = 2
+    ROWS_PER_EXECUTION_BLOCK = 3
     section = config[trade.order_status_section]
 
     try:
@@ -790,6 +795,9 @@ def extract_sbi_securities_order_status(trade, config, driver):
                     size_price_index += 1
 
                 average_price = summation / size_price["size"].sum()
+                # 3 decimals preserves weighted-average precision without
+                # implying sub-tick prices.
+                average_price = f"{average_price:.3f}".rstrip("0").rstrip(".")
                 if df.iloc[
                     index - len(size_price), margin_transaction_type_column
                 ].startswith(section["margin_entry_prefix"]):
@@ -806,25 +814,26 @@ def extract_sbi_securities_order_status(trade, config, driver):
                 section["symbol_replacement"],
                 df.iloc[index, symbol_column],
             )
-            size = df.iloc[index + 1, size_column]
-            if df.iloc[index + 1, margin_transaction_type_column].startswith(
-                section["margin_entry_prefix"]
-            ):
+            size = df.iloc[index + ORDER_DETAIL_ROW_OFFSET, size_column]
+            if df.iloc[
+                index + ORDER_DETAIL_ROW_OFFSET, margin_transaction_type_column
+            ].startswith(section["margin_entry_prefix"]):
                 entry_date = re.sub(
                     section["datetime_regex"],
                     section["date_replacement"],
-                    df.iloc[index + 2, datetime_column],
+                    df.iloc[index + EXECUTION_ROW_OFFSET, datetime_column],
                 )
                 entry_time = re.sub(
                     section["datetime_regex"],
                     section["time_replacement"],
-                    df.iloc[index + 2, datetime_column],
+                    df.iloc[index + EXECUTION_ROW_OFFSET, datetime_column],
                 )
 
                 position = (
                     "long"
                     if df.iloc[
-                        index + 1, margin_transaction_type_column
+                        index + ORDER_DETAIL_ROW_OFFSET,
+                        margin_transaction_type_column,
                     ].startswith(section["margin_long_entry"])
                     else "short"
                 )
@@ -836,7 +845,9 @@ def extract_sbi_securities_order_status(trade, config, driver):
                 )
                 order_type = (
                     "market order"
-                    if df.iloc[index + 1, order_type_column]
+                    if df.iloc[
+                        index + ORDER_DETAIL_ROW_OFFSET, order_type_column
+                    ]
                     == section["market_order"]
                     else "limit order"
                 )
@@ -848,14 +859,18 @@ def extract_sbi_securities_order_status(trade, config, driver):
                     if part
                 )
 
-                entry_price = df.iloc[index + 2, price_column]
+                entry_price = df.iloc[
+                    index + EXECUTION_ROW_OFFSET, price_column
+                ]
             else:
                 exit_time = re.sub(
                     section["datetime_regex"],
                     section["time_replacement"],
-                    df.iloc[index + 2, datetime_column],
+                    df.iloc[index + EXECUTION_ROW_OFFSET, datetime_column],
                 )
-                exit_price = df.iloc[index + 2, price_column]
+                exit_price = df.iloc[
+                    index + EXECUTION_ROW_OFFSET, price_column
+                ]
 
                 results.loc[len(results)] = [
                     {
@@ -871,7 +886,7 @@ def extract_sbi_securities_order_status(trade, config, driver):
                     for column in output_columns
                 ]
 
-            index += 3
+            index += ROWS_PER_EXECUTION_BLOCK
 
     if len(results) == 1:
         results = results.reindex([0, 1])
