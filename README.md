@@ -1,4 +1,4 @@
-# trading-peripheral
+# `trading-peripheral`
 
 <!-- Python script that retrieves Hyper SBI 2 maintenance schedules and extracts order status from the SBI Securities web page -->
 
