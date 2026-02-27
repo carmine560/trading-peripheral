@@ -3,6 +3,7 @@
 from datetime import datetime, timedelta
 from email.utils import parsedate_to_datetime
 from io import StringIO
+from zoneinfo import ZoneInfo
 import argparse
 import configparser
 import inspect
@@ -10,11 +11,10 @@ import os
 import re
 import sys
 
+from charset_normalizer import from_bytes
 from lxml import html
 from lxml.etree import Element
-import chardet
 import pandas as pd
-import pytz
 import requests
 
 from core_utilities import (
@@ -526,7 +526,8 @@ def check_web_page_send_email_message(trade, config, section):
     configuration.ensure_section_exists(config, section)
 
     response = requests.get(config[section]["url"], timeout=5)
-    response.encoding = chardet.detect(response.content)["encoding"]
+    matched = from_bytes(response.content).best()
+    response.encoding = matched.encoding if matched else "utf-8"
     root = html.fromstring(response.text)
 
     latest_news_text = (
@@ -554,6 +555,31 @@ def check_web_page_send_email_message(trade, config, section):
 # Maintenance Scheduling
 
 
+def _replace_datetime(match_object, section, now, tzinfo):
+    """Replace matched datetime strings with formatted strings."""
+    matched_year = match_object.group(int(section["year_group"]))
+    matched_month = match_object.group(int(section["month_group"]))
+    matched_day = match_object.group(int(section["day_group"]))
+    matched_time = match_object.group(int(section["time_group"]))
+    if matched_year:
+        return f"{matched_year}-{matched_month}-{matched_day} {matched_time}"
+
+    assumed_year = int(now.strftime("%Y"))
+    timedelta_object = (
+        datetime.strptime(
+            f"{assumed_year}-{matched_month}-{matched_day} {matched_time}",
+            "%Y-%m-%d %H:%M",
+        ).replace(tzinfo=tzinfo)
+        - now
+    )
+    threshold = timedelta(days=365 - 30)
+    if timedelta_object < -threshold:
+        assumed_year = assumed_year + 1
+    elif timedelta_object > threshold:
+        assumed_year = assumed_year - 1
+    return f"{assumed_year}-{matched_month}-{matched_day} {matched_time}"
+
+
 def insert_maintenance_schedules(trade, config):
     """Insert maintenance schedules into a Google Calendar."""
     configuration.ensure_section_exists(
@@ -561,7 +587,7 @@ def insert_maintenance_schedules(trade, config):
     )
 
     section = config[trade.maintenance_schedules_section]
-    tzinfo = pytz.timezone(section["timezone"])
+    tzinfo = ZoneInfo(section["timezone"])
     now = datetime.now(tzinfo)
 
     head = web_utilities.make_head_request(section["url"])
@@ -575,7 +601,8 @@ def insert_maintenance_schedules(trade, config):
         return
 
     response = requests.get(section["url"], timeout=5)
-    response.encoding = chardet.detect(response.content)["encoding"]
+    matched = from_bytes(response.content).best()
+    response.encoding = matched.encoding if matched else "utf-8"
     root = html.fromstring(response.text)
     match_object = re.search("<title>(.*)</title>", response.text)
     if match_object:
@@ -626,19 +653,17 @@ def insert_maintenance_schedules(trade, config):
 
                 datetime_string = re.sub(
                     section["datetime_regex"],
-                    lambda match_object: replace_datetime(
+                    lambda match_object: _replace_datetime(
                         match_object, section, now, tzinfo
                     ),
                     datetime_range[0],
                 )
-                start = tzinfo.localize(
-                    datetime.strptime(
-                        datetime_utilities.normalize_datetime_string(
-                            datetime_string
-                        ),
-                        "%Y-%m-%d %H:%M",
-                    )
-                )
+                start = datetime.strptime(
+                    datetime_utilities.normalize_datetime_string(
+                        datetime_string
+                    ),
+                    "%Y-%m-%d %H:%M",
+                ).replace(tzinfo=tzinfo)
                 if re.fullmatch(r"\d{1,2}:\d{2}", datetime_range[1]):
                     datetime_string = (
                         start.strftime("%Y-%m-%d ") + datetime_range[1]
@@ -646,20 +671,18 @@ def insert_maintenance_schedules(trade, config):
                 else:
                     datetime_string = re.sub(
                         section["datetime_regex"],
-                        lambda match_object: replace_datetime(
+                        lambda match_object: _replace_datetime(
                             match_object, section, now, tzinfo
                         ),
                         datetime_range[1],
                     )
 
-                end = tzinfo.localize(
-                    datetime.strptime(
-                        datetime_utilities.normalize_datetime_string(
-                            datetime_string
-                        ),
-                        "%Y-%m-%d %H:%M",
-                    )
-                )
+                end = datetime.strptime(
+                    datetime_utilities.normalize_datetime_string(
+                        datetime_string
+                    ),
+                    "%Y-%m-%d %H:%M",
+                ).replace(tzinfo=tzinfo)
 
                 body = {
                     "summary": f"🛠️ {service}: {function}",
@@ -689,33 +712,6 @@ def insert_maintenance_schedules(trade, config):
 
     section["last_inserted"] = now.isoformat()
     configuration.write_config(config, trade.config_path, is_encrypted=True)
-
-
-def replace_datetime(match_object, section, now, tzinfo):
-    """Replace matched datetime strings with formatted strings."""
-    matched_year = match_object.group(int(section["year_group"]))
-    matched_month = match_object.group(int(section["month_group"]))
-    matched_day = match_object.group(int(section["day_group"]))
-    matched_time = match_object.group(int(section["time_group"]))
-    if matched_year:
-        return f"{matched_year}-{matched_month}-{matched_day} {matched_time}"
-
-    assumed_year = int(now.strftime("%Y"))
-    timedelta_object = (
-        tzinfo.localize(
-            datetime.strptime(
-                f"{assumed_year}-{matched_month}-{matched_day} {matched_time}",
-                "%Y-%m-%d %H:%M",
-            )
-        )
-        - now
-    )
-    threshold = timedelta(days=365 - 30)
-    if timedelta_object < -threshold:
-        assumed_year = assumed_year + 1
-    elif timedelta_object > threshold:
-        assumed_year = assumed_year - 1
-    return f"{assumed_year}-{matched_month}-{matched_day} {matched_time}"
 
 
 # Order Status Extraction

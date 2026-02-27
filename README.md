@@ -37,7 +37,7 @@ Windows](https://www.python.org/downloads/windows/) with Hyper SBI 2 on Windows
   * [`selenium`](https://www.selenium.dev/) to drive a browser, and
     [`webdriver-manager`](https://github.com/SergeyPirogov/webdriver_manager)
     to automatically update the driver
-  * [`chardet`](https://github.com/chardet/chardet),
+  * [`charset-normalizer`](https://charset-normalizer.readthedocs.io/en/latest/),
     [`lxml`](https://lxml.de/index.html),
     [`pandas`](https://pandas.pydata.org/), and
     [`pyarrow`](https://arrow.apache.org/) to extract data from the web pages

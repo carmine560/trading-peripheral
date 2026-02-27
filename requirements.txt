@@ -1,4 +1,4 @@
-chardet
+charset-normalizer
 google-api-python-client
 google-auth-oauthlib
 lxml
