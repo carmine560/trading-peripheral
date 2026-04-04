@@ -10,6 +10,7 @@ import inspect
 import os
 import re
 import sys
+import time
 
 from charset_normalizer import from_bytes
 from lxml import html
@@ -78,12 +79,33 @@ def main():
         insert_maintenance_schedules(trade, config)
     if any((args.s, args.S, args.o)):
         configuration.ensure_section_exists(config, trade.actions_section)
-        driver = browser_driver.initialize(
-            headless=config["General"].getboolean("headless"),
-            user_data_directory=config["General"]["user_data_directory"],
-            profile_directory=config["General"]["profile_directory"],
-            implicitly_wait=float(config["General"]["implicitly_wait"]),
-        )
+
+        # Retry initialization to handle system instability when Chrome starts
+        # with an unsettled profile.
+        max_attempts = 3
+        retry_interval = 10
+        for attempt in range(1, max_attempts + 1):
+            try:
+                driver = browser_driver.initialize(
+                    headless=config["General"].getboolean("headless"),
+                    user_data_directory=config["General"][
+                        "user_data_directory"
+                    ],
+                    profile_directory=config["General"]["profile_directory"],
+                    implicitly_wait=float(
+                        config["General"]["implicitly_wait"]
+                    ),
+                )
+                break
+            except Exception as e:
+                if attempt == max_attempts:
+                    raise
+                print(
+                    f"Attempt {attempt} failed: {e}."
+                    f" Retrying in {retry_interval}s..."
+                )
+                time.sleep(retry_interval)
+
         if args.s:
             browser_driver.execute_action(
                 driver,
