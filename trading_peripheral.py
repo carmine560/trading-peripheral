@@ -57,19 +57,50 @@ class Trade(initializer.Initializer):
 # Entry Point
 
 
-def _initialize_driver_with_retry(config):
-    """Initialize the browser driver with retries for unsettled profiles."""
+def _run_browser_actions(args, trade, config):
+    """Execute browser-based actions using a Selenium WebDriver."""
+    configuration.ensure_section_exists(config, trade.actions_section)
     max_attempts = 3
     retry_interval = 10
+    # ChromeDriver may crash on an unsettled system after hibernation resume,
+    # leaving the driver in a broken state, so wrap both 'initialize()' and
+    # 'execute_action()' in the retry loop.
     for attempt in range(1, max_attempts + 1):
         try:
-            return browser_driver.initialize(
+            driver = browser_driver.initialize(
                 headless=config["General"].getboolean("headless"),
                 user_data_directory=config["General"]["user_data_directory"],
                 profile_directory=config["General"]["profile_directory"],
                 implicitly_wait=float(config["General"]["implicitly_wait"]),
             )
+            if args.s:
+                browser_driver.execute_action(
+                    driver,
+                    config[trade.actions_section][
+                        f"replace_{trade.vendor}_watchlists"
+                    ],
+                )
+            if args.S:
+                browser_driver.execute_action(
+                    driver,
+                    config[trade.actions_section][
+                        f"replace_{trade.process}_watchlists"
+                    ],
+                )
+            if args.o:
+                browser_driver.execute_action(
+                    driver, config[trade.actions_section]["get_order_status"]
+                )
+                if trade.vendor in BROKERAGE_ORDER_STATUS_FUNCTIONS:
+                    BROKERAGE_ORDER_STATUS_FUNCTIONS[trade.vendor](
+                        trade, config, driver
+                    )
+                else:
+                    extract_unsupported_brokerage_order_status(trade.vendor)
+            driver.quit()
+            break
         except Exception as e:
+            driver.quit()
             if attempt == max_attempts:
                 raise
             print(
@@ -77,37 +108,6 @@ def _initialize_driver_with_retry(config):
                 f" Retrying in {retry_interval}s..."
             )
             time.sleep(retry_interval)
-
-
-def _run_browser_actions(args, trade, config):
-    """Execute browser-based actions using a Selenium WebDriver."""
-    configuration.ensure_section_exists(config, trade.actions_section)
-    driver = _initialize_driver_with_retry(config)
-    if args.s:
-        browser_driver.execute_action(
-            driver,
-            config[trade.actions_section][
-                f"replace_{trade.vendor}_watchlists"
-            ],
-        )
-    if args.S:
-        browser_driver.execute_action(
-            driver,
-            config[trade.actions_section][
-                f"replace_{trade.process}_watchlists"
-            ],
-        )
-    if args.o:
-        browser_driver.execute_action(
-            driver, config[trade.actions_section]["get_order_status"]
-        )
-        if trade.vendor in BROKERAGE_ORDER_STATUS_FUNCTIONS:
-            BROKERAGE_ORDER_STATUS_FUNCTIONS[trade.vendor](
-                trade, config, driver
-            )
-        else:
-            extract_unsupported_brokerage_order_status(trade.vendor)
-    driver.quit()
 
 
 def _manage_snapshots(args, trade, config):
