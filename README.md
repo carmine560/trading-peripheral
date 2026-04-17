@@ -34,9 +34,7 @@ Windows](https://www.python.org/downloads/windows/) with Hyper SBI 2 on Windows
     to access Google APIs
   * [Chrome](https://www.google.com/chrome/) to authenticate to the website and
     load the web page
-  * [`selenium`](https://www.selenium.dev/) to drive a browser, and
-    [`webdriver-manager`](https://github.com/SergeyPirogov/webdriver_manager)
-    to automatically update the driver
+  * [`selenium`](https://www.selenium.dev/) to drive a browser
   * [`charset-normalizer`](https://charset-normalizer.readthedocs.io/en/latest/),
     [`lxml`](https://lxml.de/index.html),
     [`pandas`](https://pandas.pydata.org/), and
