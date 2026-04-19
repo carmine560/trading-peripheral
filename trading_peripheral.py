@@ -104,8 +104,8 @@ def _run_browser_actions(args, trade, config):
             if attempt == max_attempts:
                 raise
             print(
-                f"Attempt {attempt} failed: {e}."
-                f" Retrying in {retry_interval}s..."
+                f"Attempt {attempt} failed: {e}"
+                f"Retrying in {retry_interval}s..."
             )
             time.sleep(retry_interval)
 
@@ -385,11 +385,21 @@ def configure(trade, can_interpolate=True, can_override=True):
                     f"${{{trade.brokerage_variables_section}:password}}",
                 ),
                 ("click", '//button[@id="pw-btn"]'),
+                (
+                    "exist",
+                    '//*[contains(@class, "_karte-close")]',
+                    [
+                        ("click", '//*[contains(@class, "_karte-close")]'),
+                    ],
+                ),
                 ("click", '//a[.//text()="ポートフォリオ"]'),
                 ("click", '//a[text()="登録銘柄リストの追加・置き換え"]'),
                 (
                     "click",
-                    '//img[@alt="登録銘柄リストの追加・置き換え機能を利用する"]',
+                    (
+                        "//img"
+                        '[@alt="登録銘柄リストの追加・置き換え機能を利用する"]'
+                    ),
                 ),
                 ("click", '//*[@name="tool_from" and @value="3"]'),
                 ("click", '//input[@value="次へ"]'),
@@ -413,11 +423,21 @@ def configure(trade, can_interpolate=True, can_override=True):
                     f"${{{trade.brokerage_variables_section}:password}}",
                 ),
                 ("click", '//button[@id="pw-btn"]'),
+                (
+                    "exist",
+                    '//*[contains(@class, "_karte-close")]',
+                    [
+                        ("click", '//*[contains(@class, "_karte-close")]'),
+                    ],
+                ),
                 ("click", '//a[.//text()="ポートフォリオ"]'),
                 ("click", '//a[text()="登録銘柄リストの追加・置き換え"]'),
                 (
                     "click",
-                    '//img[@alt="登録銘柄リストの追加・置き換え機能を利用する"]',
+                    (
+                        "//img"
+                        '[@alt="登録銘柄リストの追加・置き換え機能を利用する"]'
+                    ),
                 ),
                 ("click", '//*[@name="tool_from" and @value="1"]'),
                 ("click", '//input[@value="次へ"]'),
@@ -441,6 +461,13 @@ def configure(trade, can_interpolate=True, can_override=True):
                     f"${{{trade.brokerage_variables_section}:password}}",
                 ),
                 ("click", '//button[@id="pw-btn"]'),
+                (
+                    "exist",
+                    '//*[contains(@class, "_karte-close")]',
+                    [
+                        ("click", '//*[contains(@class, "_karte-close")]'),
+                    ],
+                ),
                 ("click", '//a[.//text()="口座管理"]'),
                 ("click", '//p/a[text()="注文照会"]'),
             ],
