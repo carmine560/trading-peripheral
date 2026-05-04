@@ -45,3 +45,40 @@ def test_backup_file_prunes_old_backups(tmp_path):
         "beta",
         "gamma",
     ]
+
+
+def test_get_latest_file_returns_newest_match(tmp_path, monkeypatch):
+    first = tmp_path / "report-1.txt"
+    second = tmp_path / "report-2.txt"
+    ignored = tmp_path / "notes.md"
+
+    _write_source(first, "alpha", 1_700_000_000)
+    _write_source(second, "beta", 1_700_000_100)
+    _write_source(ignored, "gamma", 1_700_000_200)
+    timestamps = {
+        first.as_posix(): 1.0,
+        second.as_posix(): 2.0,
+    }
+
+    monkeypatch.setattr(
+        file_utilities.os.path,
+        "getctime",
+        lambda path: timestamps[Path(path).as_posix()],
+    )
+
+    latest = file_utilities.get_latest_file(
+        tmp_path.as_posix(), r"report-\d+\.txt"
+    )
+
+    assert Path(latest) == second
+
+
+def test_select_venv_finds_python_interpreter(tmp_path):
+    activate = tmp_path / ".venv" / "bin" / "activate"
+    activate.parent.mkdir(parents=True)
+    activate.write_text("", encoding="utf-8")
+
+    result = file_utilities.select_venv(tmp_path.as_posix())
+
+    assert Path(result[0]) == activate
+    assert result[1] == "python"

@@ -83,6 +83,19 @@ def test_execute_action_handles_control_flow():
     assert text == ["Missing does not exist."]
 
 
+def test_execute_action_evaluates_string_actions():
+    driver = FakeDriver()
+
+    result = browser_driver.execute_action(
+        driver,
+        "[('send_keys', '//input', 'element')]",
+        element="Ticker",
+    )
+
+    assert result is True
+    assert driver.elements["//input"].sent_keys == ["Ticker"]
+
+
 def test_execute_action_rejects_unknown_commands(capsys):
     driver = FakeDriver()
 

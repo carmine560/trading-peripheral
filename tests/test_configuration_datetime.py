@@ -21,6 +21,29 @@ def test_write_and_read_config_round_trip(tmp_path):
     assert loaded["General"]["implicitly_wait"] == "4"
 
 
+def test_check_config_changes_resets_option_to_default(tmp_path, monkeypatch):
+    config_path = tmp_path / "settings.ini"
+    default_config = ConfigParser(interpolation=None)
+    default_config["General"] = {"headless": "True", "implicitly_wait": "4"}
+
+    user_config = ConfigParser(interpolation=None)
+    user_config["General"] = {"headless": "False", "implicitly_wait": "4"}
+    configuration.write_config(user_config, config_path.as_posix())
+
+    monkeypatch.setattr(
+        configuration,
+        "tidy_answer",
+        lambda answers, level=0: "default",
+    )
+
+    configuration.check_config_changes(default_config, config_path.as_posix())
+
+    loaded = ConfigParser(interpolation=None)
+    configuration.read_config(loaded, config_path.as_posix())
+    assert loaded["General"].get("headless") is None
+    assert loaded["General"]["implicitly_wait"] == "4"
+
+
 def test_normalize_datetime_string_rolls_past_midnight():
     normalized = datetime_utilities.normalize_datetime_string(
         "2025-03-14 25:30"
