@@ -66,6 +66,7 @@ def _run_browser_actions(args, trade, config):
     # leaving the driver in a broken state, so wrap both 'initialize()' and
     # 'execute_action()' in the retry loop.
     for attempt in range(1, max_attempts + 1):
+        driver = None
         try:
             driver = browser_driver.initialize(
                 headless=config["General"].getboolean("headless"),
@@ -97,10 +98,8 @@ def _run_browser_actions(args, trade, config):
                     )
                 else:
                     extract_unsupported_brokerage_order_status(trade.vendor)
-            driver.quit()
             break
         except Exception as e:
-            driver.quit()
             if attempt == max_attempts:
                 raise
             print(
@@ -108,6 +107,9 @@ def _run_browser_actions(args, trade, config):
                 f"Retrying in {retry_interval}s..."
             )
             time.sleep(retry_interval)
+        finally:
+            if driver is not None:
+                driver.quit()
 
 
 def _manage_snapshots(args, trade, config):
