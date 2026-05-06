@@ -72,3 +72,25 @@ def test_replace_datetime_infers_next_year_for_old_dates():
     )
 
     assert result == "2026-1-1 00:15"
+
+
+def test_replace_datetime_strips_year_suffix_when_present():
+    section = {
+        "year_group": "1",
+        "month_group": "2",
+        "day_group": "3",
+        "time_group": "4",
+    }
+    match = re.search(
+        r"^(\d{4}年)?(\d{1,2})月(\d{1,2})日（[^）]+）(\d{1,2}:\d{2})$",
+        "2025年1月1日（日）00:15",
+    )
+
+    result = _replace_datetime(
+        match,
+        section,
+        datetime(2025, 12, 31, 23, 30, tzinfo=ZoneInfo("Asia/Tokyo")),
+        ZoneInfo("Asia/Tokyo"),
+    )
+
+    assert result == "2025-1-1 00:15"

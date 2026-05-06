@@ -614,6 +614,7 @@ def _replace_datetime(match_object, section, now, tzinfo):
     matched_day = match_object.group(int(section["day_group"]))
     matched_time = match_object.group(int(section["time_group"]))
     if matched_year:
+        matched_year = matched_year.removesuffix("年")
         return f"{matched_year}-{matched_month}-{matched_day} {matched_time}"
 
     assumed_year = int(now.strftime("%Y"))
