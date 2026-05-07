@@ -22,6 +22,7 @@ from core_utilities import (
     configuration,
     data_utilities,
     datetime_utilities,
+    errors,
     file_utilities,
     initializer,
     process_utilities,
@@ -633,6 +634,23 @@ def _replace_datetime(match_object, section, now, tzinfo):
     return f"{assumed_year}-{matched_month}-{matched_day} {matched_time}"
 
 
+def _get_last_modified_datetime(url):
+    """Return the parsed Last-Modified timestamp when HEAD data is usable."""
+    try:
+        head = web_utilities.make_head_request(url)
+    except errors.ExternalServiceError:
+        return None
+
+    last_modified = head.headers.get("last-modified")
+    if not last_modified:
+        return None
+
+    try:
+        return parsedate_to_datetime(last_modified)
+    except (TypeError, ValueError, IndexError):
+        return None
+
+
 def insert_maintenance_schedules(trade, config):
     """Insert maintenance schedules into a Google Calendar."""
     configuration.ensure_section_exists(
@@ -643,14 +661,14 @@ def insert_maintenance_schedules(trade, config):
     tzinfo = ZoneInfo(section["timezone"])
     now = datetime.now(tzinfo)
 
-    head = web_utilities.make_head_request(section["url"])
+    head_last_modified = _get_last_modified_datetime(section["url"])
     last_inserted = (
         datetime.fromisoformat(section["last_inserted"])
         if section["last_inserted"]
         else datetime.min.replace(tzinfo=tzinfo)
     )
     last_inserted = max(last_inserted, now - timedelta(days=29))
-    if parsedate_to_datetime(head.headers["last-modified"]) <= last_inserted:
+    if head_last_modified is not None and head_last_modified <= last_inserted:
         return
 
     response = requests.get(section["url"], timeout=5)
