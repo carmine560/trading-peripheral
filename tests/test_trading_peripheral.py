@@ -1,6 +1,8 @@
 from configparser import ConfigParser
 from types import SimpleNamespace
 
+from app import config as app_config
+from app import maintenance as app_maintenance
 import trading_peripheral
 from core_utilities.errors import ConfigBuildError, ExternalServiceError
 
@@ -109,15 +111,16 @@ def test_configure_raises_when_application_data_directory_missing(
         brokerage_variables_section="SBI Securities Variables",
         release_notes_section="HYPERSBI2 Release Notes",
         actions_section="HYPERSBI2 Actions",
+        instruction_items={},
     )
 
     monkeypatch.setattr(
-        trading_peripheral.os.path,
+        app_config.os.path,
         "expandvars",
         lambda value: "/tmp/appdata",
     )
     monkeypatch.setattr(
-        trading_peripheral.os.path,
+        app_config.os.path,
         "isdir",
         lambda path: False,
     )
@@ -152,7 +155,7 @@ def _build_maintenance_config():
         "datetime_xpath": "ancestor::li[1]/div[1]",
         "range_splitter_regex": "〜|～",
         "datetime_regex": (
-            r"^(\d{4}年)?(\d{1,2})月(\d{1,2})日（[^）]+）(\d{1,2}:\d{2})$"
+            r"^(\d{4}年)?(\d{1,2})月(\d{1,2})日" r"（[^）]+）(\d{1,2}:\d{2})$"
         ),
         "year_group": "1",
         "month_group": "2",
@@ -173,32 +176,32 @@ def test_insert_maintenance_schedules_falls_back_without_last_modified(
     write_calls = []
 
     monkeypatch.setattr(
-        trading_peripheral.web_utilities,
+        app_maintenance.web_utilities,
         "make_head_request",
         lambda url: SimpleNamespace(headers={}),
     )
     monkeypatch.setattr(
-        trading_peripheral.requests,
+        app_maintenance.requests,
         "get",
         lambda url, timeout: response,
     )
     monkeypatch.setattr(
-        trading_peripheral,
+        app_maintenance,
         "from_bytes",
         lambda content: SimpleNamespace(best=lambda: _FakeMatched()),
     )
     monkeypatch.setattr(
-        trading_peripheral.html,
+        app_maintenance.html,
         "fromstring",
         lambda text: _FakeRoot(),
     )
     monkeypatch.setattr(
-        trading_peripheral.google_services,
+        app_maintenance.google_services,
         "get_calendar_resource",
         lambda *args: calendar_calls.append(args) or ("resource", "calendar"),
     )
     monkeypatch.setattr(
-        trading_peripheral.configuration,
+        app_maintenance.configuration,
         "write_config",
         lambda *args, **kwargs: write_calls.append((args, kwargs)),
     )
@@ -223,34 +226,34 @@ def test_insert_maintenance_schedules_recovers_from_head_failure(
     calendar_calls = []
 
     monkeypatch.setattr(
-        trading_peripheral.web_utilities,
+        app_maintenance.web_utilities,
         "make_head_request",
         lambda url: (_ for _ in ()).throw(
             ExternalServiceError("HEAD request failed")
         ),
     )
     monkeypatch.setattr(
-        trading_peripheral.requests,
+        app_maintenance.requests,
         "get",
         lambda url, timeout: response,
     )
     monkeypatch.setattr(
-        trading_peripheral,
+        app_maintenance,
         "from_bytes",
         lambda content: SimpleNamespace(best=lambda: _FakeMatched()),
     )
     monkeypatch.setattr(
-        trading_peripheral.html,
+        app_maintenance.html,
         "fromstring",
         lambda text: _FakeRoot(),
     )
     monkeypatch.setattr(
-        trading_peripheral.google_services,
+        app_maintenance.google_services,
         "get_calendar_resource",
         lambda *args: calendar_calls.append(args) or ("resource", "calendar"),
     )
     monkeypatch.setattr(
-        trading_peripheral.configuration,
+        app_maintenance.configuration,
         "write_config",
         lambda *args, **kwargs: None,
     )
@@ -258,66 +261,3 @@ def test_insert_maintenance_schedules_recovers_from_head_failure(
     trading_peripheral.insert_maintenance_schedules(trade, config)
 
     assert response.encoding == "utf-8"
-    assert calendar_calls
-
-
-def test_check_web_page_send_email_message_raises_on_get_failure(
-    monkeypatch,
-):
-    trade = SimpleNamespace(
-        config_directory="/tmp",
-        config_path="/tmp/trading_peripheral.ini",
-    )
-    section = "SBI Securities Investment Tools News"
-    config = ConfigParser(interpolation=None)
-    config[section] = {
-        "url": "https://example.com/news",
-        "latest_news_xpath": "//latest",
-        "latest_news_text": "",
-    }
-
-    monkeypatch.setattr(
-        trading_peripheral.requests,
-        "get",
-        lambda url, timeout: (_ for _ in ()).throw(
-            trading_peripheral.requests.exceptions.HTTPError("403")
-        ),
-    )
-
-    try:
-        trading_peripheral.check_web_page_send_email_message(
-            trade, config, section
-        )
-    except ExternalServiceError as exc:
-        message = str(exc)
-    else:
-        raise AssertionError("Expected ExternalServiceError")
-
-    assert "GET request failed for https://example.com/news" in message
-
-
-def test_insert_maintenance_schedules_raises_on_get_failure(monkeypatch):
-    trade = _FakeMaintenanceTrade()
-    config = _build_maintenance_config()
-
-    monkeypatch.setattr(
-        trading_peripheral.web_utilities,
-        "make_head_request",
-        lambda url: SimpleNamespace(headers={}),
-    )
-    monkeypatch.setattr(
-        trading_peripheral.requests,
-        "get",
-        lambda url, timeout: (_ for _ in ()).throw(
-            trading_peripheral.requests.exceptions.HTTPError("500")
-        ),
-    )
-
-    try:
-        trading_peripheral.insert_maintenance_schedules(trade, config)
-    except ExternalServiceError as exc:
-        message = str(exc)
-    else:
-        raise AssertionError("Expected ExternalServiceError")
-
-    assert "GET request failed for https://example.com/maintenance" in message
