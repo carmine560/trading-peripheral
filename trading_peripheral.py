@@ -578,7 +578,15 @@ def check_web_page_send_email_message(trade, config, section):
     """Check the web page and send an email message if an update is found."""
     configuration.ensure_section_exists(config, section)
 
-    response = requests.get(config[section]["url"], timeout=5)
+    url = config[section]["url"]
+    try:
+        response = requests.get(url, timeout=5)
+        response.raise_for_status()
+    except requests.exceptions.RequestException as e:
+        raise errors.ExternalServiceError(
+            f"GET request failed for {url}: {e}"
+        ) from e
+
     matched = from_bytes(response.content).best()
     response.encoding = matched.encoding if matched else "utf-8"
     root = html.fromstring(response.text)
@@ -651,6 +659,136 @@ def _get_last_modified_datetime(url):
         return None
 
 
+def _get_response_root_title(url):
+    """Fetch a page, then return the response, parsed root, and title."""
+    try:
+        response = requests.get(url, timeout=5)
+        response.raise_for_status()
+    except requests.exceptions.RequestException as e:
+        raise errors.ExternalServiceError(
+            f"GET request failed for {url}: {e}"
+        ) from e
+
+    matched = from_bytes(response.content).best()
+    response.encoding = matched.encoding if matched else "utf-8"
+    root = html.fromstring(response.text)
+    match_object = re.search("<title>(.*)</title>", response.text)
+    title = match_object.group(1) if match_object else ""
+    return response, root, title
+
+
+def _insert_all_service_anchor(root, section):
+    """Insert a synthetic all-service element when the page omits it."""
+    try:
+        all_service_element = root.xpath(section["all_service_xpath"])[0]
+        match_object = re.search(r"//(\w+)", section["service_xpath"])
+        if not match_object:
+            return
+
+        pre_element = Element(match_object.group(1))
+        match_object = re.search(
+            r"@class, +\"(.+?)\"", section["service_xpath"]
+        )
+        if not match_object:
+            return
+
+        pre_element.set("class", match_object.group(1))
+        pre_element.text = section["all_service_name"]
+        all_service_element.addprevious(pre_element)
+    except IndexError:
+        pass
+
+
+def _get_datetime_bounds(datetime_range, section, now, tzinfo):
+    """Parse a maintenance datetime range into start and end datetimes."""
+    datetime_string = re.sub(
+        section["datetime_regex"],
+        lambda match_object: _replace_datetime(
+            match_object, section, now, tzinfo
+        ),
+        datetime_range[0],
+    )
+    start = datetime.strptime(
+        datetime_utilities.normalize_datetime_string(datetime_string),
+        "%Y-%m-%d %H:%M",
+    ).replace(tzinfo=tzinfo)
+    if re.fullmatch(r"\d{1,2}:\d{2}", datetime_range[1]):
+        datetime_string = start.strftime("%Y-%m-%d ") + datetime_range[1]
+    else:
+        datetime_string = re.sub(
+            section["datetime_regex"],
+            lambda match_object: _replace_datetime(
+                match_object, section, now, tzinfo
+            ),
+            datetime_range[1],
+        )
+
+    end = datetime.strptime(
+        datetime_utilities.normalize_datetime_string(datetime_string),
+        "%Y-%m-%d %H:%M",
+    ).replace(tzinfo=tzinfo)
+    return start, end
+
+
+def _store_maintenance_body(previous_bodies, service, body_tuple):
+    """Store a calendar body tuple with bounded history per service."""
+    previous_bodies.setdefault(service, []).append(body_tuple)
+    maximum_number_of_bodies = 32
+    if len(previous_bodies[service]) > maximum_number_of_bodies:
+        previous_bodies[service] = previous_bodies[service][
+            -maximum_number_of_bodies:
+        ]
+
+
+def _insert_service_maintenance_events(
+    root,
+    section,
+    now,
+    tzinfo,
+    title,
+    resource,
+    previous_bodies,
+):
+    """Insert maintenance events from the parsed page into Calendar."""
+    for service in configuration.evaluate_value(section["services"]):
+        for schedule in root.xpath(section["service_xpath"].format(service)):
+            function = schedule.xpath(section["function_xpath"])[0].xpath(
+                "normalize-space(.)"
+            )
+            datetimes = (
+                schedule.xpath(section["datetime_xpath"])[0]
+                .text_content()
+                .split("\n")
+            )
+
+            for datetime_text in datetimes:
+                datetime_range = re.split(
+                    re.compile(section["range_splitter_regex"]),
+                    datetime_text.strip(),
+                )
+                if len(datetime_range) != 2:
+                    continue
+
+                start, end = _get_datetime_bounds(
+                    datetime_range, section, now, tzinfo
+                )
+                body = {
+                    "summary": f"🛠️ {service}: {function}",
+                    "start": {"dateTime": start.isoformat()},
+                    "end": {"dateTime": end.isoformat()},
+                    "reminders": {"useDefault": False},
+                    "source": {"title": title, "url": section["url"]},
+                }
+                body_tuple = data_utilities.dictionary_to_tuple(body)
+                if body_tuple in previous_bodies.get(service, []):
+                    continue
+
+                google_services.insert_calendar_event(
+                    resource, section["calendar_id"], body
+                )
+                _store_maintenance_body(previous_bodies, service, body_tuple)
+
+
 def insert_maintenance_schedules(trade, config):
     """Insert maintenance schedules into a Google Calendar."""
     configuration.ensure_section_exists(
@@ -671,28 +809,8 @@ def insert_maintenance_schedules(trade, config):
     if head_last_modified is not None and head_last_modified <= last_inserted:
         return
 
-    response = requests.get(section["url"], timeout=5)
-    matched = from_bytes(response.content).best()
-    response.encoding = matched.encoding if matched else "utf-8"
-    root = html.fromstring(response.text)
-    match_object = re.search("<title>(.*)</title>", response.text)
-    if match_object:
-        title = match_object.group(1)
-
-    try:
-        all_service_element = root.xpath(section["all_service_xpath"])[0]
-        match_object = re.search(r"//(\w+)", section["service_xpath"])
-        if match_object:
-            pre_element = Element(match_object.group(1))
-            match_object = re.search(
-                r"@class, +\"(.+?)\"", section["service_xpath"]
-            )
-            if match_object:
-                pre_element.set("class", match_object.group(1))
-                pre_element.text = section["all_service_name"]
-                all_service_element.addprevious(pre_element)
-    except IndexError:
-        pass
+    _, root, title = _get_response_root_title(section["url"])
+    _insert_all_service_anchor(root, section)
 
     resource, section["calendar_id"] = google_services.get_calendar_resource(
         os.path.join(trade.config_directory, "token.json"),
@@ -702,84 +820,10 @@ def insert_maintenance_schedules(trade, config):
     )
 
     previous_bodies = configuration.evaluate_value(section["previous_bodies"])
-    for service in configuration.evaluate_value(section["services"]):
-        for schedule in root.xpath(section["service_xpath"].format(service)):
-            function = schedule.xpath(section["function_xpath"])[0].xpath(
-                "normalize-space(.)"
-            )
-            datetimes = (
-                schedule.xpath(section["datetime_xpath"])[0]
-                .text_content()
-                .split("\n")
-            )
-
-            for index, _ in enumerate(datetimes):
-                datetime_range = re.split(
-                    re.compile(section["range_splitter_regex"]),
-                    datetimes[index].strip(),
-                )
-
-                if len(datetime_range) != 2:
-                    continue
-
-                datetime_string = re.sub(
-                    section["datetime_regex"],
-                    lambda match_object: _replace_datetime(
-                        match_object, section, now, tzinfo
-                    ),
-                    datetime_range[0],
-                )
-                start = datetime.strptime(
-                    datetime_utilities.normalize_datetime_string(
-                        datetime_string
-                    ),
-                    "%Y-%m-%d %H:%M",
-                ).replace(tzinfo=tzinfo)
-                if re.fullmatch(r"\d{1,2}:\d{2}", datetime_range[1]):
-                    datetime_string = (
-                        start.strftime("%Y-%m-%d ") + datetime_range[1]
-                    )
-                else:
-                    datetime_string = re.sub(
-                        section["datetime_regex"],
-                        lambda match_object: _replace_datetime(
-                            match_object, section, now, tzinfo
-                        ),
-                        datetime_range[1],
-                    )
-
-                end = datetime.strptime(
-                    datetime_utilities.normalize_datetime_string(
-                        datetime_string
-                    ),
-                    "%Y-%m-%d %H:%M",
-                ).replace(tzinfo=tzinfo)
-
-                body = {
-                    "summary": f"🛠️ {service}: {function}",
-                    "start": {"dateTime": start.isoformat()},
-                    "end": {"dateTime": end.isoformat()},
-                    "reminders": {"useDefault": False},
-                    "source": {"title": title, "url": section["url"]},
-                }
-                body_tuple = data_utilities.dictionary_to_tuple(body)
-
-                if body_tuple not in previous_bodies.get(service, []):
-                    google_services.insert_calendar_event(
-                        resource, section["calendar_id"], body
-                    )
-
-                    previous_bodies.setdefault(service, []).append(body_tuple)
-                    maximum_number_of_bodies = 32
-                    if (
-                        len(previous_bodies[service])
-                        > maximum_number_of_bodies
-                    ):
-                        previous_bodies[service] = previous_bodies[service][
-                            -maximum_number_of_bodies:
-                        ]
-
-                    section["previous_bodies"] = str(previous_bodies)
+    _insert_service_maintenance_events(
+        root, section, now, tzinfo, title, resource, previous_bodies
+    )
+    section["previous_bodies"] = str(previous_bodies)
 
     section["last_inserted"] = now.isoformat()
     configuration.write_config(config, trade.config_path, is_encrypted=True)

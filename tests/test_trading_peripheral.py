@@ -40,6 +40,9 @@ class _FakeResponse:
         self.text = "<title>Maintenance</title>"
         self.encoding = None
 
+    def raise_for_status(self):
+        return None
+
 
 def test_run_browser_actions_retries_after_initialize_failure(monkeypatch):
     args = SimpleNamespace(s=True, S=False, o=False)
@@ -215,3 +218,65 @@ def test_insert_maintenance_schedules_recovers_from_head_failure(
 
     assert response.encoding == "utf-8"
     assert calendar_calls
+
+
+def test_check_web_page_send_email_message_raises_on_get_failure(
+    monkeypatch,
+):
+    trade = SimpleNamespace(
+        config_directory="/tmp",
+        config_path="/tmp/trading_peripheral.ini",
+    )
+    section = "SBI Securities Investment Tools News"
+    config = ConfigParser(interpolation=None)
+    config[section] = {
+        "url": "https://example.com/news",
+        "latest_news_xpath": "//latest",
+        "latest_news_text": "",
+    }
+
+    monkeypatch.setattr(
+        trading_peripheral.requests,
+        "get",
+        lambda url, timeout: (_ for _ in ()).throw(
+            trading_peripheral.requests.exceptions.HTTPError("403")
+        ),
+    )
+
+    try:
+        trading_peripheral.check_web_page_send_email_message(
+            trade, config, section
+        )
+    except ExternalServiceError as exc:
+        message = str(exc)
+    else:
+        raise AssertionError("Expected ExternalServiceError")
+
+    assert "GET request failed for https://example.com/news" in message
+
+
+def test_insert_maintenance_schedules_raises_on_get_failure(monkeypatch):
+    trade = _FakeMaintenanceTrade()
+    config = _build_maintenance_config()
+
+    monkeypatch.setattr(
+        trading_peripheral.web_utilities,
+        "make_head_request",
+        lambda url: SimpleNamespace(headers={}),
+    )
+    monkeypatch.setattr(
+        trading_peripheral.requests,
+        "get",
+        lambda url, timeout: (_ for _ in ()).throw(
+            trading_peripheral.requests.exceptions.HTTPError("500")
+        ),
+    )
+
+    try:
+        trading_peripheral.insert_maintenance_schedules(trade, config)
+    except ExternalServiceError as exc:
+        message = str(exc)
+    else:
+        raise AssertionError("Expected ExternalServiceError")
+
+    assert "GET request failed for https://example.com/maintenance" in message
