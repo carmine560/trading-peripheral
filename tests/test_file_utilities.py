@@ -1,6 +1,7 @@
 from pathlib import Path
 
 from core_utilities import file_utilities
+from core_utilities.errors import UtilityOperationError
 
 
 def _write_source(path: Path, content: str, mtime: int) -> None:
@@ -82,3 +83,65 @@ def test_select_venv_finds_python_interpreter(tmp_path):
 
     assert Path(result[0]) == activate
     assert result[1] == "python"
+
+
+def test_archive_encrypt_directory_raises_on_gpg_failure(
+    tmp_path, monkeypatch
+):
+    source = tmp_path / "settings"
+    output_directory = tmp_path / "backups"
+    source.mkdir()
+    output_directory.mkdir()
+
+    class FakeEncrypted:
+        ok = False
+        status = "no public key"
+
+    class FakeGPG:
+        def list_keys(self):
+            return [{"fingerprint": "ABC123"}]
+
+        def encrypt_file(self, *args, **kwargs):
+            return FakeEncrypted()
+
+    monkeypatch.setattr(file_utilities.gnupg, "GPG", lambda: FakeGPG())
+
+    try:
+        file_utilities.archive_encrypt_directory(
+            source.as_posix(), output_directory.as_posix()
+        )
+    except UtilityOperationError as exc:
+        message = str(exc)
+    else:
+        raise AssertionError("Expected UtilityOperationError")
+
+    assert message == "GPG encryption failed: no public key"
+
+
+def test_decrypt_extract_file_raises_on_empty_gpg_data(tmp_path, monkeypatch):
+    source = tmp_path / "snapshot.tar.xz.gpg"
+    output_directory = tmp_path / "restore"
+    source.write_bytes(b"encrypted")
+    output_directory.mkdir()
+
+    class FakeDecrypted:
+        ok = True
+        status = "decryption ok"
+        data = b""
+
+    class FakeGPG:
+        def decrypt_file(self, *args, **kwargs):
+            return FakeDecrypted()
+
+    monkeypatch.setattr(file_utilities.gnupg, "GPG", lambda: FakeGPG())
+
+    try:
+        file_utilities.decrypt_extract_file(
+            source.as_posix(), output_directory.as_posix()
+        )
+    except UtilityOperationError as exc:
+        message = str(exc)
+    else:
+        raise AssertionError("Expected UtilityOperationError")
+
+    assert message == "GPG decryption returned no file data."
