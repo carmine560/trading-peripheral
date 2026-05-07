@@ -2,7 +2,7 @@ from configparser import ConfigParser
 from types import SimpleNamespace
 
 import trading_peripheral
-from core_utilities.errors import ExternalServiceError
+from core_utilities.errors import ConfigBuildError, ExternalServiceError
 
 
 class _FakeTrade:
@@ -94,6 +94,47 @@ def test_run_browser_actions_retries_after_initialize_failure(monkeypatch):
     assert sleep_calls == [10]
     assert actions == [(driver, "[]")]
     assert driver.quit_calls == 1
+
+
+def test_configure_raises_when_application_data_directory_missing(
+    monkeypatch,
+):
+    trade = SimpleNamespace(
+        vendor="SBI Securities",
+        process="HYPERSBI2",
+        config_path="/tmp/trading_peripheral.ini",
+        investment_tools_news_section="SBI Securities Investment Tools News",
+        maintenance_schedules_section="SBI Securities Maintenance Schedules",
+        order_status_section="SBI Securities Order Status",
+        brokerage_variables_section="SBI Securities Variables",
+        release_notes_section="HYPERSBI2 Release Notes",
+        actions_section="HYPERSBI2 Actions",
+    )
+
+    monkeypatch.setattr(
+        trading_peripheral.os.path,
+        "expandvars",
+        lambda value: "/tmp/appdata",
+    )
+    monkeypatch.setattr(
+        trading_peripheral.os.path,
+        "isdir",
+        lambda path: False,
+    )
+
+    try:
+        trading_peripheral.configure(
+            trade, can_interpolate=False, can_override=False
+        )
+    except ConfigBuildError as exc:
+        message = str(exc)
+    else:
+        raise AssertionError("Expected ConfigBuildError")
+
+    assert message == (
+        "Application data directory does not exist: "
+        "/tmp/appdata\\SBI Securities\\HYPERSBI2"
+    )
 
 
 def _build_maintenance_config():

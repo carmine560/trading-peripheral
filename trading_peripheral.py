@@ -478,21 +478,26 @@ def configure(trade, can_interpolate=True, can_override=True):
 
         latest_modified_time = 0.0
         identifier = ""
-        for f in os.listdir(
-            config[trade.process]["application_data_directory"]
-        ):
+        application_data_directory = config[trade.process][
+            "application_data_directory"
+        ]
+        if not os.path.isdir(application_data_directory):
+            raise errors.ConfigBuildError(
+                "Application data directory does not exist: "
+                f"{application_data_directory}"
+            )
+
+        for f in os.listdir(application_data_directory):
             if re.fullmatch("[0-9a-z]{32}", f):
                 modified_time = os.path.getmtime(
-                    os.path.join(
-                        config[trade.process]["application_data_directory"], f
-                    )
+                    os.path.join(application_data_directory, f)
                 )
                 if modified_time > latest_modified_time:
                     latest_modified_time = modified_time
                     identifier = f
         if identifier:
             config[trade.process]["watchlists"] = os.path.join(
-                config[trade.process]["application_data_directory"],
+                application_data_directory,
                 identifier,
                 "portfolio.json",
             )
