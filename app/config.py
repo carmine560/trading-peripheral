@@ -256,8 +256,9 @@ def _configure_hypersbi2_watchlists(config, trade):
         )
         return
 
-    print("Unspecified identifier.")
-    sys.exit(1)
+    raise errors.ConfigBuildError(
+        "Unable to determine the latest watchlist identifier."
+    )
 
 
 def configure_exit(args, trade):

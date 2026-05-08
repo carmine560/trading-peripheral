@@ -15,6 +15,7 @@ from app.order_status import (
     extract_unsupported_brokerage_order_status,
 )
 from core_utilities import configuration, file_utilities, initializer
+from core_utilities import errors as core_errors
 from core_utilities import process_utilities
 from web_utilities import browser_driver
 
@@ -105,8 +106,7 @@ def _manage_snapshots(args, trade, config):
     """Archive or restore the process application data."""
     configuration.ensure_section_exists(config, trade.process)
     if process_utilities.is_running(trade.process):
-        print(f"'{trade.process}' is running.")
-        sys.exit(1)
+        raise core_errors.ProcessStateError(f"'{trade.process}' is running.")
     application_data_directory = config[trade.process][
         "application_data_directory"
     ]
@@ -127,7 +127,7 @@ def _manage_snapshots(args, trade, config):
         file_utilities.decrypt_extract_file(snapshot, output_directory)
 
 
-def main():
+def run():
     """Execute the main program based on command-line arguments."""
     args = get_arguments()
     trade = Trade(*args.P)
@@ -156,12 +156,21 @@ def main():
         _manage_snapshots(args, trade, config)
 
 
-if __name__ == "__main__":
+def main():
+    """Run the CLI and return the final process exit code."""
     try:
-        main()
+        run()
     except configuration.ConfigError as e:
         print(f"Configuration error: {e}")
-        sys.exit(1)
+        return 1
+    except core_errors.TradingAssistantError as e:
+        print(e)
+        return 1
     except Exception as e:
         print(f"Unexpected error: {e}")
-        sys.exit(1)
+        return 1
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())

@@ -3,8 +3,14 @@ from types import SimpleNamespace
 
 from app import config as app_config
 from app import maintenance as app_maintenance
+from app import order_status as app_order_status
 import trading_peripheral
-from core_utilities.errors import ConfigBuildError, ExternalServiceError
+from core_utilities.errors import (
+    ConfigBuildError,
+    ExternalServiceError,
+    MarketDataError,
+    ProcessStateError,
+)
 
 
 class _FakeTrade:
@@ -16,6 +22,7 @@ class _FakeTrade:
 class _FakeDriver:
     def __init__(self):
         self.quit_calls = 0
+        self.page_source = "<html></html>"
 
     def quit(self):
         self.quit_calls += 1
@@ -138,6 +145,114 @@ def test_configure_raises_when_application_data_directory_missing(
         "Application data directory does not exist: "
         "/tmp/appdata\\SBI Securities\\HYPERSBI2"
     )
+
+
+def test_configure_raises_when_watchlist_identifier_missing(monkeypatch):
+    trade = SimpleNamespace(
+        vendor="SBI Securities",
+        process="HYPERSBI2",
+        config_path="/tmp/trading_peripheral.ini",
+        investment_tools_news_section="SBI Securities Investment Tools News",
+        maintenance_schedules_section="SBI Securities Maintenance Schedules",
+        order_status_section="SBI Securities Order Status",
+        brokerage_variables_section="SBI Securities Variables",
+        release_notes_section="HYPERSBI2 Release Notes",
+        actions_section="HYPERSBI2 Actions",
+        instruction_items={},
+    )
+
+    monkeypatch.setattr(
+        app_config.os.path,
+        "expandvars",
+        lambda value: "/tmp/appdata",
+    )
+    monkeypatch.setattr(app_config.os.path, "isdir", lambda path: True)
+    monkeypatch.setattr(app_config.os, "listdir", lambda path: ["notes"])
+
+    try:
+        trading_peripheral.configure(
+            trade, can_interpolate=False, can_override=False
+        )
+    except ConfigBuildError as exc:
+        message = str(exc)
+    else:
+        raise AssertionError("Expected ConfigBuildError")
+
+    assert message == "Unable to determine the latest watchlist identifier."
+
+
+def test_manage_snapshots_raises_process_state_error(monkeypatch):
+    args = SimpleNamespace(d=True, D=False)
+    trade = SimpleNamespace(process="HYPERSBI2")
+    config = ConfigParser(interpolation=None)
+    config["HYPERSBI2"] = {
+        "application_data_directory": "/tmp/HYPERSBI2",
+        "snapshot_directory": "/tmp",
+    }
+    config["General"] = {"fingerprint": ""}
+
+    monkeypatch.setattr(
+        trading_peripheral.process_utilities,
+        "is_running",
+        lambda process: True,
+    )
+
+    try:
+        trading_peripheral._manage_snapshots(args, trade, config)
+    except ProcessStateError as exc:
+        message = str(exc)
+    else:
+        raise AssertionError("Expected ProcessStateError")
+
+    assert message == "'HYPERSBI2' is running."
+
+
+def test_order_status_raises_market_data_error_on_parse_failure(monkeypatch):
+    trade = SimpleNamespace(order_status_section="SBI Securities Order Status")
+    config = ConfigParser(interpolation=None)
+    config[trade.order_status_section] = {
+        "table_identifier": "注文種別",
+    }
+    driver = _FakeDriver()
+
+    monkeypatch.setattr(
+        app_order_status.pd,
+        "read_html",
+        lambda *args, **kwargs: (_ for _ in ()).throw(ValueError("bad html")),
+    )
+
+    try:
+        app_order_status.extract_sbi_securities_order_status(
+            trade, config, driver
+        )
+    except MarketDataError as exc:
+        message = str(exc)
+    else:
+        raise AssertionError("Expected MarketDataError")
+
+    assert message == (
+        "Unable to parse the order status table from the current page."
+    )
+
+
+def test_main_returns_error_code_for_trading_errors(monkeypatch, capsys):
+    def raise_error():
+        raise ProcessStateError("'HYPERSBI2' is running.")
+
+    monkeypatch.setattr(trading_peripheral, "run", raise_error)
+
+    assert trading_peripheral.main() == 1
+    assert capsys.readouterr().out == "'HYPERSBI2' is running.\n"
+
+
+def test_main_returns_error_code_for_config_errors(monkeypatch, capsys):
+    def raise_error():
+        raise trading_peripheral.configuration.ConfigError("missing section")
+
+    monkeypatch.setattr(trading_peripheral, "run", raise_error)
+
+    assert trading_peripheral.main() == 1
+    assert capsys.readouterr().out == "Configuration error: missing section\n"
 
 
 def _build_maintenance_config():

@@ -2,11 +2,11 @@
 
 from io import StringIO
 import re
-import sys
 
 import pandas as pd
 
 from core_utilities import configuration
+from core_utilities.errors import MarketDataError
 
 
 def extract_sbi_securities_order_status(trade, config, driver):
@@ -25,8 +25,9 @@ def extract_sbi_securities_order_status(trade, config, driver):
             flavor="lxml",
         )
     except ValueError as exc:
-        print(exc)
-        sys.exit(1)
+        raise MarketDataError(
+            "Unable to parse the order status table from the current page."
+        ) from exc
 
     exclusion = configuration.evaluate_value(section["exclusion"])
     df = min(dfs, key=lambda frame: frame.shape[0])
@@ -182,8 +183,9 @@ def extract_sbi_securities_order_status(trade, config, driver):
 
 def extract_unsupported_brokerage_order_status(brokerage):
     """Handle order status requests for unsupported brokerages."""
-    print(f"Order status extraction for '{brokerage}' is not implemented.")
-    return None
+    raise MarketDataError(
+        f"Order status extraction for '{brokerage}' is not implemented."
+    )
 
 
 BROKERAGE_ORDER_STATUS_FUNCTIONS = {
