@@ -20,6 +20,16 @@ from core_utilities import (
 from web_utilities import google_services, web_utilities
 
 
+def _get_required_xpath_match(nodes, xpath, url, description):
+    """Return the required unique XPath match or raise a scraper error."""
+    if len(nodes) != 1:
+        raise errors.ScraperError(
+            f"{description} XPath matched {len(nodes)} nodes for {url}: "
+            f"{xpath}"
+        )
+    return nodes[0]
+
+
 def _replace_datetime(match_object, section, now, tzinfo):
     """Replace matched datetime strings with formatted strings."""
     matched_year = match_object.group(int(section["year_group"]))
@@ -154,14 +164,20 @@ def _insert_service_maintenance_events(
     """Insert maintenance events from the parsed page into Calendar."""
     for service in configuration.evaluate_value(section["services"]):
         for schedule in root.xpath(section["service_xpath"].format(service)):
-            function = schedule.xpath(section["function_xpath"])[0].xpath(
-                "normalize-space(.)"
+            function_element = _get_required_xpath_match(
+                schedule.xpath(section["function_xpath"]),
+                section["function_xpath"],
+                section["url"],
+                f"{service} maintenance function",
             )
-            datetimes = (
-                schedule.xpath(section["datetime_xpath"])[0]
-                .text_content()
-                .split("\n")
+            function = function_element.xpath("normalize-space(.)")
+            datetime_element = _get_required_xpath_match(
+                schedule.xpath(section["datetime_xpath"]),
+                section["datetime_xpath"],
+                section["url"],
+                f"{service} maintenance datetime",
             )
+            datetimes = datetime_element.text_content().split("\n")
 
             for datetime_text in datetimes:
                 datetime_range = re.split(

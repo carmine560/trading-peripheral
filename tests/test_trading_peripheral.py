@@ -3,6 +3,7 @@ from types import SimpleNamespace
 
 from app import config as app_config
 from app import maintenance as app_maintenance
+from app import monitoring as app_monitoring
 from app import order_status as app_order_status
 import trading_peripheral
 from core_utilities.errors import (
@@ -10,6 +11,7 @@ from core_utilities.errors import (
     ExternalServiceError,
     MarketDataError,
     ProcessStateError,
+    ScraperError,
 )
 
 
@@ -36,6 +38,19 @@ class _FakeMaintenanceTrade:
 
 class _FakeMatched:
     encoding = "utf-8"
+
+
+class _FakeElement:
+    def __init__(self, text=""):
+        self._text = text
+
+    def text_content(self):
+        return self._text
+
+    def xpath(self, expression):
+        if expression == "normalize-space(.)":
+            return self._text
+        return []
 
 
 class _FakeRoot:
@@ -255,6 +270,100 @@ def test_main_returns_error_code_for_config_errors(monkeypatch, capsys):
     assert capsys.readouterr().out == "Configuration error: missing section\n"
 
 
+def test_monitoring_raises_scraper_error_for_missing_news_node(
+    monkeypatch,
+):
+    trade = SimpleNamespace(config_directory="/tmp", config_path="/tmp/config")
+    config = ConfigParser(interpolation=None)
+    config["General"] = {
+        "email_message_from": "from@example.com",
+        "email_message_to": "to@example.com",
+    }
+    config["News"] = {
+        "url": "https://example.com/news",
+        "latest_news_xpath": "//headline",
+        "latest_news_text": "",
+    }
+    response = _FakeResponse()
+
+    monkeypatch.setattr(
+        app_monitoring.requests,
+        "get",
+        lambda url, timeout: response,
+    )
+    monkeypatch.setattr(
+        app_monitoring,
+        "from_bytes",
+        lambda content: SimpleNamespace(best=lambda: _FakeMatched()),
+    )
+    monkeypatch.setattr(
+        app_monitoring.html,
+        "fromstring",
+        lambda text: _FakeRoot(),
+    )
+
+    try:
+        app_monitoring.check_web_page_send_email_message(trade, config, "News")
+    except ScraperError as exc:
+        message = str(exc)
+    else:
+        raise AssertionError("Expected ScraperError")
+
+    assert message == (
+        "News latest news XPath matched 0 nodes for "
+        "https://example.com/news: //headline"
+    )
+
+
+def test_monitoring_raises_scraper_error_for_duplicate_news_nodes(
+    monkeypatch,
+):
+    trade = SimpleNamespace(config_directory="/tmp", config_path="/tmp/config")
+    config = ConfigParser(interpolation=None)
+    config["General"] = {
+        "email_message_from": "from@example.com",
+        "email_message_to": "to@example.com",
+    }
+    config["News"] = {
+        "url": "https://example.com/news",
+        "latest_news_xpath": "//headline",
+        "latest_news_text": "",
+    }
+    response = _FakeResponse()
+
+    class _DuplicateRoot:
+        def xpath(self, expression):
+            return [_FakeElement("first"), _FakeElement("second")]
+
+    monkeypatch.setattr(
+        app_monitoring.requests,
+        "get",
+        lambda url, timeout: response,
+    )
+    monkeypatch.setattr(
+        app_monitoring,
+        "from_bytes",
+        lambda content: SimpleNamespace(best=lambda: _FakeMatched()),
+    )
+    monkeypatch.setattr(
+        app_monitoring.html,
+        "fromstring",
+        lambda text: _DuplicateRoot(),
+    )
+
+    try:
+        app_monitoring.check_web_page_send_email_message(trade, config, "News")
+    except ScraperError as exc:
+        message = str(exc)
+    else:
+        raise AssertionError("Expected ScraperError")
+
+    assert message == (
+        "News latest news XPath matched 2 nodes for "
+        "https://example.com/news: //headline"
+    )
+
+
 def _build_maintenance_config():
     config = ConfigParser(interpolation=None)
     config["SBI Securities Maintenance Schedules"] = {
@@ -376,3 +485,85 @@ def test_insert_maintenance_schedules_recovers_from_head_failure(
     trading_peripheral.insert_maintenance_schedules(trade, config)
 
     assert response.encoding == "utf-8"
+
+
+def test_insert_maintenance_schedules_raises_for_missing_function_node(
+    monkeypatch,
+):
+    trade = _FakeMaintenanceTrade()
+    config = _build_maintenance_config()
+    config[trade.maintenance_schedules_section]["services"] = "('all',)"
+    response = _FakeResponse()
+
+    class _FakeSchedule:
+        def xpath(self, expression):
+            if (
+                expression
+                == config[trade.maintenance_schedules_section][
+                    "function_xpath"
+                ]
+            ):
+                return []
+            if (
+                expression
+                == config[trade.maintenance_schedules_section][
+                    "datetime_xpath"
+                ]
+            ):
+                return [_FakeElement("03/14 09:00～10:00")]
+            return []
+
+    class _MaintenanceRoot:
+        def xpath(self, expression):
+            if (
+                expression
+                == config[trade.maintenance_schedules_section][
+                    "all_service_xpath"
+                ]
+            ):
+                return []
+            if expression == (
+                config[trade.maintenance_schedules_section][
+                    "service_xpath"
+                ].format("all")
+            ):
+                return [_FakeSchedule()]
+            return []
+
+    monkeypatch.setattr(
+        app_maintenance.web_utilities,
+        "make_head_request",
+        lambda url: SimpleNamespace(headers={}),
+    )
+    monkeypatch.setattr(
+        app_maintenance.requests,
+        "get",
+        lambda url, timeout: response,
+    )
+    monkeypatch.setattr(
+        app_maintenance,
+        "from_bytes",
+        lambda content: SimpleNamespace(best=lambda: _FakeMatched()),
+    )
+    monkeypatch.setattr(
+        app_maintenance.html,
+        "fromstring",
+        lambda text: _MaintenanceRoot(),
+    )
+    monkeypatch.setattr(
+        app_maintenance.google_services,
+        "get_calendar_resource",
+        lambda *args: ("resource", "calendar"),
+    )
+
+    try:
+        trading_peripheral.insert_maintenance_schedules(trade, config)
+    except ScraperError as exc:
+        message = str(exc)
+    else:
+        raise AssertionError("Expected ScraperError")
+
+    assert message == (
+        "all maintenance function XPath matched 0 nodes for "
+        "https://example.com/maintenance: following::p[1]"
+    )

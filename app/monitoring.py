@@ -10,6 +10,17 @@ from core_utilities import configuration, errors
 from web_utilities import google_services
 
 
+def _get_required_xpath_match(root, xpath, url, description):
+    """Return the required unique XPath match or raise a scraper error."""
+    matches = root.xpath(xpath)
+    if len(matches) != 1:
+        raise errors.ScraperError(
+            f"{description} XPath matched {len(matches)} nodes for {url}: "
+            f"{xpath}"
+        )
+    return matches[0]
+
+
 def check_web_page_send_email_message(trade, config, section):
     """Check the web page and send an email message if an update is found."""
     configuration.ensure_section_exists(config, section)
@@ -27,11 +38,13 @@ def check_web_page_send_email_message(trade, config, section):
     response.encoding = matched.encoding if matched else "utf-8"
     root = html.fromstring(response.text)
 
-    latest_news_text = (
-        root.xpath(config[section]["latest_news_xpath"])[0]
-        .text_content()
-        .strip()
+    latest_news_element = _get_required_xpath_match(
+        root,
+        config[section]["latest_news_xpath"],
+        url,
+        f"{section} latest news",
     )
+    latest_news_text = latest_news_element.text_content().strip()
     if latest_news_text == config[section]["latest_news_text"]:
         return
 
