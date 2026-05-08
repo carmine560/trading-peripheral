@@ -1,5 +1,6 @@
 from selenium.webdriver.common.keys import Keys
 
+from core_utilities.errors import BrowserAutomationError
 from web_utilities import browser_driver
 
 
@@ -122,11 +123,16 @@ def test_execute_action_evaluates_string_actions():
 def test_execute_action_rejects_unknown_commands(capsys):
     driver = FakeDriver()
 
-    result = browser_driver.execute_action(driver, [("unknown", "value")])
+    try:
+        browser_driver.execute_action(driver, [("unknown", "value")])
+    except BrowserAutomationError as exc:
+        message = str(exc)
+    else:
+        raise AssertionError("Expected BrowserAutomationError")
 
     captured = capsys.readouterr()
-    assert result is False
-    assert "'unknown' is not a recognized command." in captured.out
+    assert message == "Unrecognized browser command: 'unknown'"
+    assert captured.out == ""
 
 
 def test_execute_action_logs_failing_instruction(capsys, monkeypatch):
@@ -142,13 +148,15 @@ def test_execute_action_logs_failing_instruction(capsys, monkeypatch):
 
     try:
         browser_driver.execute_action(driver, [("click", "//button")])
-    except RuntimeError as exc:
-        assert str(exc) == "blocked: //button"
+    except BrowserAutomationError as exc:
+        assert str(exc) == "Browser instruction failed: ('click', '//button')"
+        assert isinstance(exc.__cause__, RuntimeError)
+        assert str(exc.__cause__) == "blocked: //button"
     else:
-        raise AssertionError("Expected RuntimeError")
+        raise AssertionError("Expected BrowserAutomationError")
 
     captured = capsys.readouterr()
-    assert "Failed instruction: ('click', '//button')" in captured.out
+    assert captured.out == ""
 
 
 def test_wait_for_clickable_skips_hidden_duplicate_elements():
