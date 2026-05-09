@@ -227,6 +227,35 @@ def test_ensure_watchlists_path_raises_when_identifier_missing(monkeypatch):
     assert message == "Unable to determine the latest watchlist identifier."
 
 
+def test_configure_uses_single_release_note_match_xpath(monkeypatch):
+    trade = SimpleNamespace(
+        vendor="SBI Securities",
+        process="HYPERSBI2",
+        config_path="/tmp/trading_peripheral.ini",
+        investment_tools_news_section="SBI Securities Investment Tools News",
+        maintenance_schedules_section="SBI Securities Maintenance Schedules",
+        order_status_section="SBI Securities Order Status",
+        brokerage_variables_section="SBI Securities Variables",
+        release_notes_section="HYPERSBI2 Release Notes",
+        actions_section="HYPERSBI2 Actions",
+        instruction_items={},
+    )
+
+    monkeypatch.setattr(
+        app_config.os.path,
+        "expandvars",
+        lambda value: "/tmp/appdata",
+    )
+
+    config = trading_peripheral.configure(
+        trade, can_interpolate=False, can_override=False
+    )
+
+    assert config[trade.release_notes_section]["latest_news_xpath"] == (
+        '(//p[contains(@class, "Rnote__ver")])[1]'
+    )
+
+
 def test_manage_snapshots_raises_process_state_error(monkeypatch):
     args = SimpleNamespace(d=True, D=False)
     trade = SimpleNamespace(process="HYPERSBI2")

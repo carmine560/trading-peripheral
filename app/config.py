@@ -131,7 +131,7 @@ def _configure_hypersbi2_sections(config, trade):
     """Populate sections specific to the HYPERSBI2 process."""
     config[trade.release_notes_section] = {
         "url": "https://go.sbisec.co.jp/lp/lp_hyper_sbi2_211112_update.html",
-        "latest_news_xpath": '//p[contains(@class, "Rnote__ver")]',
+        "latest_news_xpath": '(//p[contains(@class, "Rnote__ver")])[1]',
         "latest_news_text": "",
     }
     config[trade.process] = {
