@@ -68,11 +68,11 @@ pytest
 
 ## Usage
 
-The `-m` option uses the Google Calendar API, and the `-t` and `-r` options use
-the Gmail API. Follow the [*Google Calendar API
-Quickstart*](https://developers.google.com/calendar/api/quickstart/python) and
-[*Gmail API
-Quickstart*](https://developers.google.com/gmail/api/quickstart/python) web
+The `-t` and `-r` options use the Gmail API, and the `-m` option uses the
+Google Calendar API. Follow [*Gmail API
+Quickstart*](https://developers.google.com/gmail/api/quickstart/python) and the
+[*Google Calendar API
+Quickstart*](https://developers.google.com/calendar/api/quickstart/python) web
 pages to obtain your `client_secret_*.json` file.
 
 Create [a non-default data directory for
