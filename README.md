@@ -68,8 +68,8 @@ pytest
 
 ## Usage
 
-The `-m` and `-q` options use the Google Calendar and Gmail APIs. Follow the
-[*Google Calendar API
+The `-m` option uses the Google Calendar API, and the `-t` and `-r` options use
+the Gmail API. Follow the [*Google Calendar API
 Quickstart*](https://developers.google.com/calendar/api/quickstart/python) and
 [*Gmail API
 Quickstart*](https://developers.google.com/gmail/api/quickstart/python) web
