@@ -310,6 +310,95 @@ def test_order_status_raises_market_data_error_on_parse_failure(monkeypatch):
     )
 
 
+def test_order_status_extracts_single_page_weighted_prices(monkeypatch):
+    trade = SimpleNamespace(
+        vendor="SBI Securities",
+        process="HYPERSBI2",
+        config_path="/tmp/trading_peripheral.ini",
+        investment_tools_news_section="SBI Securities Investment Tools News",
+        maintenance_schedules_section="SBI Securities Maintenance Schedules",
+        order_status_section="SBI Securities Order Status",
+        brokerage_variables_section="SBI Securities Variables",
+        release_notes_section="HYPERSBI2 Release Notes",
+        actions_section="HYPERSBI2 Actions",
+        instruction_items={},
+    )
+    monkeypatch.setattr(
+        app_config.os.path,
+        "expandvars",
+        lambda value: "/tmp/appdata",
+    )
+    config = app_config.configure(trade, can_override=False)
+    config[trade.order_status_section]["output_columns"] = str(
+        (
+            "entry_date",
+            "entry_time",
+            "symbol",
+            "size",
+            "order_specification",
+            "entry_price",
+            "exit_time",
+            "exit_price",
+        )
+    )
+    driver = _FakeDriver()
+    captured = {}
+    df = app_order_status.pd.DataFrame(
+        [
+            ["", "取消完了", "", "", "", "", "", ""],
+            ["", "", "", "逆指値：現在値が1000円以下", "", "", "", ""],
+            ["", "", "逆指値注文", "ABC 1234 東証", "", "", "", ""],
+            ["", "", "", "信新買", "", "", "100", "成行"],
+            ["", "", "", "約定", "", "03/14 09:00:00", "40", "100"],
+            ["", "", "", "約定", "", "03/14 09:01:00", "60", "102"],
+            ["", "", "", "ABC 1234 東証", "", "", "", ""],
+            ["", "", "", "信返売", "", "", "100", "指値"],
+            ["", "", "", "約定", "", "03/14 10:30:00", "25", "110"],
+            ["", "", "", "約定", "", "03/14 10:31:00", "75", "112"],
+        ]
+    )
+
+    monkeypatch.setattr(
+        app_order_status.pd,
+        "read_html",
+        lambda *args, **kwargs: [df],
+    )
+
+    def fake_to_clipboard(self, **kwargs):
+        captured["rows"] = (
+            self.astype(object).where(self.notna(), None).values.tolist()
+        )
+        captured["kwargs"] = kwargs
+
+    monkeypatch.setattr(
+        app_order_status.pd.DataFrame,
+        "to_clipboard",
+        fake_to_clipboard,
+    )
+
+    app_order_status.extract_sbi_securities_order_status(trade, config, driver)
+
+    assert captured["rows"] == [
+        [
+            "03/14",
+            "09:00:00",
+            "1234",
+            "100",
+            "long stop market order",
+            "101.2",
+            "10:30:00",
+            "111.5",
+        ],
+        [None, None, None, None, None, None, None, None],
+    ]
+    assert captured["kwargs"] == {
+        "sep": ",",
+        "header": False,
+        "index": False,
+        "quoting": 1,
+    }
+
+
 def test_main_returns_error_code_for_trading_errors(monkeypatch, capsys):
     def raise_error():
         raise ProcessStateError("'HYPERSBI2' is running.")
