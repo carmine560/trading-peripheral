@@ -7,7 +7,7 @@ import time
 
 from app import maintenance
 from app.cli import get_arguments
-from app.config import configure, configure_exit
+from app.config import configure, configure_exit, ensure_watchlists_path
 from app.maintenance import insert_maintenance_schedules
 from app.monitoring import check_web_page_send_email_message
 from app.order_status import (
@@ -148,6 +148,7 @@ def run():
         _run_browser_actions(args, trade, config)
     if args.w:
         configuration.ensure_section_exists(config, trade.process)
+        ensure_watchlists_path(config, trade)
         file_utilities.backup_file(
             config[trade.process]["watchlists"],
             backup_directory=config[trade.process]["backup_directory"],

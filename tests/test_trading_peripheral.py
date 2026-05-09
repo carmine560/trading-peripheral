@@ -120,7 +120,7 @@ def test_run_browser_actions_retries_after_initialize_failure(monkeypatch):
     assert driver.quit_calls == 1
 
 
-def test_configure_raises_when_application_data_directory_missing(
+def test_configure_skips_watchlist_discovery_when_directory_missing(
     monkeypatch,
 ):
     trade = SimpleNamespace(
@@ -147,10 +147,39 @@ def test_configure_raises_when_application_data_directory_missing(
         lambda path: False,
     )
 
+    config = trading_peripheral.configure(
+        trade, can_interpolate=False, can_override=False
+    )
+    assert config[trade.process]["watchlists"] == ""
+
+
+def test_ensure_watchlists_path_raises_when_directory_missing(monkeypatch):
+    trade = SimpleNamespace(
+        vendor="SBI Securities",
+        process="HYPERSBI2",
+        config_path="/tmp/trading_peripheral.ini",
+        investment_tools_news_section="SBI Securities Investment Tools News",
+        maintenance_schedules_section="SBI Securities Maintenance Schedules",
+        order_status_section="SBI Securities Order Status",
+        brokerage_variables_section="SBI Securities Variables",
+        release_notes_section="HYPERSBI2 Release Notes",
+        actions_section="HYPERSBI2 Actions",
+        instruction_items={},
+    )
+
+    monkeypatch.setattr(
+        app_config.os.path,
+        "expandvars",
+        lambda value: "/tmp/appdata",
+    )
+    monkeypatch.setattr(app_config.os.path, "isdir", lambda path: False)
+
+    config = trading_peripheral.configure(
+        trade, can_interpolate=False, can_override=False
+    )
+
     try:
-        trading_peripheral.configure(
-            trade, can_interpolate=False, can_override=False
-        )
+        app_config.ensure_watchlists_path(config, trade)
     except ConfigBuildError as exc:
         message = str(exc)
     else:
@@ -162,7 +191,7 @@ def test_configure_raises_when_application_data_directory_missing(
     )
 
 
-def test_configure_raises_when_watchlist_identifier_missing(monkeypatch):
+def test_ensure_watchlists_path_raises_when_identifier_missing(monkeypatch):
     trade = SimpleNamespace(
         vendor="SBI Securities",
         process="HYPERSBI2",
@@ -184,10 +213,12 @@ def test_configure_raises_when_watchlist_identifier_missing(monkeypatch):
     monkeypatch.setattr(app_config.os.path, "isdir", lambda path: True)
     monkeypatch.setattr(app_config.os, "listdir", lambda path: ["notes"])
 
+    config = trading_peripheral.configure(
+        trade, can_interpolate=False, can_override=False
+    )
+
     try:
-        trading_peripheral.configure(
-            trade, can_interpolate=False, can_override=False
-        )
+        app_config.ensure_watchlists_path(config, trade)
     except ConfigBuildError as exc:
         message = str(exc)
     else:

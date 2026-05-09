@@ -174,7 +174,6 @@ def _configure_hypersbi2_sections(config, trade):
             ("click", '//p/a[text()="注文照会"]'),
         ],
     }
-    _configure_hypersbi2_watchlists(config, trade)
 
 
 def _build_watchlist_actions(trade, tool_from, tool_to, name, action_id):
@@ -259,6 +258,18 @@ def _configure_hypersbi2_watchlists(config, trade):
     raise errors.ConfigBuildError(
         "Unable to determine the latest watchlist identifier."
     )
+
+
+def ensure_watchlists_path(config, trade):
+    """Populate the watchlists path when the current process needs it."""
+    if trade.process != "HYPERSBI2":
+        return
+
+    configuration.ensure_section_exists(config, trade.process)
+    if config[trade.process]["watchlists"]:
+        return
+
+    _configure_hypersbi2_watchlists(config, trade)
 
 
 def configure_exit(args, trade):
