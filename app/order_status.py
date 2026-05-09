@@ -5,7 +5,7 @@ import re
 
 import pandas as pd
 
-from core_utilities import configuration
+from core_utilities.config_validation import evaluate_value
 from core_utilities.errors import MarketDataError
 
 
@@ -29,7 +29,7 @@ def extract_sbi_securities_order_status(trade, config, driver):
             "Unable to parse the order status table from the current page."
         ) from exc
 
-    exclusion = configuration.evaluate_value(section["exclusion"])
+    exclusion = evaluate_value(section["exclusion"])
     df = min(dfs, key=lambda frame: frame.shape[0])
     df = df[
         ~df.iloc[:, int(exclusion["equals"][0])].isin(exclusion["equals"][1])
@@ -50,7 +50,7 @@ def extract_sbi_securities_order_status(trade, config, driver):
     datetime_column = int(section["datetime_column"])
     size_column = int(section["size_column"])
     price_column = int(section["price_column"])
-    output_columns = configuration.evaluate_value(section["output_columns"])
+    output_columns = evaluate_value(section["output_columns"])
     entry_date = None
     entry_time = None
     order_specification = None

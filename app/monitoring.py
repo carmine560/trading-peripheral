@@ -6,7 +6,9 @@ from charset_normalizer import from_bytes
 from lxml import html
 import requests
 
-from core_utilities import configuration, errors
+from core_utilities import errors
+from core_utilities.config_io import write_config
+from core_utilities.config_validation import ensure_section_exists
 from web_utilities import google_services
 
 
@@ -23,7 +25,7 @@ def _get_required_xpath_match(root, xpath, url, description):
 
 def check_web_page_send_email_message(trade, config, section):
     """Check the web page and send an email message if an update is found."""
-    configuration.ensure_section_exists(config, section)
+    ensure_section_exists(config, section)
 
     url = config[section]["url"]
     try:
@@ -59,4 +61,4 @@ def check_web_page_send_email_message(trade, config, section):
     )
 
     config[section]["latest_news_text"] = latest_news_text
-    configuration.write_config(config, trade.config_path, is_encrypted=True)
+    write_config(config, trade.config_path, is_encrypted=True)

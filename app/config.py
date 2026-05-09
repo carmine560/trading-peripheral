@@ -5,7 +5,11 @@ import os
 import re
 import sys
 
-from core_utilities import configuration, errors
+from core_utilities import errors
+from core_utilities.config_diff import check_config_changes
+from core_utilities.config_io import read_config
+from core_utilities.config_prompt import modify_section
+from core_utilities.config_validation import ensure_section_exists
 
 
 def configure(trade, can_interpolate=True, can_override=True):
@@ -34,7 +38,7 @@ def configure(trade, can_interpolate=True, can_override=True):
         _configure_hypersbi2_sections(config, trade)
 
     if can_override:
-        configuration.read_config(config, trade.config_path, is_encrypted=True)
+        read_config(config, trade.config_path, is_encrypted=True)
 
     return config
 
@@ -265,7 +269,7 @@ def ensure_watchlists_path(config, trade):
     if trade.process != "HYPERSBI2":
         return
 
-    configuration.ensure_section_exists(config, trade.process)
+    ensure_section_exists(config, trade.process)
     if config[trade.process]["watchlists"]:
         return
 
@@ -312,7 +316,7 @@ def configure_exit(args, trade):
             ),
         }.items():
             if getattr(args, argument):
-                configuration.modify_section(
+                modify_section(
                     config,
                     section,
                     trade.config_path,
@@ -327,7 +331,7 @@ def configure_exit(args, trade):
 
         sys.exit()
     if args.C:
-        configuration.check_config_changes(
+        check_config_changes(
             configure(trade, can_interpolate=False, can_override=False),
             trade.config_path,
             excluded_sections=(trade.brokerage_variables_section,),

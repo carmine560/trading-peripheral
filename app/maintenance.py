@@ -12,10 +12,14 @@ from lxml.etree import Element
 import requests
 
 from core_utilities import (
-    configuration,
     data_utilities,
     datetime_utilities,
     errors,
+)
+from core_utilities.config_io import write_config
+from core_utilities.config_validation import (
+    ensure_section_exists,
+    evaluate_value,
 )
 from web_utilities import google_services, web_utilities
 
@@ -162,7 +166,7 @@ def _insert_service_maintenance_events(
     previous_bodies,
 ):
     """Insert maintenance events from the parsed page into Calendar."""
-    for service in configuration.evaluate_value(section["services"]):
+    for service in evaluate_value(section["services"]):
         for schedule in root.xpath(section["service_xpath"].format(service)):
             function_element = _get_required_xpath_match(
                 schedule.xpath(section["function_xpath"]),
@@ -209,9 +213,7 @@ def _insert_service_maintenance_events(
 
 def insert_maintenance_schedules(trade, config):
     """Insert maintenance schedules into a Google Calendar."""
-    configuration.ensure_section_exists(
-        config, trade.maintenance_schedules_section
-    )
+    ensure_section_exists(config, trade.maintenance_schedules_section)
 
     section = config[trade.maintenance_schedules_section]
     tzinfo = ZoneInfo(section["timezone"])
@@ -237,11 +239,11 @@ def insert_maintenance_schedules(trade, config):
         section["timezone"],
     )
 
-    previous_bodies = configuration.evaluate_value(section["previous_bodies"])
+    previous_bodies = evaluate_value(section["previous_bodies"])
     _insert_service_maintenance_events(
         root, section, now, tzinfo, title, resource, previous_bodies
     )
     section["previous_bodies"] = str(previous_bodies)
 
     section["last_inserted"] = now.isoformat()
-    configuration.write_config(config, trade.config_path, is_encrypted=True)
+    write_config(config, trade.config_path, is_encrypted=True)

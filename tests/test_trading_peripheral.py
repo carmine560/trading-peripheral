@@ -574,7 +574,7 @@ def test_insert_maintenance_schedules_falls_back_without_last_modified(
         lambda *args: calendar_calls.append(args) or ("resource", "calendar"),
     )
     monkeypatch.setattr(
-        app_maintenance.configuration,
+        app_maintenance,
         "write_config",
         lambda *args, **kwargs: write_calls.append((args, kwargs)),
     )
@@ -626,7 +626,7 @@ def test_insert_maintenance_schedules_recovers_from_head_failure(
         lambda *args: calendar_calls.append(args) or ("resource", "calendar"),
     )
     monkeypatch.setattr(
-        app_maintenance.configuration,
+        app_maintenance,
         "write_config",
         lambda *args, **kwargs: None,
     )

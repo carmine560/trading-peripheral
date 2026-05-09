@@ -3,7 +3,8 @@ from datetime import datetime
 import re
 from zoneinfo import ZoneInfo
 
-from core_utilities import configuration, datetime_utilities
+from core_utilities import config_diff, config_io, config_prompt
+from core_utilities import datetime_utilities
 from trading_peripheral import _replace_datetime
 
 
@@ -12,10 +13,10 @@ def test_write_and_read_config_round_trip(tmp_path):
     written = ConfigParser(interpolation=None)
     written["General"] = {"headless": "True", "implicitly_wait": "4"}
 
-    configuration.write_config(written, config_path.as_posix())
+    config_io.write_config(written, config_path.as_posix())
 
     loaded = ConfigParser(interpolation=None)
-    configuration.read_config(loaded, config_path.as_posix())
+    config_io.read_config(loaded, config_path.as_posix())
 
     assert loaded["General"]["headless"] == "True"
     assert loaded["General"]["implicitly_wait"] == "4"
@@ -28,18 +29,18 @@ def test_check_config_changes_resets_option_to_default(tmp_path, monkeypatch):
 
     user_config = ConfigParser(interpolation=None)
     user_config["General"] = {"headless": "False", "implicitly_wait": "4"}
-    configuration.write_config(user_config, config_path.as_posix())
+    config_io.write_config(user_config, config_path.as_posix())
 
     monkeypatch.setattr(
-        configuration,
+        config_diff,
         "tidy_answer",
         lambda answers, level=0: "default",
     )
 
-    configuration.check_config_changes(default_config, config_path.as_posix())
+    config_diff.check_config_changes(default_config, config_path.as_posix())
 
     loaded = ConfigParser(interpolation=None)
-    configuration.read_config(loaded, config_path.as_posix())
+    config_io.read_config(loaded, config_path.as_posix())
     assert loaded["General"].get("headless") is None
     assert loaded["General"]["implicitly_wait"] == "4"
 
