@@ -14,9 +14,11 @@ from app.order_status import (
     BROKERAGE_ORDER_STATUS_FUNCTIONS,
     extract_unsupported_brokerage_order_status,
 )
-from core_utilities import configuration, file_utilities, initializer
 from core_utilities import errors as core_errors
 from core_utilities import process_utilities
+from core_utilities.config_common import ConfigError
+from core_utilities.config_validation import ensure_section_exists
+from core_utilities import file_utilities, initializer
 from web_utilities import browser_driver
 
 _replace_datetime = maintenance._replace_datetime
@@ -49,7 +51,7 @@ class Trade(initializer.Initializer):
 
 def _run_browser_actions(args, trade, config):
     """Execute browser-based actions using a Selenium WebDriver."""
-    configuration.ensure_section_exists(config, trade.actions_section)
+    ensure_section_exists(config, trade.actions_section)
     max_attempts = 3
     retry_interval = 10
     # ChromeDriver may crash on an unsettled system after hibernation resume,
@@ -104,7 +106,7 @@ def _run_browser_actions(args, trade, config):
 
 def _manage_snapshots(args, trade, config):
     """Archive or restore the process application data."""
-    configuration.ensure_section_exists(config, trade.process)
+    ensure_section_exists(config, trade.process)
     if process_utilities.is_running(trade.process):
         raise core_errors.ProcessStateError(f"'{trade.process}' is running.")
     application_data_directory = config[trade.process][
@@ -147,7 +149,7 @@ def run():
     if any((args.s, args.S, args.o)):
         _run_browser_actions(args, trade, config)
     if args.w:
-        configuration.ensure_section_exists(config, trade.process)
+        ensure_section_exists(config, trade.process)
         ensure_watchlists_path(config, trade)
         file_utilities.backup_file(
             config[trade.process]["watchlists"],
@@ -161,7 +163,7 @@ def main():
     """Run the CLI and return the final process exit code."""
     try:
         run()
-    except configuration.ConfigError as e:
+    except ConfigError as e:
         print(f"Configuration error: {e}")
         return 1
     except core_errors.TradingAssistantError as e:

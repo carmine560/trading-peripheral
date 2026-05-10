@@ -6,6 +6,7 @@ from app import maintenance as app_maintenance
 from app import monitoring as app_monitoring
 from app import order_status as app_order_status
 import trading_peripheral
+from core_utilities.config_common import ConfigError
 from core_utilities.errors import (
     ConfigBuildError,
     ExternalServiceError,
@@ -411,7 +412,7 @@ def test_main_returns_error_code_for_trading_errors(monkeypatch, capsys):
 
 def test_main_returns_error_code_for_config_errors(monkeypatch, capsys):
     def raise_error():
-        raise trading_peripheral.configuration.ConfigError("missing section")
+        raise ConfigError("missing section")
 
     monkeypatch.setattr(trading_peripheral, "run", raise_error)
 
