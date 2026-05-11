@@ -24,10 +24,10 @@ def extract_sbi_securities_order_status(trade, config, driver):
             match=section["table_identifier"],
             flavor="lxml",
         )
-    except ValueError as exc:
+    except ValueError as e:
         raise MarketDataError(
             "Unable to parse the order status table from the current page."
-        ) from exc
+        ) from e
 
     exclusion = evaluate_value(section["exclusion"])
     df = min(dfs, key=lambda frame: frame.shape[0])

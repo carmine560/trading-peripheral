@@ -181,8 +181,8 @@ def test_ensure_watchlists_path_raises_when_directory_missing(monkeypatch):
 
     try:
         app_config.ensure_watchlists_path(config, trade)
-    except ConfigBuildError as exc:
-        message = str(exc)
+    except ConfigBuildError as e:
+        message = str(e)
     else:
         raise AssertionError("Expected ConfigBuildError")
 
@@ -220,8 +220,8 @@ def test_ensure_watchlists_path_raises_when_identifier_missing(monkeypatch):
 
     try:
         app_config.ensure_watchlists_path(config, trade)
-    except ConfigBuildError as exc:
-        message = str(exc)
+    except ConfigBuildError as e:
+        message = str(e)
     else:
         raise AssertionError("Expected ConfigBuildError")
 
@@ -275,8 +275,8 @@ def test_manage_snapshots_raises_process_state_error(monkeypatch):
 
     try:
         trading_peripheral._manage_snapshots(args, trade, config)
-    except ProcessStateError as exc:
-        message = str(exc)
+    except ProcessStateError as e:
+        message = str(e)
     else:
         raise AssertionError("Expected ProcessStateError")
 
@@ -301,8 +301,8 @@ def test_order_status_raises_market_data_error_on_parse_failure(monkeypatch):
         app_order_status.extract_sbi_securities_order_status(
             trade, config, driver
         )
-    except MarketDataError as exc:
-        message = str(exc)
+    except MarketDataError as e:
+        message = str(e)
     else:
         raise AssertionError("Expected MarketDataError")
 
@@ -454,8 +454,8 @@ def test_monitoring_raises_scraper_error_for_missing_news_node(
 
     try:
         app_monitoring.check_web_page_send_email_message(trade, config, "News")
-    except ScraperError as exc:
-        message = str(exc)
+    except ScraperError as e:
+        message = str(e)
     else:
         raise AssertionError("Expected ScraperError")
 
@@ -503,8 +503,8 @@ def test_monitoring_raises_scraper_error_for_duplicate_news_nodes(
 
     try:
         app_monitoring.check_web_page_send_email_message(trade, config, "News")
-    except ScraperError as exc:
-        message = str(exc)
+    except ScraperError as e:
+        message = str(e)
     else:
         raise AssertionError("Expected ScraperError")
 
@@ -708,8 +708,8 @@ def test_insert_maintenance_schedules_raises_for_missing_function_node(
 
     try:
         trading_peripheral.insert_maintenance_schedules(trade, config)
-    except ScraperError as exc:
-        message = str(exc)
+    except ScraperError as e:
+        message = str(e)
     else:
         raise AssertionError("Expected ScraperError")
 

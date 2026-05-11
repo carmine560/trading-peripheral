@@ -125,8 +125,8 @@ def test_execute_action_rejects_unknown_commands(capsys):
 
     try:
         browser_driver.execute_action(driver, [("unknown", "value")])
-    except BrowserAutomationError as exc:
-        message = str(exc)
+    except BrowserAutomationError as e:
+        message = str(e)
     else:
         raise AssertionError("Expected BrowserAutomationError")
 
@@ -148,10 +148,10 @@ def test_execute_action_logs_failing_instruction(capsys, monkeypatch):
 
     try:
         browser_driver.execute_action(driver, [("click", "//button")])
-    except BrowserAutomationError as exc:
-        assert str(exc) == "Browser instruction failed: ('click', '//button')"
-        assert isinstance(exc.__cause__, RuntimeError)
-        assert str(exc.__cause__) == "blocked: //button"
+    except BrowserAutomationError as e:
+        assert str(e) == "Browser instruction failed: ('click', '//button')"
+        assert isinstance(e.__cause__, RuntimeError)
+        assert str(e.__cause__) == "blocked: //button"
     else:
         raise AssertionError("Expected BrowserAutomationError")
 
@@ -181,8 +181,8 @@ def test_wait_for_clickable_reports_timeout_context(monkeypatch):
 
     try:
         browser_driver._wait_for_clickable(driver, "//duplicate")
-    except Exception as exc:
-        message = str(exc)
+    except Exception as e:
+        message = str(e)
     else:
         raise AssertionError("Expected timeout")
 

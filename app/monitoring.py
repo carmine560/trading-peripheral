@@ -31,10 +31,10 @@ def check_web_page_send_email_message(trade, config, section):
     try:
         response = requests.get(url, timeout=5)
         response.raise_for_status()
-    except requests.exceptions.RequestException as exc:
+    except requests.exceptions.RequestException as e:
         raise errors.ExternalServiceError(
-            f"GET request failed for {url}: {exc}"
-        ) from exc
+            f"GET request failed for {url}: {e}"
+        ) from e
 
     matched = from_bytes(response.content).best()
     response.encoding = matched.encoding if matched else "utf-8"

@@ -14,7 +14,7 @@ from app.order_status import (
     BROKERAGE_ORDER_STATUS_FUNCTIONS,
     extract_unsupported_brokerage_order_status,
 )
-from core_utilities import errors as core_errors
+from core_utilities import errors
 from core_utilities import process_utilities
 from core_utilities.config_common import ConfigError
 from core_utilities.config_validation import ensure_section_exists
@@ -95,8 +95,8 @@ def _run_browser_actions(args, trade, config):
             if attempt == max_attempts:
                 raise
             print(
-                f"Attempt {attempt} failed: {e}"
-                f"Retrying in {retry_interval}s..."
+                f"Attempt {attempt} failed: {e}."
+                f" Retrying in {retry_interval}s..."
             )
             time.sleep(retry_interval)
         finally:
@@ -108,7 +108,7 @@ def _manage_snapshots(args, trade, config):
     """Archive or restore the process application data."""
     ensure_section_exists(config, trade.process)
     if process_utilities.is_running(trade.process):
-        raise core_errors.ProcessStateError(f"'{trade.process}' is running.")
+        raise errors.ProcessStateError(f"'{trade.process}' is running.")
     application_data_directory = config[trade.process][
         "application_data_directory"
     ]
@@ -166,7 +166,7 @@ def main():
     except ConfigError as e:
         print(f"Configuration error: {e}")
         return 1
-    except core_errors.TradingAssistantError as e:
+    except errors.TradingAssistantError as e:
         print(e)
         return 1
     except Exception as e:

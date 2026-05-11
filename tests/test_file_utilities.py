@@ -110,8 +110,8 @@ def test_archive_encrypt_directory_raises_on_gpg_failure(
         file_utilities.archive_encrypt_directory(
             source.as_posix(), output_directory.as_posix()
         )
-    except UtilityOperationError as exc:
-        message = str(exc)
+    except UtilityOperationError as e:
+        message = str(e)
     else:
         raise AssertionError("Expected UtilityOperationError")
 
@@ -139,8 +139,8 @@ def test_decrypt_extract_file_raises_on_empty_gpg_data(tmp_path, monkeypatch):
         file_utilities.decrypt_extract_file(
             source.as_posix(), output_directory.as_posix()
         )
-    except UtilityOperationError as exc:
-        message = str(exc)
+    except UtilityOperationError as e:
+        message = str(e)
     else:
         raise AssertionError("Expected UtilityOperationError")
 
