@@ -95,8 +95,8 @@ def _run_browser_actions(args, trade, config):
             if attempt == max_attempts:
                 raise
             print(
-                f"Attempt {attempt} failed: {e}."
-                f" Retrying in {retry_interval}s..."
+                f"Attempt {attempt} failed: {e}\n"
+                f"Retrying in {retry_interval}s..."
             )
             time.sleep(retry_interval)
         finally:
