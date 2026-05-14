@@ -3,9 +3,9 @@ from datetime import datetime
 import re
 from zoneinfo import ZoneInfo
 
+from app.maintenance import _replace_datetime
 from core_utilities import config_diff, config_io, config_prompt
 from core_utilities import datetime_utilities
-from trading_peripheral import _replace_datetime
 
 
 def test_write_and_read_config_round_trip(tmp_path):

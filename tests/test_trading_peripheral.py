@@ -5,7 +5,6 @@ from app import config as app_config
 from app import maintenance as app_maintenance
 from app import monitoring as app_monitoring
 from app import order_status as app_order_status
-import trading_peripheral
 from core_utilities.config_common import ConfigError
 from core_utilities.errors import (
     ConfigBuildError,
@@ -14,6 +13,7 @@ from core_utilities.errors import (
     ProcessStateError,
     ScraperError,
 )
+import trading_peripheral
 
 
 class _FakeTrade:
@@ -67,6 +67,40 @@ class _FakeResponse:
 
     def raise_for_status(self):
         return None
+
+
+def test_run_returns_after_launcher_generation(monkeypatch):
+    args = SimpleNamespace(P=("SBI Securities", "HYPERSBI2"), BS=True)
+    calls = []
+
+    class FakeTrade:
+        def __init__(self, vendor, process):
+            calls.append(("trade", vendor, process))
+
+    def fail_after_launcher(*args, **kwargs):
+        raise AssertionError("run continued after launcher generation")
+
+    monkeypatch.setattr(trading_peripheral, "get_arguments", lambda: args)
+    monkeypatch.setattr(trading_peripheral, "Trade", FakeTrade)
+    monkeypatch.setattr(
+        trading_peripheral.file_utilities,
+        "create_launchers_exit",
+        lambda current_args, script_path: calls.append(
+            ("launcher", current_args, script_path)
+        )
+        or True,
+    )
+    monkeypatch.setattr(
+        trading_peripheral, "configure_exit", fail_after_launcher
+    )
+    monkeypatch.setattr(trading_peripheral, "configure", fail_after_launcher)
+
+    trading_peripheral.run()
+
+    assert calls[0] == ("trade", "SBI Securities", "HYPERSBI2")
+    assert calls[1][0] == "launcher"
+    assert calls[1][1] is args
+    assert calls[1][2] == trading_peripheral.__file__
 
 
 def test_run_browser_actions_retries_after_initialize_failure(monkeypatch):
@@ -347,7 +381,16 @@ def test_order_status_extracts_single_page_weighted_prices(monkeypatch):
     df = app_order_status.pd.DataFrame(
         [
             ["", "取消完了", "", "", "", "", "", ""],
-            ["", "", "", "逆指値：現在値が1000円以下", "", "", "", ""],
+            [
+                "",
+                "",
+                "",
+                "逆指値：現在値が1000円以下",
+                "",
+                "",
+                "",
+                "",
+            ],
             ["", "", "逆指値注文", "ABC 1234 東証", "", "", "", ""],
             ["", "", "", "信新買", "", "", "100", "成行"],
             ["", "", "", "約定", "", "03/14 09:00:00", "40", "100"],

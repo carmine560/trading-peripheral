@@ -5,7 +5,6 @@ import os
 import sys
 import time
 
-from app import maintenance
 from app.cli import get_arguments
 from app.config import configure, configure_exit, ensure_watchlists_path
 from app.maintenance import insert_maintenance_schedules
@@ -14,14 +13,18 @@ from app.order_status import (
     BROKERAGE_ORDER_STATUS_FUNCTIONS,
     extract_unsupported_brokerage_order_status,
 )
-from core_utilities import errors
-from core_utilities import process_utilities
+from core_utilities import (
+    errors,
+    file_utilities,
+    initializer,
+    process_utilities,
+)
 from core_utilities.config_common import ConfigError
 from core_utilities.config_validation import ensure_section_exists
-from core_utilities import file_utilities, initializer
 from web_utilities import browser_driver
 
-_replace_datetime = maintenance._replace_datetime
+BROWSER_ACTION_MAX_ATTEMPTS = 3
+BROWSER_ACTION_RETRY_INTERVAL = 10
 
 
 class Trade(initializer.Initializer):
@@ -52,12 +55,10 @@ class Trade(initializer.Initializer):
 def _run_browser_actions(args, trade, config):
     """Execute browser-based actions using a Selenium WebDriver."""
     ensure_section_exists(config, trade.actions_section)
-    max_attempts = 3
-    retry_interval = 10
     # ChromeDriver may crash on an unsettled system after hibernation resume,
     # leaving the driver in a broken state, so wrap both 'initialize()' and
     # 'execute_action()' in the retry loop.
-    for attempt in range(1, max_attempts + 1):
+    for attempt in range(1, BROWSER_ACTION_MAX_ATTEMPTS + 1):
         driver = None
         try:
             driver = browser_driver.initialize(
@@ -92,13 +93,13 @@ def _run_browser_actions(args, trade, config):
                     extract_unsupported_brokerage_order_status(trade.vendor)
             break
         except Exception as e:
-            if attempt == max_attempts:
+            if attempt == BROWSER_ACTION_MAX_ATTEMPTS:
                 raise
             print(
                 f"Attempt {attempt} failed: {e}\n"
-                f"Retrying in {retry_interval}s..."
+                f"Retrying in {BROWSER_ACTION_RETRY_INTERVAL}s..."
             )
-            time.sleep(retry_interval)
+            time.sleep(BROWSER_ACTION_RETRY_INTERVAL)
         finally:
             if driver is not None:
                 driver.quit()
@@ -133,7 +134,8 @@ def run():
     """Execute the main program based on command-line arguments."""
     args = get_arguments()
     trade = Trade(*args.P)
-    file_utilities.create_launchers_exit(args, __file__)
+    if file_utilities.create_launchers_exit(args, __file__):
+        return
     configure_exit(args, trade)
     config = configure(trade)
     if args.t:
