@@ -345,7 +345,7 @@ def test_order_status_raises_market_data_error_on_parse_failure(monkeypatch):
     )
 
 
-def test_order_status_extracts_single_page_weighted_prices(monkeypatch):
+def _build_order_status_trade_config(monkeypatch):
     trade = SimpleNamespace(
         vendor="SBI Securities",
         process="HYPERSBI2",
@@ -376,11 +376,36 @@ def test_order_status_extracts_single_page_weighted_prices(monkeypatch):
             "exit_price",
         )
     )
+    return trade, config
+
+
+def _assert_order_status_market_data_error(monkeypatch, trade, config, df):
+    driver = _FakeDriver()
+    monkeypatch.setattr(
+        app_order_status.pd,
+        "read_html",
+        lambda *args, **kwargs: [df],
+    )
+
+    try:
+        app_order_status.extract_sbi_securities_order_status(
+            trade, config, driver
+        )
+    except MarketDataError as e:
+        message = str(e)
+    else:
+        raise AssertionError("Expected MarketDataError")
+
+    assert message == "Unable to extract order status from the parsed table."
+
+
+def test_order_status_extracts_single_page_weighted_prices(monkeypatch):
+    trade, config = _build_order_status_trade_config(monkeypatch)
     driver = _FakeDriver()
     captured = {}
     df = app_order_status.pd.DataFrame(
         [
-            ["", "取消完了", "", "", "", "", "", ""],
+            ["", "取消完了", "", None, "", "", "", ""],
             [
                 "",
                 "",
@@ -441,6 +466,51 @@ def test_order_status_extracts_single_page_weighted_prices(monkeypatch):
         "index": False,
         "quoting": 1,
     }
+
+
+def test_order_status_raises_market_data_error_for_missing_column(
+    monkeypatch,
+):
+    trade, config = _build_order_status_trade_config(monkeypatch)
+    df = app_order_status.pd.DataFrame(
+        [
+            ["", "", "逆指値注文", "ABC 1234 東証", "", "", ""],
+            ["", "", "", "信新買", "", "", "100"],
+            ["", "", "", "約定", "", "03/14 09:00:00", "40"],
+        ]
+    )
+
+    _assert_order_status_market_data_error(monkeypatch, trade, config, df)
+
+
+def test_order_status_raises_market_data_error_for_short_row_block(
+    monkeypatch,
+):
+    trade, config = _build_order_status_trade_config(monkeypatch)
+    df = app_order_status.pd.DataFrame(
+        [
+            ["", "", "逆指値注文", "ABC 1234 東証", "", "", "", ""],
+            ["", "", "", "信新買", "", "", "100", "成行"],
+        ]
+    )
+
+    _assert_order_status_market_data_error(monkeypatch, trade, config, df)
+
+
+def test_order_status_raises_market_data_error_for_bad_weighted_price(
+    monkeypatch,
+):
+    trade, config = _build_order_status_trade_config(monkeypatch)
+    df = app_order_status.pd.DataFrame(
+        [
+            ["", "", "逆指値注文", "ABC 1234 東証", "", "", "", ""],
+            ["", "", "", "信新買", "", "", "100", "成行"],
+            ["", "", "", "約定", "", "03/14 09:00:00", "bad", "100"],
+            ["", "", "", "約定", "", "03/14 09:01:00", "60", "102"],
+        ]
+    )
+
+    _assert_order_status_market_data_error(monkeypatch, trade, config, df)
 
 
 def test_main_returns_error_code_for_trading_errors(monkeypatch, capsys):
