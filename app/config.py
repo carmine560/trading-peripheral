@@ -56,7 +56,6 @@ def _configure_sbi_sections(config, trade):
         "latest_news_xpath": '//*[@id="tab1_news"]/li[1]/p/a',
         "latest_news_text": "",
     }
-    all_service_name = "すべてのサービス"
     config[trade.maintenance_schedules_section] = {
         "url": (
             "https://search.sbisec.co.jp/v2/popwin/info/home"
@@ -65,25 +64,21 @@ def _configure_sbi_sections(config, trade):
         "timezone": "Asia/Tokyo",
         "last_inserted": "",
         "calendar_id": "",
-        "all_service_xpath": (
-            '//p[contains(@class, "mt-x-2")'
-            f' and contains(., "{all_service_name}")]'
-        ),
-        "all_service_name": all_service_name,
         "services": (
-            all_service_name,
+            "すべてのサービス",
             "HYPER SBI 2",
             "HYPER SBI2",
             "メインサイト",
         ),
         "service_xpath": (
-            '//span[contains(@class, "font-xs font-bold")' ' and text()="{0}"]'
+            '//span[contains(@class, "font-xs font-bold")'
+            ' and normalize-space(.)="{0}"]'
         ),
         "function_xpath": "following::p[1]",
         "datetime_xpath": "ancestor::li[1]/div[1]",
         "range_splitter_regex": "〜|～",
         "datetime_regex": (
-            r"^(\d{4}年)?(\d{1,2})月(\d{1,2})日" r"（[^）]+）(\d{1,2}:\d{2})$$"
+            r"^(\d{4}年)?(\d{1,2})月(\d{1,2})日（[^）]+）(\d{1,2}:\d{2})$$"
         ),
         "year_group": "1",
         "month_group": "2",

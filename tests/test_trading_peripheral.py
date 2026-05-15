@@ -291,6 +291,45 @@ def test_configure_uses_single_release_note_match_xpath(monkeypatch):
     )
 
 
+def test_configure_matches_all_service_label_with_descendant_text(
+    monkeypatch,
+):
+    trade = SimpleNamespace(
+        vendor="SBI Securities",
+        process="HYPERSBI2",
+        config_path="/tmp/trading_peripheral.ini",
+        investment_tools_news_section="SBI Securities Investment Tools News",
+        maintenance_schedules_section="SBI Securities Maintenance Schedules",
+        order_status_section="SBI Securities Order Status",
+        brokerage_variables_section="SBI Securities Variables",
+        release_notes_section="HYPERSBI2 Release Notes",
+        actions_section="HYPERSBI2 Actions",
+        instruction_items={},
+    )
+
+    monkeypatch.setattr(
+        app_config.os.path,
+        "expandvars",
+        lambda value: "/tmp/appdata",
+    )
+
+    config = trading_peripheral.configure(
+        trade, can_interpolate=False, can_override=False
+    )
+    section = config[trade.maintenance_schedules_section]
+    root = app_maintenance.html.fromstring(
+        '<span class="marker-white font-xs font-bold">'
+        '<font size="2">すべてのサービス</font>'
+        "</span>"
+    )
+
+    assert "all_service_xpath" not in section
+    assert "all_service_name" not in section
+    matches = root.xpath(section["service_xpath"].format("すべてのサービス"))
+
+    assert len(matches) == 1
+
+
 def test_manage_snapshots_raises_process_state_error(monkeypatch):
     args = SimpleNamespace(d=True, D=False)
     trade = SimpleNamespace(process="HYPERSBI2")
@@ -634,15 +673,13 @@ def _build_maintenance_config():
         "timezone": "Asia/Tokyo",
         "last_inserted": "",
         "calendar_id": "",
-        "all_service_xpath": "//all-service",
-        "all_service_name": "all",
         "services": "()",
         "service_xpath": "//service",
         "function_xpath": "following::p[1]",
         "datetime_xpath": "ancestor::li[1]/div[1]",
         "range_splitter_regex": "〜|～",
         "datetime_regex": (
-            r"^(\d{4}年)?(\d{1,2})月(\d{1,2})日" r"（[^）]+）(\d{1,2}:\d{2})$"
+            r"^(\d{4}年)?(\d{1,2})月(\d{1,2})日（[^）]+）(\d{1,2}:\d{2})$"
         ),
         "year_group": "1",
         "month_group": "2",
@@ -778,13 +815,6 @@ def test_insert_maintenance_schedules_raises_for_missing_function_node(
 
     class _MaintenanceRoot:
         def xpath(self, expression):
-            if (
-                expression
-                == config[trade.maintenance_schedules_section][
-                    "all_service_xpath"
-                ]
-            ):
-                return []
             if expression == (
                 config[trade.maintenance_schedules_section][
                     "service_xpath"

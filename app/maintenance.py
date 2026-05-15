@@ -8,7 +8,6 @@ from zoneinfo import ZoneInfo
 
 from charset_normalizer import from_bytes
 from lxml import html
-from lxml.etree import Element
 import requests
 
 from core_utilities import (
@@ -93,26 +92,6 @@ def _get_response_root_title(url):
     match_object = re.search("<title>(.*)</title>", response.text)
     title = match_object.group(1) if match_object else ""
     return response, root, title
-
-
-def _insert_all_service_anchor(root, section):
-    """Insert a synthetic all-service element when the page omits it."""
-    try:
-        all_service_element = root.xpath(section["all_service_xpath"])[0]
-        match_object = re.search(r"//(\w+)", section["service_xpath"])
-        if not match_object:
-            return
-
-        pre_element = Element(match_object.group(1))
-        match_object = re.search(r'@class, +"(.+?)"', section["service_xpath"])
-        if not match_object:
-            return
-
-        pre_element.set("class", match_object.group(1))
-        pre_element.text = section["all_service_name"]
-        all_service_element.addprevious(pre_element)
-    except IndexError:
-        pass
 
 
 def _get_datetime_bounds(datetime_range, section, now, tzinfo):
@@ -230,7 +209,6 @@ def insert_maintenance_schedules(trade, config):
         return
 
     _, root, title = _get_response_root_title(section["url"])
-    _insert_all_service_anchor(root, section)
 
     resource, section["calendar_id"] = google_services.get_calendar_resource(
         os.path.join(trade.config_directory, "token.json"),
