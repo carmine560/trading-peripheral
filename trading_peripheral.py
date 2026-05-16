@@ -14,13 +14,13 @@ from app.order_status import (
     extract_unsupported_brokerage_order_status,
 )
 from core_utilities import (
-    errors,
     file_utilities,
     initializer,
     process_utilities,
 )
 from core_utilities.config_common import ConfigError
 from core_utilities.config_validation import ensure_section_exists
+from core_utilities.errors import CoreUtilitiesError, ProcessStateError
 from web_utilities import browser_driver
 
 BROWSER_ACTION_MAX_ATTEMPTS = 3
@@ -109,7 +109,7 @@ def _manage_snapshots(args, trade, config):
     """Archive or restore the process application data."""
     ensure_section_exists(config, trade.process)
     if process_utilities.is_running(trade.process):
-        raise errors.ProcessStateError(f"'{trade.process}' is running.")
+        raise ProcessStateError(f"'{trade.process}' is running.")
     application_data_directory = config[trade.process][
         "application_data_directory"
     ]
@@ -168,7 +168,7 @@ def main():
     except ConfigError as e:
         print(f"Configuration error: {e}")
         return 1
-    except errors.TradingAssistantError as e:
+    except CoreUtilitiesError as e:
         print(e)
         return 1
     except Exception as e:
