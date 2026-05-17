@@ -218,9 +218,15 @@ def insert_maintenance_schedules(trade, config):
     )
 
     previous_bodies = evaluate_value(section["previous_bodies"])
-    _insert_service_maintenance_events(
-        root, section, now, tzinfo, title, resource, previous_bodies
-    )
+    try:
+        _insert_service_maintenance_events(
+            root, section, now, tzinfo, title, resource, previous_bodies
+        )
+    except Exception:
+        if str(previous_bodies) != section["previous_bodies"]:
+            section["previous_bodies"] = str(previous_bodies)
+            write_config(config, trade.config_path, is_encrypted=True)
+        raise
     section["previous_bodies"] = str(previous_bodies)
 
     section["last_inserted"] = now.isoformat()

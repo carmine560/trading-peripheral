@@ -787,6 +787,107 @@ def test_insert_maintenance_schedules_recovers_from_head_failure(
     assert response.encoding == "utf-8"
 
 
+def test_insert_maintenance_schedules_persists_progress_on_insert_failure(
+    monkeypatch,
+):
+    trade = _FakeMaintenanceTrade()
+    config = _build_maintenance_config()
+    config[trade.maintenance_schedules_section]["services"] = "('all',)"
+    response = _FakeResponse()
+    write_calls = []
+    inserted_bodies = []
+
+    class _FakeSchedule:
+        def xpath(self, expression):
+            if (
+                expression
+                == config[trade.maintenance_schedules_section][
+                    "function_xpath"
+                ]
+            ):
+                return [_FakeElement("Function")]
+            if (
+                expression
+                == config[trade.maintenance_schedules_section][
+                    "datetime_xpath"
+                ]
+            ):
+                return [
+                    _FakeElement(
+                        "2026年3月14日（土）09:00～10:00\n"
+                        "2026年3月14日（土）10:00～11:00"
+                    )
+                ]
+            return []
+
+    class _MaintenanceRoot:
+        def xpath(self, expression):
+            if expression == (
+                config[trade.maintenance_schedules_section][
+                    "service_xpath"
+                ].format("all")
+            ):
+                return [_FakeSchedule()]
+            return []
+
+    def fail_second_insert(resource, calendar_id, body):
+        inserted_bodies.append(body)
+        if len(inserted_bodies) == 2:
+            raise ExternalServiceError("insert failed")
+
+    monkeypatch.setattr(
+        app_maintenance.web_utilities,
+        "make_head_request",
+        lambda url: SimpleNamespace(headers={}),
+    )
+    monkeypatch.setattr(
+        app_maintenance.requests,
+        "get",
+        lambda url, timeout: response,
+    )
+    monkeypatch.setattr(
+        app_maintenance,
+        "from_bytes",
+        lambda content: SimpleNamespace(best=lambda: _FakeMatched()),
+    )
+    monkeypatch.setattr(
+        app_maintenance.html,
+        "fromstring",
+        lambda text: _MaintenanceRoot(),
+    )
+    monkeypatch.setattr(
+        app_maintenance.google_services,
+        "get_calendar_resource",
+        lambda *args: ("resource", "calendar"),
+    )
+    monkeypatch.setattr(
+        app_maintenance.google_services,
+        "insert_calendar_event",
+        fail_second_insert,
+    )
+    monkeypatch.setattr(
+        app_maintenance,
+        "write_config",
+        lambda *args, **kwargs: write_calls.append((args, kwargs)),
+    )
+
+    try:
+        trading_peripheral.insert_maintenance_schedules(trade, config)
+    except ExternalServiceError as e:
+        message = str(e)
+    else:
+        raise AssertionError("Expected ExternalServiceError")
+
+    assert message == "insert failed"
+    assert len(inserted_bodies) == 2
+    assert write_calls
+    assert (
+        "09:00:00+09:00"
+        in config[trade.maintenance_schedules_section]["previous_bodies"]
+    )
+    assert config[trade.maintenance_schedules_section]["last_inserted"] == ""
+
+
 def test_insert_maintenance_schedules_raises_for_missing_function_node(
     monkeypatch,
 ):
