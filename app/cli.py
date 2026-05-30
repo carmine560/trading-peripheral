@@ -19,12 +19,6 @@ def get_arguments():
         metavar=("BROKERAGE", "PROCESS|EXECUTABLE_PATH"),
     )
     parser.add_argument(
-        "-t",
-        action="store_true",
-        help="check the 'BROKERAGE' investment tools web page"
-        " and send a notification via Gmail if it is updated",
-    )
-    parser.add_argument(
         "-r",
         action="store_true",
         help="check the 'PROCESS' release notes"

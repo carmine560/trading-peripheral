@@ -45,17 +45,6 @@ def configure(trade, can_interpolate=True, can_override=True):
 
 def _configure_sbi_sections(config, trade):
     """Populate sections specific to SBI Securities."""
-    config[trade.investment_tools_news_section] = {
-        "url": (
-            "https://site2.sbisec.co.jp/ETGate/"
-            "?_ControlID=WPLETmgR001Control"
-            "&_PageID=WPLETmgR001Mdtl20&_DataStoreID=DSWPLETmgR001Control"
-            "&_ActionID=DefaultAID&burl=search_home&cat1=home&cat2=tool"
-            "&dir=tool%2F&file=home_tool.html&getFlg=on&OutSide=on#"
-        ),
-        "latest_news_xpath": '//*[@id="tab1_news"]/li[1]/p/a',
-        "latest_news_text": "",
-    }
     config[trade.maintenance_schedules_section] = {
         "url": (
             "https://search.sbisec.co.jp/v2/popwin/info/home"

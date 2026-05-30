@@ -4,9 +4,6 @@
 
 The `trading_peripheral.py` Python script can:
 
-  * Check the [*SBI Securities Investment
-    Tools*](https://site2.sbisec.co.jp/ETGate/?_ControlID=WPLETmgR001Control&_PageID=WPLETmgR001Mdtl20&_DataStoreID=DSWPLETmgR001Control&_ActionID=DefaultAID&burl=search_home&cat1=home&cat2=tool&dir=tool%2F&file=home_tool.html&getFlg=on&OutSide=on#)
-    web page and send a notification via Gmail if it is updated
   * Check the [*Hyper SBI 2 Release
     Notes*](https://go.sbisec.co.jp/lp/lp_hyper_sbi2_211112_update.html) and
     send a notification via Gmail if they are updated
@@ -68,8 +65,8 @@ pytest
 
 ## Usage
 
-The `-t` and `-r` options use the Gmail API, and the `-m` option uses the
-Google Calendar API. Follow [*Gmail API
+The `-r` option uses the Gmail API, and the `-m` option uses the Google
+Calendar API. Follow [*Gmail API
 Quickstart*](https://developers.google.com/gmail/api/quickstart/python) and the
 [*Google Calendar API
 Quickstart*](https://developers.google.com/calendar/api/quickstart/python) web
@@ -104,8 +101,6 @@ automated login.
 
   * `-P BROKERAGE PROCESS|EXECUTABLE_PATH`: set the brokerage and the process
     [defaults: `SBI Securities` and `HYPERSBI2`]
-  * `-t`: check the `BROKERAGE` investment tools web page and send a
-    notification via Gmail if it is updated
   * `-r`: check the `PROCESS` release notes and send a notification via Gmail
     if they are updated
   * `-m`: insert `PROCESS` maintenance schedules into Google Calendar

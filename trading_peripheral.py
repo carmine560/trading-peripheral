@@ -33,9 +33,6 @@ class Trade(initializer.Initializer):
     def __init__(self, vendor, process):
         """Initialize the Trade with the vendor and process."""
         super().__init__(vendor, process, __file__)
-        self.investment_tools_news_section = (
-            f"{self.vendor} Investment Tools News"
-        )
         self.maintenance_schedules_section = (
             f"{self.vendor} Maintenance Schedules"
         )
@@ -138,10 +135,6 @@ def run():
         return
     configure_exit(args, trade)
     config = configure(trade)
-    if args.t:
-        check_web_page_send_email_message(
-            trade, config, trade.investment_tools_news_section
-        )
     if args.r:
         check_web_page_send_email_message(
             trade, config, trade.release_notes_section
