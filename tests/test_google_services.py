@@ -91,3 +91,70 @@ def test_get_credentials_wraps_token_write_failure(monkeypatch, tmp_path):
     assert message == (
         f"Unable to write Google credentials to {token_json}: disk full"
     )
+
+
+def test_send_email_message_returns_false_without_required_fields(
+    monkeypatch,
+):
+    def fail_build(*args, **kwargs):
+        raise AssertionError("Gmail resource should not be built")
+
+    monkeypatch.setattr(google_services, "build", fail_build)
+
+    assert (
+        google_services.send_email_message(
+            "/tmp/token.json",
+            "Subject",
+            "",
+            "to@example.com",
+            "content",
+        )
+        is False
+    )
+
+
+def test_send_email_message_returns_true_after_send(monkeypatch):
+    build_calls = []
+    send_calls = []
+
+    class Request:
+        def execute(self):
+            return {"id": "message-id"}
+
+    class Messages:
+        def send(self, userId, body):
+            send_calls.append((userId, body))
+            return Request()
+
+    class Users:
+        def messages(self):
+            return Messages()
+
+    class Resource:
+        def users(self):
+            return Users()
+
+    monkeypatch.setattr(
+        google_services,
+        "get_credentials",
+        lambda credentials_path: "credentials",
+    )
+    monkeypatch.setattr(
+        google_services,
+        "build",
+        lambda *args, **kwargs: build_calls.append((args, kwargs))
+        or Resource(),
+    )
+
+    sent = google_services.send_email_message(
+        "/tmp/token.json",
+        "Subject",
+        "from@example.com",
+        "to@example.com",
+        "content",
+    )
+
+    assert sent is True
+    assert build_calls == [(("gmail", "v1"), {"credentials": "credentials"})]
+    assert send_calls[0][0] == "me"
+    assert "raw" in send_calls[0][1]

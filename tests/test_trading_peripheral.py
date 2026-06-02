@@ -676,6 +676,115 @@ def test_monitoring_raises_scraper_error_for_duplicate_news_nodes(
     )
 
 
+def test_monitoring_does_not_mark_news_seen_when_email_is_not_sent(
+    monkeypatch,
+):
+    trade = SimpleNamespace(config_directory="/tmp", config_path="/tmp/config")
+    config = ConfigParser(interpolation=None)
+    config["General"] = {
+        "email_message_from": "",
+        "email_message_to": "",
+    }
+    config["News"] = {
+        "url": "https://example.com/news",
+        "latest_news_xpath": "//headline",
+        "latest_news_text": "",
+    }
+    response = _FakeResponse()
+    write_calls = []
+
+    class _NewsRoot:
+        def xpath(self, expression):
+            return [_FakeElement("Version 2")]
+
+    monkeypatch.setattr(
+        app_monitoring.requests,
+        "get",
+        lambda url, timeout: response,
+    )
+    monkeypatch.setattr(
+        app_monitoring,
+        "from_bytes",
+        lambda content: SimpleNamespace(best=lambda: _FakeMatched()),
+    )
+    monkeypatch.setattr(
+        app_monitoring.html,
+        "fromstring",
+        lambda text: _NewsRoot(),
+    )
+    monkeypatch.setattr(
+        app_monitoring,
+        "write_config",
+        lambda *args, **kwargs: write_calls.append((args, kwargs)),
+    )
+
+    app_monitoring.check_web_page_send_email_message(trade, config, "News")
+
+    assert config["News"]["latest_news_text"] == ""
+    assert write_calls == []
+
+
+def test_monitoring_marks_news_seen_after_confirmed_email_send(monkeypatch):
+    trade = SimpleNamespace(config_directory="/tmp", config_path="/tmp/config")
+    config = ConfigParser(interpolation=None)
+    config["General"] = {
+        "email_message_from": "from@example.com",
+        "email_message_to": "to@example.com",
+    }
+    config["News"] = {
+        "url": "https://example.com/news",
+        "latest_news_xpath": "//headline",
+        "latest_news_text": "",
+    }
+    response = _FakeResponse()
+    email_calls = []
+    write_calls = []
+
+    class _NewsRoot:
+        def xpath(self, expression):
+            return [_FakeElement("Version 2")]
+
+    monkeypatch.setattr(
+        app_monitoring.requests,
+        "get",
+        lambda url, timeout: response,
+    )
+    monkeypatch.setattr(
+        app_monitoring,
+        "from_bytes",
+        lambda content: SimpleNamespace(best=lambda: _FakeMatched()),
+    )
+    monkeypatch.setattr(
+        app_monitoring.html,
+        "fromstring",
+        lambda text: _NewsRoot(),
+    )
+    monkeypatch.setattr(
+        app_monitoring.google_services,
+        "send_email_message",
+        lambda *args: email_calls.append(args) or True,
+    )
+    monkeypatch.setattr(
+        app_monitoring,
+        "write_config",
+        lambda *args, **kwargs: write_calls.append((args, kwargs)),
+    )
+
+    app_monitoring.check_web_page_send_email_message(trade, config, "News")
+
+    assert config["News"]["latest_news_text"] == "Version 2"
+    assert email_calls == [
+        (
+            app_monitoring.os.path.join("/tmp", "token.json"),
+            "News",
+            "from@example.com",
+            "to@example.com",
+            "Version 2\nhttps://example.com/news",
+        )
+    ]
+    assert write_calls
+
+
 def _build_maintenance_config():
     config = ConfigParser(interpolation=None)
     config["SBI Securities Maintenance Schedules"] = {

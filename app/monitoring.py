@@ -52,13 +52,14 @@ def check_web_page_send_email_message(trade, config, section):
 
     print(latest_news_text)
 
-    google_services.send_email_message(
+    if not google_services.send_email_message(
         os.path.join(trade.config_directory, "token.json"),
         section,
         config["General"]["email_message_from"],
         config["General"]["email_message_to"],
         f"{latest_news_text}\n{config[section]['url']}",
-    )
+    ):
+        return
 
     config[section]["latest_news_text"] = latest_news_text
     write_config(config, trade.config_path, is_encrypted=True)
