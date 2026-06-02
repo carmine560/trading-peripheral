@@ -119,6 +119,14 @@ def test_run_returns_after_launcher_generation(monkeypatch):
     assert calls[1][2] == trading_peripheral.__file__
 
 
+def test_trade_action_command_completions_match_browser_dispatch():
+    trade = trading_peripheral.Trade("SBI Securities", "HYPERSBI2")
+
+    assert trade.instruction_items["all_keys"] == list(
+        trading_peripheral.browser_driver._COMMAND_DISPATCH
+    )
+
+
 def test_run_browser_actions_retries_after_initialize_failure(monkeypatch):
     args = SimpleNamespace(s=True, S=False, o=False)
     trade = _FakeTrade()

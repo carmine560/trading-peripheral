@@ -1,6 +1,5 @@
 """Manage SBI Securities data and integrate with other services."""
 
-import inspect
 import os
 import sys
 import time
@@ -40,9 +39,7 @@ class Trade(initializer.Initializer):
         self.brokerage_variables_section = f"{self.vendor} Variables"
         self.release_notes_section = f"{self.process} Release Notes"
         self.instruction_items = {
-            "all_keys": initializer.extract_commands(
-                inspect.getsource(browser_driver.execute_action)
-            ),
+            "all_keys": list(browser_driver._COMMAND_DISPATCH),
             "control_flow_keys": {"exist", "for"},
             "additional_value_keys": {"send_keys"},
             "no_value_keys": {"refresh"},
