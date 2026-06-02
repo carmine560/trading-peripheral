@@ -1,6 +1,7 @@
 from configparser import ConfigParser
 from types import SimpleNamespace
 
+from app import cli as app_cli
 from app import config as app_config
 from app import maintenance as app_maintenance
 from app import monitoring as app_monitoring
@@ -67,6 +68,21 @@ class _FakeResponse:
 
     def raise_for_status(self):
         return None
+
+
+def test_get_arguments_rejects_snapshot_backup_and_restore(monkeypatch):
+    monkeypatch.setattr(
+        app_cli.sys, "argv", ["trading_peripheral.py", "-d", "-D"]
+    )
+
+    try:
+        app_cli.get_arguments()
+    except SystemExit as e:
+        code = e.code
+    else:
+        raise AssertionError("Expected SystemExit")
+
+    assert code == 2
 
 
 def test_run_returns_after_launcher_generation(monkeypatch):
