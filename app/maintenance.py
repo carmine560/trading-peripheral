@@ -210,12 +210,15 @@ def insert_maintenance_schedules(trade, config):
 
     _, root, title = _get_response_root_title(section["url"])
 
+    previous_calendar_id = section["calendar_id"]
     resource, section["calendar_id"] = google_services.get_calendar_resource(
         os.path.join(trade.config_directory, "token.json"),
         section["calendar_id"],
         trade.maintenance_schedules_section,
         section["timezone"],
     )
+    if not previous_calendar_id and section["calendar_id"]:
+        write_config(config, trade.config_path, is_encrypted=True)
 
     previous_bodies = evaluate_value(section["previous_bodies"])
     try:

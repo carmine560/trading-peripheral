@@ -1014,6 +1014,7 @@ def test_insert_maintenance_schedules_raises_for_missing_function_node(
     config = _build_maintenance_config()
     config[trade.maintenance_schedules_section]["services"] = "('all',)"
     response = _FakeResponse()
+    write_calls = []
 
     class _FakeSchedule:
         def xpath(self, expression):
@@ -1068,6 +1069,11 @@ def test_insert_maintenance_schedules_raises_for_missing_function_node(
         "get_calendar_resource",
         lambda *args: ("resource", "calendar"),
     )
+    monkeypatch.setattr(
+        app_maintenance,
+        "write_config",
+        lambda *args, **kwargs: write_calls.append((args, kwargs)),
+    )
 
     try:
         trading_peripheral.insert_maintenance_schedules(trade, config)
@@ -1080,3 +1086,7 @@ def test_insert_maintenance_schedules_raises_for_missing_function_node(
         "all maintenance function XPath matched 0 nodes for "
         "https://example.com/maintenance: following::p[1]"
     )
+    assert config[trade.maintenance_schedules_section]["calendar_id"] == (
+        "calendar"
+    )
+    assert write_calls
