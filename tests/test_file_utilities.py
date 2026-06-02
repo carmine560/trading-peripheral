@@ -1,5 +1,6 @@
 import io
 import os
+import subprocess
 import tarfile
 from pathlib import Path
 
@@ -31,18 +32,10 @@ def _build_snapshot_data(root_name: str, filename: str, content: str) -> bytes:
 
 
 def _patch_gpg_decrypt(monkeypatch, data: bytes) -> None:
-    class FakeDecrypted:
-        ok = True
-        status = "decryption ok"
+    def run(args, **kwargs):
+        return subprocess.CompletedProcess(args, 0, stdout=data, stderr=b"")
 
-        def __init__(self, decrypted_data):
-            self.data = decrypted_data
-
-    class FakeGPG:
-        def decrypt_file(self, *args, **kwargs):
-            return FakeDecrypted(data)
-
-    monkeypatch.setattr(file_utilities.gnupg, "GPG", lambda: FakeGPG())
+    monkeypatch.setattr(file_utilities.subprocess, "run", run)
 
 
 def test_backup_file_skips_unchanged_content(tmp_path):
@@ -125,18 +118,12 @@ def test_archive_encrypt_directory_raises_on_gpg_failure(
     source.mkdir()
     output_directory.mkdir()
 
-    class FakeEncrypted:
-        ok = False
-        status = "no public key"
+    def run(args, **kwargs):
+        return subprocess.CompletedProcess(
+            args, 2, stdout=b"", stderr=b"no public key"
+        )
 
-    class FakeGPG:
-        def list_keys(self):
-            return [{"fingerprint": "ABC123"}]
-
-        def encrypt_file(self, *args, **kwargs):
-            return FakeEncrypted()
-
-    monkeypatch.setattr(file_utilities.gnupg, "GPG", lambda: FakeGPG())
+    monkeypatch.setattr(file_utilities.subprocess, "run", run)
 
     try:
         file_utilities.archive_encrypt_directory(
@@ -156,16 +143,10 @@ def test_decrypt_extract_file_raises_on_empty_gpg_data(tmp_path, monkeypatch):
     source.write_bytes(b"encrypted")
     output_directory.mkdir()
 
-    class FakeDecrypted:
-        ok = True
-        status = "decryption ok"
-        data = b""
+    def run(args, **kwargs):
+        return subprocess.CompletedProcess(args, 0, stdout=b"", stderr=b"")
 
-    class FakeGPG:
-        def decrypt_file(self, *args, **kwargs):
-            return FakeDecrypted()
-
-    monkeypatch.setattr(file_utilities.gnupg, "GPG", lambda: FakeGPG())
+    monkeypatch.setattr(file_utilities.subprocess, "run", run)
 
     try:
         file_utilities.decrypt_extract_file(
