@@ -36,8 +36,7 @@ Windows](https://www.python.org/downloads/windows/) with Hyper SBI 2 on Windows
     [`lxml`](https://lxml.de/index.html),
     [`pandas`](https://pandas.pydata.org/), and
     [`pyarrow`](https://arrow.apache.org/) to extract data from the web pages
-  * [`python-gnupg`](https://github.com/vsajip/python-gnupg) to invoke
-    [GnuPG](https://gnupg.org/index.html) to encrypt and decrypt the
+  * [GnuPG](https://gnupg.org/index.html) to encrypt and decrypt the
     configuration file and a snapshot of the Hyper SBI 2 application data
   * [`prompt_toolkit`](https://github.com/prompt-toolkit/python-prompt-toolkit)
     to complete possible values or a previous value in configuring
