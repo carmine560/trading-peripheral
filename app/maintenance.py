@@ -122,6 +122,9 @@ def _get_datetime_bounds(datetime_range, section, now, tzinfo):
         datetime_utilities.normalize_datetime_string(datetime_string),
         "%Y-%m-%d %H:%M",
     ).replace(tzinfo=tzinfo)
+    # Only roll over true overnight ranges; equal start and end are preserved.
+    if end < start:
+        end += timedelta(days=1)
     return start, end
 
 

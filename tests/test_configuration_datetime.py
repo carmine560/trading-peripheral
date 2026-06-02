@@ -3,7 +3,7 @@ from datetime import datetime
 import re
 from zoneinfo import ZoneInfo
 
-from app.maintenance import _replace_datetime
+from app.maintenance import _get_datetime_bounds, _replace_datetime
 from core_utilities import config_diff, config_io, config_prompt
 from core_utilities import datetime_utilities
 
@@ -51,6 +51,50 @@ def test_normalize_datetime_string_rolls_past_midnight():
     )
 
     assert normalized == "2025-03-15 01:30"
+
+
+def test_get_datetime_bounds_rolls_time_only_end_past_midnight():
+    section = {
+        "datetime_regex": (
+            r"^(\d{4}年)?(\d{1,2})月(\d{1,2})日" r"（[^）]+）(\d{1,2}:\d{2})$"
+        ),
+        "year_group": "1",
+        "month_group": "2",
+        "day_group": "3",
+        "time_group": "4",
+    }
+
+    start, end = _get_datetime_bounds(
+        ["2026年3月14日（土）23:00", "02:00"],
+        section,
+        datetime(2026, 3, 1, tzinfo=ZoneInfo("Asia/Tokyo")),
+        ZoneInfo("Asia/Tokyo"),
+    )
+
+    assert start.isoformat() == "2026-03-14T23:00:00+09:00"
+    assert end.isoformat() == "2026-03-15T02:00:00+09:00"
+
+
+def test_get_datetime_bounds_keeps_equal_start_and_end():
+    section = {
+        "datetime_regex": (
+            r"^(\d{4}年)?(\d{1,2})月(\d{1,2})日" r"（[^）]+）(\d{1,2}:\d{2})$"
+        ),
+        "year_group": "1",
+        "month_group": "2",
+        "day_group": "3",
+        "time_group": "4",
+    }
+
+    start, end = _get_datetime_bounds(
+        ["2026年3月14日（土）09:00", "09:00"],
+        section,
+        datetime(2026, 3, 1, tzinfo=ZoneInfo("Asia/Tokyo")),
+        ZoneInfo("Asia/Tokyo"),
+    )
+
+    assert start.isoformat() == "2026-03-14T09:00:00+09:00"
+    assert end.isoformat() == "2026-03-14T09:00:00+09:00"
 
 
 def test_replace_datetime_infers_next_year_for_old_dates():
