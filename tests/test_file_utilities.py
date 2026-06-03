@@ -111,6 +111,89 @@ def test_archive_encrypt_directory_raises_on_gpg_failure(
     assert message == "GPG encryption failed: no public key"
 
 
+def test_archive_encrypt_directory_preserves_existing_snapshot_on_gpg_failure(
+    tmp_path, monkeypatch
+):
+    source = tmp_path / "settings"
+    output_directory = tmp_path / "backups"
+    snapshot = output_directory / "settings.tar.xz.gpg"
+    source.mkdir()
+    output_directory.mkdir()
+    snapshot.write_bytes(b"previous snapshot")
+
+    def run(args, **kwargs):
+        return subprocess.CompletedProcess(
+            args, 2, stdout=b"", stderr=b"no public key"
+        )
+
+    monkeypatch.setattr(file_utilities.subprocess, "run", run)
+
+    try:
+        file_utilities.archive_encrypt_directory(
+            source.as_posix(), output_directory.as_posix()
+        )
+    except UtilityOperationError:
+        pass
+    else:
+        raise AssertionError("Expected UtilityOperationError")
+
+    assert snapshot.read_bytes() == b"previous snapshot"
+    assert not list(output_directory.glob(".settings.tar.xz.gpg.*.tmp"))
+
+
+def test_archive_encrypt_directory_rejects_empty_gpg_data(
+    tmp_path, monkeypatch
+):
+    source = tmp_path / "settings"
+    output_directory = tmp_path / "backups"
+    snapshot = output_directory / "settings.tar.xz.gpg"
+    source.mkdir()
+    output_directory.mkdir()
+    snapshot.write_bytes(b"previous snapshot")
+
+    def run(args, **kwargs):
+        return subprocess.CompletedProcess(args, 0, stdout=b"", stderr=b"")
+
+    monkeypatch.setattr(file_utilities.subprocess, "run", run)
+
+    try:
+        file_utilities.archive_encrypt_directory(
+            source.as_posix(), output_directory.as_posix()
+        )
+    except UtilityOperationError as e:
+        message = str(e)
+    else:
+        raise AssertionError("Expected UtilityOperationError")
+
+    assert message == "GPG encryption returned no file data."
+    assert snapshot.read_bytes() == b"previous snapshot"
+
+
+def test_archive_encrypt_directory_writes_successful_gpg_data(
+    tmp_path, monkeypatch
+):
+    source = tmp_path / "settings"
+    output_directory = tmp_path / "backups"
+    snapshot = output_directory / "settings.tar.xz.gpg"
+    source.mkdir()
+    output_directory.mkdir()
+    snapshot.write_bytes(b"previous snapshot")
+
+    def run(args, **kwargs):
+        return subprocess.CompletedProcess(
+            args, 0, stdout=b"new snapshot", stderr=b""
+        )
+
+    monkeypatch.setattr(file_utilities.subprocess, "run", run)
+
+    file_utilities.archive_encrypt_directory(
+        source.as_posix(), output_directory.as_posix()
+    )
+
+    assert snapshot.read_bytes() == b"new snapshot"
+    assert not list(output_directory.glob(".settings.tar.xz.gpg.*.tmp"))
+
+
 def test_decrypt_extract_file_raises_on_empty_gpg_data(tmp_path, monkeypatch):
     source = tmp_path / "snapshot.tar.xz.gpg"
     output_directory = tmp_path / "restore"
