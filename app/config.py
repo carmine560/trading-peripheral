@@ -76,7 +76,16 @@ def _configure_sbi_sections(config, trade):
         "previous_bodies": {},
     }
     config[trade.order_status_section] = {
-        "output_columns": (),
+        "output_columns": (
+            "entry_date",
+            "entry_time",
+            "symbol",
+            "size",
+            "order_specification",
+            "entry_price",
+            "exit_time",
+            "exit_price",
+        ),
         "table_identifier": "注文種別",
         "exclusion": {
             "equals": ("${order_status_column}", ("取消完了",)),

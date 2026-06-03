@@ -421,18 +421,6 @@ def _build_order_status_trade_config(monkeypatch):
         lambda value: "/tmp/appdata",
     )
     config = app_config.configure(trade, can_override=False)
-    config[trade.order_status_section]["output_columns"] = str(
-        (
-            "entry_date",
-            "entry_time",
-            "symbol",
-            "size",
-            "order_specification",
-            "entry_price",
-            "exit_time",
-            "exit_price",
-        )
-    )
     return trade, config
 
 
@@ -456,7 +444,9 @@ def _assert_order_status_market_data_error(monkeypatch, trade, config, df):
     assert message == "Unable to extract order status from the parsed table."
 
 
-def test_order_status_extracts_single_page_weighted_prices(monkeypatch):
+def test_order_status_extracts_default_columns_and_weighted_prices(
+    monkeypatch,
+):
     trade, config = _build_order_status_trade_config(monkeypatch)
     driver = _FakeDriver()
     captured = {}
