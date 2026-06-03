@@ -13,6 +13,7 @@ from core_utilities.errors import (
     MarketDataError,
     ProcessStateError,
     ScraperError,
+    UtilityOperationError,
 )
 import trading_peripheral
 
@@ -373,6 +374,74 @@ def test_manage_snapshots_raises_process_state_error(monkeypatch):
         raise AssertionError("Expected ProcessStateError")
 
     assert message == "'HYPERSBI2' is running."
+
+
+def test_run_watchlist_backup_raises_when_watchlist_file_missing(
+    monkeypatch, tmp_path
+):
+    args = SimpleNamespace(
+        P=("SBI Securities", "HYPERSBI2"),
+        BS=False,
+        G=False,
+        O=False,
+        A=False,
+        C=False,
+        r=False,
+        m=False,
+        s=False,
+        S=False,
+        o=False,
+        w=True,
+        d=False,
+        D=False,
+    )
+    trade = SimpleNamespace(process="HYPERSBI2")
+    config = ConfigParser(interpolation=None)
+    config[trade.process] = {
+        "watchlists": "",
+        "backup_directory": tmp_path.as_posix(),
+    }
+    missing_watchlists = tmp_path / "application" / "portfolio.json"
+
+    monkeypatch.setattr(trading_peripheral, "get_arguments", lambda: args)
+    monkeypatch.setattr(
+        trading_peripheral, "Trade", lambda vendor, process: trade
+    )
+    monkeypatch.setattr(
+        trading_peripheral.file_utilities,
+        "create_launchers_exit",
+        lambda current_args, script_path: False,
+    )
+    monkeypatch.setattr(
+        trading_peripheral, "configure_exit", lambda current_args, trade: None
+    )
+    monkeypatch.setattr(trading_peripheral, "configure", lambda trade: config)
+    monkeypatch.setattr(
+        trading_peripheral,
+        "ensure_watchlists_path",
+        lambda current_config, current_trade: current_config[
+            current_trade.process
+        ].update({"watchlists": missing_watchlists.as_posix()}),
+    )
+    monkeypatch.setattr(
+        trading_peripheral.file_utilities,
+        "backup_file",
+        lambda *args, **kwargs: (_ for _ in ()).throw(
+            AssertionError("backup_file should not be called")
+        ),
+    )
+
+    try:
+        trading_peripheral.run()
+    except UtilityOperationError as e:
+        message = str(e)
+    else:
+        raise AssertionError("Expected UtilityOperationError")
+
+    assert (
+        message
+        == f"Watchlist file does not exist: {missing_watchlists.as_posix()}"
+    )
 
 
 def test_order_status_raises_market_data_error_on_parse_failure(monkeypatch):

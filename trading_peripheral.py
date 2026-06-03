@@ -19,7 +19,11 @@ from core_utilities import (
 )
 from core_utilities.config_common import ConfigError
 from core_utilities.config_validation import ensure_section_exists
-from core_utilities.errors import CoreUtilitiesError, ProcessStateError
+from core_utilities.errors import (
+    CoreUtilitiesError,
+    ProcessStateError,
+    UtilityOperationError,
+)
 from web_utilities import browser_driver
 
 BROWSER_ACTION_MAX_ATTEMPTS = 3
@@ -141,10 +145,14 @@ def run():
     if any((args.s, args.S, args.o)):
         _run_browser_actions(args, trade, config)
     if args.w:
-        ensure_section_exists(config, trade.process)
         ensure_watchlists_path(config, trade)
+        watchlists = config[trade.process]["watchlists"]
+        if not os.path.isfile(watchlists):
+            raise UtilityOperationError(
+                f"Watchlist file does not exist: {watchlists}"
+            )
         file_utilities.backup_file(
-            config[trade.process]["watchlists"],
+            watchlists,
             backup_directory=config[trade.process]["backup_directory"],
         )
     if args.d or args.D:
