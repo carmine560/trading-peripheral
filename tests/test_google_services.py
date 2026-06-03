@@ -158,3 +158,30 @@ def test_send_email_message_returns_true_after_send(monkeypatch):
     assert build_calls == [(("gmail", "v1"), {"credentials": "credentials"})]
     assert send_calls[0][0] == "me"
     assert "raw" in send_calls[0][1]
+
+
+def test_insert_calendar_event_ignores_duplicate_event_id(monkeypatch):
+    class DuplicateEventError(Exception):
+        def __init__(self):
+            self.resp = SimpleNamespace(status=409)
+
+    class Request:
+        def execute(self):
+            raise DuplicateEventError()
+
+    class Events:
+        def insert(self, calendarId, body):
+            return Request()
+
+    class Resource:
+        def events(self):
+            return Events()
+
+    monkeypatch.setattr(google_services, "HttpError", DuplicateEventError)
+
+    assert (
+        google_services.insert_calendar_event(
+            Resource(), "calendar", {"id": "event"}
+        )
+        is None
+    )

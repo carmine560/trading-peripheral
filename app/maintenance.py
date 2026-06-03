@@ -1,7 +1,9 @@
 """Maintenance schedule scraping and calendar insertion logic."""
 
+import base64
 from datetime import datetime, timedelta
 from email.utils import parsedate_to_datetime
+import hashlib
 import os
 import re
 from zoneinfo import ZoneInfo
@@ -187,6 +189,18 @@ def _insert_service_maintenance_events(
                 if body_tuple in previous_bodies.get(service, []):
                     continue
 
+                # Derive a stable event ID so repeated inserts return 409
+                # instead of duplicating.
+                body["id"] = (
+                    base64.b32hexencode(
+                        hashlib.sha256(
+                            repr(body_tuple).encode("utf-8")
+                        ).digest()
+                    )
+                    .decode("ascii")
+                    .rstrip("=")
+                    .lower()
+                )
                 google_services.insert_calendar_event(
                     resource, section["calendar_id"], body
                 )
