@@ -204,6 +204,97 @@ def test_send_email_message_returns_true_after_send(monkeypatch):
     assert "raw" in send_calls[0][1]
 
 
+def test_get_calendar_resource_wraps_build_failure(monkeypatch):
+    monkeypatch.setattr(
+        google_services,
+        "get_credentials",
+        lambda credentials_path: "credentials",
+    )
+    monkeypatch.setattr(
+        google_services,
+        "build",
+        lambda *args, **kwargs: (_ for _ in ()).throw(
+            ValueError("discovery failed")
+        ),
+    )
+
+    try:
+        google_services.get_calendar_resource(
+            "/tmp/token.json", "", "Calendar", "Asia/Tokyo"
+        )
+    except ExternalServiceError as e:
+        message = str(e)
+    else:
+        raise AssertionError("Expected ExternalServiceError")
+
+    assert message == (
+        "Unable to build Google Calendar resource for "
+        "/tmp/token.json: discovery failed"
+    )
+
+
+def test_send_email_message_wraps_build_failure(monkeypatch):
+    monkeypatch.setattr(
+        google_services,
+        "get_credentials",
+        lambda credentials_path: "credentials",
+    )
+    monkeypatch.setattr(
+        google_services,
+        "build",
+        lambda *args, **kwargs: (_ for _ in ()).throw(
+            ValueError("discovery failed")
+        ),
+    )
+
+    try:
+        google_services.send_email_message(
+            "/tmp/token.json",
+            "Subject",
+            "from@example.com",
+            "to@example.com",
+            "content",
+        )
+    except ExternalServiceError as e:
+        message = str(e)
+    else:
+        raise AssertionError("Expected ExternalServiceError")
+
+    assert message == (
+        "Unable to build Gmail resource for "
+        "/tmp/token.json: discovery failed"
+    )
+
+
+def test_extract_string_from_email_wraps_build_failure(monkeypatch):
+    monkeypatch.setattr(
+        google_services,
+        "get_credentials",
+        lambda credentials_path: "credentials",
+    )
+    monkeypatch.setattr(
+        google_services,
+        "build",
+        lambda *args, **kwargs: (_ for _ in ()).throw(
+            ValueError("discovery failed")
+        ),
+    )
+
+    try:
+        google_services.extract_string_from_email(
+            "/tmp/token.json", "from@example.com", r"code: (\d+)"
+        )
+    except ExternalServiceError as e:
+        message = str(e)
+    else:
+        raise AssertionError("Expected ExternalServiceError")
+
+    assert message == (
+        "Unable to build Gmail resource for "
+        "/tmp/token.json: discovery failed"
+    )
+
+
 def test_insert_calendar_event_ignores_duplicate_event_id(monkeypatch):
     class DuplicateEventError(Exception):
         def __init__(self):
