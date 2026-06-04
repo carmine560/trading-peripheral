@@ -52,13 +52,13 @@ cd trading-peripheral
 # '--recurse-submodules'.
 python -m venv .venv
 . .venv\Scripts\Activate.ps1
-python -m pip install -r requirements.txt -U
+python -m pip install -r requirements.txt -c constraints.txt
 ```
 
 ## Run Tests (Optional)
 
 ``` powershell
-python -m pip install -r requirements-dev.txt -U
+python -m pip install -r requirements-dev.txt -c constraints.txt
 pytest
 ```
 
