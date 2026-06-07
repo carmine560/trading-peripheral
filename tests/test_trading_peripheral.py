@@ -136,7 +136,7 @@ def test_run_browser_actions_retries_after_initialize_failure(monkeypatch):
         "headless": "True",
         "user_data_directory": "",
         "profile_directory": "Default",
-        "implicitly_wait": "4",
+        "wait_timeout": "4",
     }
     config[trade.actions_section] = {
         "replace_SBI Securities_watchlists": "[]",
@@ -162,8 +162,8 @@ def test_run_browser_actions_retries_after_initialize_failure(monkeypatch):
     monkeypatch.setattr(
         trading_peripheral.browser_driver,
         "execute_action",
-        lambda current_driver, action: actions.append(
-            (current_driver, action)
+        lambda current_driver, action, wait_timeout: actions.append(
+            (current_driver, action, wait_timeout)
         ),
     )
     monkeypatch.setattr(
@@ -176,7 +176,7 @@ def test_run_browser_actions_retries_after_initialize_failure(monkeypatch):
 
     assert len(init_calls) == 2
     assert sleep_calls == [10]
-    assert actions == [(driver, "[]")]
+    assert actions == [(driver, "[]", 4.0)]
     assert driver.quit_calls == 1
 
 

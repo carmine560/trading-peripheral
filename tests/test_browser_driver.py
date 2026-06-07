@@ -34,7 +34,6 @@ class FakeDriver:
         self.visited = []
         self.refreshed = 0
         self.scripts = []
-        self._trading_peripheral_wait_timeout = 0.1
         self.current_url = "https://example.com/page"
         self.title = "Example"
         self.elements = {
@@ -120,6 +119,28 @@ def test_execute_action_evaluates_string_actions():
     assert driver.elements["//input"].sent_keys == ["Ticker"]
 
 
+def test_execute_action_passes_explicit_wait_timeout(monkeypatch):
+    driver = FakeDriver()
+    wait_calls = []
+
+    monkeypatch.setattr(
+        browser_driver,
+        "_wait_for_visible",
+        lambda current_driver, xpath, wait_timeout: wait_calls.append(
+            (current_driver, xpath, wait_timeout)
+        )
+        or driver.elements[xpath],
+    )
+
+    browser_driver.execute_action(
+        driver,
+        [("send_keys", "//input", "value")],
+        wait_timeout=3.5,
+    )
+
+    assert wait_calls == [(driver, "//input", 3.5)]
+
+
 def test_execute_action_rejects_unknown_commands(capsys):
     driver = FakeDriver()
 
@@ -141,7 +162,7 @@ def test_execute_action_logs_failing_instruction(capsys, monkeypatch):
     monkeypatch.setattr(
         browser_driver,
         "_wait_for_clickable",
-        lambda current_driver, xpath: (_ for _ in ()).throw(
+        lambda current_driver, xpath, wait_timeout: (_ for _ in ()).throw(
             RuntimeError(f"blocked: {xpath}")
         ),
     )
@@ -167,7 +188,7 @@ def test_wait_for_clickable_skips_hidden_duplicate_elements():
 
     driver.find_elements = lambda by, xpath: [hidden, visible]
 
-    result = browser_driver._wait_for_clickable(driver, "//duplicate")
+    result = browser_driver._wait_for_clickable(driver, "//duplicate", 0.1)
 
     assert result is visible
 
@@ -177,10 +198,9 @@ def test_wait_for_clickable_reports_timeout_context(monkeypatch):
     hidden = FakeElement()
     hidden.visible = False
     driver.find_elements = lambda by, xpath: [hidden]
-    driver._trading_peripheral_wait_timeout = 0.01
 
     try:
-        browser_driver._wait_for_clickable(driver, "//duplicate")
+        browser_driver._wait_for_clickable(driver, "//duplicate", 0.01)
     except Exception as e:
         message = str(e)
     else:
@@ -192,7 +212,7 @@ def test_wait_for_clickable_reports_timeout_context(monkeypatch):
     assert "title='Example'" in message
 
 
-def test_initialize_requests_desktop_window_and_maximizes(monkeypatch):
+def test_initialize_configures_headless_browser(monkeypatch):
     recorded_arguments = []
 
     class FakeOptions:
@@ -202,14 +222,6 @@ def test_initialize_requests_desktop_window_and_maximizes(monkeypatch):
     class FakeChromeDriver:
         def __init__(self, options):
             self.options = options
-            self.maximized = False
-            self.implicit_wait_value = None
-
-        def maximize_window(self):
-            self.maximized = True
-
-        def implicitly_wait(self, value):
-            self.implicit_wait_value = value
 
         def execute_cdp_cmd(self, command, payload):
             self.cdp_command = (command, payload)
@@ -229,16 +241,43 @@ def test_initialize_requests_desktop_window_and_maximizes(monkeypatch):
     )
 
     driver = browser_driver.initialize(
-        headless=False,
+        headless=True,
         user_data_directory="C:/Chrome/Selenium",
         profile_directory="Default",
-        implicitly_wait=4,
     )
 
-    assert "--window-size=1600,1000" in recorded_arguments
+    assert "--headless=new" in recorded_arguments
     assert "--user-data-dir=C:/Chrome/Selenium" in recorded_arguments
     assert "--profile-directory=Default" in recorded_arguments
-    assert "--restore-last-session=false" in recorded_arguments
-    assert driver.maximized is True
-    assert driver.implicit_wait_value == 4
-    assert driver._trading_peripheral_wait_timeout == 4.0
+    assert "--restore-last-session=false" not in recorded_arguments
+    assert driver.cdp_command == (
+        "Network.setUserAgentOverride",
+        {"userAgent": "Chrome"},
+    )
+
+
+def test_initialize_skips_headless_only_configuration(monkeypatch):
+    recorded_arguments = []
+
+    class FakeOptions:
+        def add_argument(self, argument):
+            recorded_arguments.append(argument)
+
+    class FakeChromeDriver:
+        def __init__(self, options):
+            self.options = options
+
+    driver_holder = {}
+
+    monkeypatch.setattr(browser_driver, "Options", FakeOptions)
+    monkeypatch.setattr(
+        browser_driver.webdriver,
+        "Chrome",
+        lambda options: driver_holder.setdefault(
+            "driver", FakeChromeDriver(options)
+        ),
+    )
+
+    browser_driver.initialize(headless=False)
+
+    assert recorded_arguments == []

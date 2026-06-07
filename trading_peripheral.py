@@ -63,7 +63,6 @@ def _run_browser_actions(args, trade, config):
                 headless=config["General"].getboolean("headless"),
                 user_data_directory=config["General"]["user_data_directory"],
                 profile_directory=config["General"]["profile_directory"],
-                implicitly_wait=float(config["General"]["implicitly_wait"]),
             )
             if args.s:
                 browser_driver.execute_action(
@@ -71,6 +70,7 @@ def _run_browser_actions(args, trade, config):
                     config[trade.actions_section][
                         f"replace_{trade.vendor}_watchlists"
                     ],
+                    wait_timeout=float(config["General"]["wait_timeout"]),
                 )
             if args.S:
                 browser_driver.execute_action(
@@ -78,10 +78,13 @@ def _run_browser_actions(args, trade, config):
                     config[trade.actions_section][
                         f"replace_{trade.process}_watchlists"
                     ],
+                    wait_timeout=float(config["General"]["wait_timeout"]),
                 )
             if args.o:
                 browser_driver.execute_action(
-                    driver, config[trade.actions_section]["get_order_status"]
+                    driver,
+                    config[trade.actions_section]["get_order_status"],
+                    wait_timeout=float(config["General"]["wait_timeout"]),
                 )
                 if trade.vendor in BROKERAGE_ORDER_STATUS_FUNCTIONS:
                     BROKERAGE_ORDER_STATUS_FUNCTIONS[trade.vendor](

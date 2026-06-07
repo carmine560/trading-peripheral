@@ -11,7 +11,7 @@ from core_utilities import datetime_utilities
 def test_write_and_read_config_round_trip(tmp_path):
     config_path = tmp_path / "settings.ini"
     written = ConfigParser(interpolation=None)
-    written["General"] = {"headless": "True", "implicitly_wait": "4"}
+    written["General"] = {"headless": "True", "wait_timeout": "4"}
 
     config_io.write_config(written, config_path.as_posix())
 
@@ -19,16 +19,16 @@ def test_write_and_read_config_round_trip(tmp_path):
     config_io.read_config(loaded, config_path.as_posix())
 
     assert loaded["General"]["headless"] == "True"
-    assert loaded["General"]["implicitly_wait"] == "4"
+    assert loaded["General"]["wait_timeout"] == "4"
 
 
 def test_check_config_changes_resets_option_to_default(tmp_path, monkeypatch):
     config_path = tmp_path / "settings.ini"
     default_config = ConfigParser(interpolation=None)
-    default_config["General"] = {"headless": "True", "implicitly_wait": "4"}
+    default_config["General"] = {"headless": "True", "wait_timeout": "4"}
 
     user_config = ConfigParser(interpolation=None)
-    user_config["General"] = {"headless": "False", "implicitly_wait": "4"}
+    user_config["General"] = {"headless": "False", "wait_timeout": "4"}
     config_io.write_config(user_config, config_path.as_posix())
 
     monkeypatch.setattr(
@@ -42,7 +42,7 @@ def test_check_config_changes_resets_option_to_default(tmp_path, monkeypatch):
     loaded = ConfigParser(interpolation=None)
     config_io.read_config(loaded, config_path.as_posix())
     assert loaded["General"].get("headless") is None
-    assert loaded["General"]["implicitly_wait"] == "4"
+    assert loaded["General"]["wait_timeout"] == "4"
 
 
 def test_normalize_datetime_string_rolls_past_midnight():

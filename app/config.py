@@ -25,7 +25,7 @@ def configure(trade, can_interpolate=True, can_override=True):
         "headless": "True",
         "user_data_directory": "",
         "profile_directory": "Default",
-        "implicitly_wait": "4",
+        "wait_timeout": "4",
         "email_message_from": "",
         "email_message_to": "",
         "fingerprint": "",
