@@ -657,6 +657,7 @@ def test_monitoring_raises_scraper_error_for_missing_news_node(
     config["General"] = {
         "email_message_from": "from@example.com",
         "email_message_to": "to@example.com",
+        "fingerprint": "fingerprint",
     }
     config["News"] = {
         "url": "https://example.com/news",
@@ -702,6 +703,7 @@ def test_monitoring_raises_scraper_error_for_duplicate_news_nodes(
     config["General"] = {
         "email_message_from": "from@example.com",
         "email_message_to": "to@example.com",
+        "fingerprint": "fingerprint",
     }
     config["News"] = {
         "url": "https://example.com/news",
@@ -751,6 +753,7 @@ def test_monitoring_does_not_mark_news_seen_when_email_is_not_sent(
     config["General"] = {
         "email_message_from": "",
         "email_message_to": "",
+        "fingerprint": "fingerprint",
     }
     config["News"] = {
         "url": "https://example.com/news",
@@ -797,6 +800,7 @@ def test_monitoring_marks_news_seen_after_confirmed_email_send(monkeypatch):
     config["General"] = {
         "email_message_from": "from@example.com",
         "email_message_to": "to@example.com",
+        "fingerprint": "fingerprint",
     }
     config["News"] = {
         "url": "https://example.com/news",
@@ -829,7 +833,7 @@ def test_monitoring_marks_news_seen_after_confirmed_email_send(monkeypatch):
     monkeypatch.setattr(
         app_monitoring.google_services,
         "send_email_message",
-        lambda *args: email_calls.append(args) or True,
+        lambda *args, **kwargs: email_calls.append((args, kwargs)) or True,
     )
     monkeypatch.setattr(
         app_monitoring,
@@ -842,11 +846,14 @@ def test_monitoring_marks_news_seen_after_confirmed_email_send(monkeypatch):
     assert config["News"]["latest_news_text"] == "Version 2"
     assert email_calls == [
         (
-            app_monitoring.os.path.join("/tmp", "token.json"),
-            "News",
-            "from@example.com",
-            "to@example.com",
-            "Version 2\nhttps://example.com/news",
+            (
+                app_monitoring.os.path.join("/tmp", "token.json"),
+                "News",
+                "from@example.com",
+                "to@example.com",
+                "Version 2\nhttps://example.com/news",
+            ),
+            {"fingerprint": "fingerprint"},
         )
     ]
     assert write_calls
@@ -854,6 +861,7 @@ def test_monitoring_marks_news_seen_after_confirmed_email_send(monkeypatch):
 
 def _build_maintenance_config():
     config = ConfigParser(interpolation=None)
+    config["General"] = {"fingerprint": "fingerprint"}
     config["SBI Securities Maintenance Schedules"] = {
         "url": "https://example.com/maintenance",
         "timezone": "Asia/Tokyo",
@@ -908,7 +916,8 @@ def test_insert_maintenance_schedules_falls_back_without_last_modified(
     monkeypatch.setattr(
         app_maintenance.google_services,
         "get_calendar_resource",
-        lambda *args: calendar_calls.append(args) or ("resource", "calendar"),
+        lambda *args, **kwargs: calendar_calls.append((args, kwargs))
+        or ("resource", "calendar"),
     )
     monkeypatch.setattr(
         app_maintenance,
@@ -920,6 +929,7 @@ def test_insert_maintenance_schedules_falls_back_without_last_modified(
 
     assert response.encoding == "utf-8"
     assert calendar_calls
+    assert calendar_calls[0][1] == {"fingerprint": "fingerprint"}
     assert write_calls
     assert config[trade.maintenance_schedules_section]["calendar_id"] == (
         "calendar"
@@ -960,7 +970,8 @@ def test_insert_maintenance_schedules_recovers_from_head_failure(
     monkeypatch.setattr(
         app_maintenance.google_services,
         "get_calendar_resource",
-        lambda *args: calendar_calls.append(args) or ("resource", "calendar"),
+        lambda *args, **kwargs: calendar_calls.append((args, kwargs))
+        or ("resource", "calendar"),
     )
     monkeypatch.setattr(
         app_maintenance,
@@ -1044,7 +1055,7 @@ def test_insert_maintenance_schedules_persists_progress_on_insert_failure(
     monkeypatch.setattr(
         app_maintenance.google_services,
         "get_calendar_resource",
-        lambda *args: ("resource", "calendar"),
+        lambda *args, **kwargs: ("resource", "calendar"),
     )
     monkeypatch.setattr(
         app_maintenance.google_services,
@@ -1136,7 +1147,7 @@ def test_insert_maintenance_schedules_retries_without_duplicate_events(
     monkeypatch.setattr(
         app_maintenance.google_services,
         "get_calendar_resource",
-        lambda *args: ("resource", "calendar"),
+        lambda *args, **kwargs: ("resource", "calendar"),
     )
     monkeypatch.setattr(
         app_maintenance.google_services,
@@ -1231,7 +1242,7 @@ def test_insert_maintenance_schedules_raises_for_missing_function_node(
     monkeypatch.setattr(
         app_maintenance.google_services,
         "get_calendar_resource",
-        lambda *args: ("resource", "calendar"),
+        lambda *args, **kwargs: ("resource", "calendar"),
     )
     monkeypatch.setattr(
         app_maintenance,

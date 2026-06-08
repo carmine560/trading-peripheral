@@ -84,6 +84,67 @@ def test_select_venv_finds_python_interpreter(tmp_path):
     assert result[1] == "python"
 
 
+def test_read_encrypted_file_returns_gpg_stdout(tmp_path, monkeypatch):
+    source = tmp_path / "token.json.gpg"
+    source.write_bytes(b"encrypted")
+
+    def run(args, **kwargs):
+        return subprocess.CompletedProcess(
+            args, 0, stdout=b"plain", stderr=b""
+        )
+
+    monkeypatch.setattr(file_utilities.subprocess, "run", run)
+
+    assert file_utilities.read_encrypted_file(source.as_posix()) == b"plain"
+
+
+def test_write_encrypted_file_writes_only_gpg_stdout(tmp_path, monkeypatch):
+    target = tmp_path / "token.json.gpg"
+    calls = []
+
+    def run(args, **kwargs):
+        calls.append((args, kwargs))
+        return subprocess.CompletedProcess(
+            args, 0, stdout=b"encrypted", stderr=b""
+        )
+
+    monkeypatch.setattr(file_utilities.subprocess, "run", run)
+
+    file_utilities.write_encrypted_file(
+        target.as_posix(), b"plain", fingerprint="fingerprint"
+    )
+
+    assert target.read_bytes() == b"encrypted"
+    assert calls[0][0][-2:] == ["--recipient", "fingerprint"]
+    assert calls[0][1]["input"] == b"plain"
+    assert not list(tmp_path.glob(".token.json.gpg.*.tmp"))
+
+
+def test_write_encrypted_file_preserves_existing_file_on_gpg_failure(
+    tmp_path, monkeypatch
+):
+    target = tmp_path / "token.json.gpg"
+    target.write_bytes(b"previous encrypted")
+
+    def run(args, **kwargs):
+        return subprocess.CompletedProcess(
+            args, 2, stdout=b"", stderr=b"no public key"
+        )
+
+    monkeypatch.setattr(file_utilities.subprocess, "run", run)
+
+    try:
+        file_utilities.write_encrypted_file(target.as_posix(), b"plain")
+    except UtilityOperationError as e:
+        message = str(e)
+    else:
+        raise AssertionError("Expected UtilityOperationError")
+
+    assert message == "GPG encryption failed: no public key"
+    assert target.read_bytes() == b"previous encrypted"
+    assert not list(tmp_path.glob(".token.json.gpg.*.tmp"))
+
+
 def test_archive_encrypt_directory_raises_on_gpg_failure(
     tmp_path, monkeypatch
 ):

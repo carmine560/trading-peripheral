@@ -22,6 +22,40 @@ def test_write_and_read_config_round_trip(tmp_path):
     assert loaded["General"]["wait_timeout"] == "4"
 
 
+def test_write_and_read_encrypted_config_uses_shared_file_helpers(
+    tmp_path, monkeypatch
+):
+    config_path = tmp_path / "settings.ini"
+    encrypted_path = tmp_path / "settings.ini.gpg"
+    encrypted_files = {}
+    written = ConfigParser(interpolation=None)
+    written["General"] = {
+        "fingerprint": "fingerprint",
+        "headless": "True",
+    }
+
+    def write_encrypted_file(path, data, fingerprint=""):
+        encrypted_files[path] = (data, fingerprint)
+
+    monkeypatch.setattr(
+        config_io, "write_encrypted_file", write_encrypted_file
+    )
+    monkeypatch.setattr(
+        config_io,
+        "read_encrypted_file",
+        lambda path: encrypted_files[path][0],
+    )
+
+    config_io.write_config(written, config_path.as_posix(), is_encrypted=True)
+    encrypted_path.write_bytes(b"encrypted")
+
+    loaded = ConfigParser(interpolation=None)
+    config_io.read_config(loaded, config_path.as_posix(), is_encrypted=True)
+
+    assert encrypted_files[encrypted_path.as_posix()][1] == "fingerprint"
+    assert loaded["General"]["headless"] == "True"
+
+
 def test_check_config_changes_resets_option_to_default(tmp_path, monkeypatch):
     config_path = tmp_path / "settings.ini"
     default_config = ConfigParser(interpolation=None)

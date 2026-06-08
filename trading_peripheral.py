@@ -54,8 +54,8 @@ def _run_browser_actions(args, trade, config):
     """Execute browser-based actions using a Selenium WebDriver."""
     ensure_section_exists(config, trade.actions_section)
     # ChromeDriver may crash on an unsettled system after hibernation resume,
-    # leaving the driver in a broken state, so wrap both 'initialize()' and
-    # 'execute_action()' in the retry loop.
+    # leaving the driver in a broken state, so wrap both initialize() and
+    # execute_action() in the retry loop.
     for attempt in range(1, BROWSER_ACTION_MAX_ATTEMPTS + 1):
         driver = None
         try:

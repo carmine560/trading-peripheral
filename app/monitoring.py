@@ -58,6 +58,7 @@ def check_web_page_send_email_message(trade, config, section):
         config["General"]["email_message_from"],
         config["General"]["email_message_to"],
         f"{latest_news_text}\n{config[section]['url']}",
+        fingerprint=config["General"]["fingerprint"],
     ):
         return
 

@@ -233,6 +233,7 @@ def insert_maintenance_schedules(trade, config):
         section["calendar_id"],
         trade.maintenance_schedules_section,
         section["timezone"],
+        fingerprint=config["General"]["fingerprint"],
     )
     if not previous_calendar_id and section["calendar_id"]:
         write_config(config, trade.config_path, is_encrypted=True)
