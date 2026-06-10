@@ -25,23 +25,23 @@ The `trading_peripheral.py` Python script can:
 Windows](https://www.python.org/downloads/windows/) with Hyper SBI 2 on Windows
 10 with ESU and requires the following packages:
 
-  * [`google-api-python-client`](https://github.com/googleapis/google-api-python-client/),
-    [`google-auth`](https://github.com/googleapis/google-auth-library-python),
-    and
-    [`google-auth-oauthlib`](https://github.com/googleapis/google-auth-library-python-oauthlib)
-    to access Google APIs
   * [Chrome](https://www.google.com/chrome/) to authenticate to the website and
     load the web page
-  * [`selenium`](https://www.selenium.dev/) to drive a browser
+  * [GnuPG](https://gnupg.org/index.html) to encrypt and decrypt the
+    configuration file and a snapshot of the Hyper SBI 2 application data
   * [`charset-normalizer`](https://charset-normalizer.readthedocs.io/en/latest/),
     [`lxml`](https://lxml.de/index.html),
     [`pandas`](https://pandas.pydata.org/), and
     [`requests`](https://requests.readthedocs.io/en/latest/) to extract data
     from the web pages
-  * [GnuPG](https://gnupg.org/index.html) to encrypt and decrypt the
-    configuration file and a snapshot of the Hyper SBI 2 application data
+  * [`google-api-python-client`](https://github.com/googleapis/google-api-python-client/),
+    [`google-auth`](https://github.com/googleapis/google-auth-library-python),
+    and
+    [`google-auth-oauthlib`](https://github.com/googleapis/google-auth-library-python-oauthlib)
+    to access Google APIs
   * [`prompt_toolkit`](https://github.com/prompt-toolkit/python-prompt-toolkit)
     to complete possible values or a previous value in configuring
+  * [`selenium`](https://www.selenium.dev/) to drive a browser
 
 Install each package as needed. For example:
 
