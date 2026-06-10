@@ -64,7 +64,7 @@ def extract_sbi_securities_order_status(trade, config, driver):
         entry_time = None
         order_specification = None
         entry_price = None
-        results = pd.DataFrame(columns=output_columns)
+        results = []
 
         while index < len(df):
             if df.iloc[index, execution_column] == section["execution"]:
@@ -109,9 +109,7 @@ def extract_sbi_securities_order_status(trade, config, driver):
                     ):
                         entry_price = average_price
                     else:
-                        results.loc[len(results) - 1, "exit_price"] = (
-                            average_price
-                        )
+                        results[-1]["exit_price"] = average_price
 
                     size_price = pd.DataFrame(columns=("size", "price"))
 
@@ -197,7 +195,7 @@ def extract_sbi_securities_order_status(trade, config, driver):
                         price_column,
                     ]
 
-                    results.loc[len(results)] = [
+                    results.append(
                         {
                             "entry_date": entry_date,
                             "entry_time": entry_time,
@@ -207,12 +205,12 @@ def extract_sbi_securities_order_status(trade, config, driver):
                             "entry_price": entry_price,
                             "exit_time": exit_time,
                             "exit_price": exit_price,
-                        }.get(column)
-                        for column in output_columns
-                    ]
+                        }
+                    )
 
                 index += SBI_SECURITIES_ROWS_PER_EXECUTION_BLOCK
 
+        results = pd.DataFrame(results, columns=output_columns)
         if len(results) == 1:
             results = results.reindex([0, 1])
     except (AttributeError, IndexError, KeyError, TypeError, ValueError) as e:
