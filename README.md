@@ -25,7 +25,8 @@ The `trading_peripheral.py` Python script can:
 Windows](https://www.python.org/downloads/windows/) with Hyper SBI 2 on Windows
 10 with ESU and requires the following packages:
 
-  * [`google-api-python-client`](https://github.com/googleapis/google-api-python-client/)
+  * [`google-api-python-client`](https://github.com/googleapis/google-api-python-client/),
+    [`google-auth`](https://github.com/googleapis/google-auth-library-python),
     and
     [`google-auth-oauthlib`](https://github.com/googleapis/google-auth-library-python-oauthlib)
     to access Google APIs
@@ -35,7 +36,8 @@ Windows](https://www.python.org/downloads/windows/) with Hyper SBI 2 on Windows
   * [`charset-normalizer`](https://charset-normalizer.readthedocs.io/en/latest/),
     [`lxml`](https://lxml.de/index.html),
     [`pandas`](https://pandas.pydata.org/), and
-    [`pyarrow`](https://arrow.apache.org/) to extract data from the web pages
+    [`requests`](https://requests.readthedocs.io/en/latest/) to extract data
+    from the web pages
   * [GnuPG](https://gnupg.org/index.html) to encrypt and decrypt the
     configuration file and a snapshot of the Hyper SBI 2 application data
   * [`prompt_toolkit`](https://github.com/prompt-toolkit/python-prompt-toolkit)

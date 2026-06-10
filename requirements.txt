@@ -1,8 +1,9 @@
 charset-normalizer
 google-api-python-client
+google-auth
 google-auth-oauthlib
 lxml
 pandas
 prompt_toolkit
-pyarrow
+requests
 selenium

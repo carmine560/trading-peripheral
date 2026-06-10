@@ -1,9 +1,10 @@
 charset-normalizer==3.4.7
 google-api-python-client==2.197.0
+google-auth==2.53.0
 google-auth-oauthlib==1.4.0
 lxml==6.1.1
 pandas==3.0.3
 prompt_toolkit==3.0.52
-pyarrow==24.0.0
+requests==2.34.2
 selenium==4.44.0
 pytest==9.0.3
