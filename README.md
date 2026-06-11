@@ -29,19 +29,20 @@ Windows](https://www.python.org/downloads/windows/) with Hyper SBI 2 on Windows
     load the web page
   * [GnuPG](https://gnupg.org/index.html) to encrypt and decrypt the
     configuration file and a snapshot of the Hyper SBI 2 application data
-  * [`charset-normalizer`](https://charset-normalizer.readthedocs.io/en/latest/),
-    [`lxml`](https://lxml.de/index.html),
-    [`pandas`](https://pandas.pydata.org/), and
-    [`requests`](https://requests.readthedocs.io/en/latest/) to extract data
-    from the web pages
-  * [`google-api-python-client`](https://github.com/googleapis/google-api-python-client/),
-    [`google-auth`](https://github.com/googleapis/google-auth-library-python),
+  * [`charset-normalizer`](https://github.com/jawah/charset_normalizer),
+    [`lxml`](https://github.com/lxml/lxml),
+    [`pandas`](https://github.com/pandas-dev/pandas), and
+    [`requests`](https://github.com/psf/requests) to extract data from the web
+    pages
+  * [`google-api-python-client`](https://github.com/googleapis/google-api-python-client),
+    [`google-auth`](https://github.com/googleapis/google-cloud-python/tree/main/packages/google-auth),
     and
-    [`google-auth-oauthlib`](https://github.com/googleapis/google-auth-library-python-oauthlib)
+    [`google-auth-oauthlib`](https://github.com/googleapis/google-cloud-python/tree/main/packages/google-auth-oauthlib)
     to access Google APIs
   * [`prompt_toolkit`](https://github.com/prompt-toolkit/python-prompt-toolkit)
     to complete possible values or a previous value in configuring
-  * [`selenium`](https://www.selenium.dev/) to drive a browser
+  * [`selenium`](https://github.com/SeleniumHQ/selenium/tree/trunk/py) to drive
+    a browser
 
 Install each package as needed. For example:
 
