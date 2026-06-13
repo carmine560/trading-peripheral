@@ -8,7 +8,8 @@ from web_utilities import google_services
 
 def test_get_credentials_wraps_invalid_token_load(monkeypatch, tmp_path):
     token_json = tmp_path / "token.json"
-    token_json.write_text("{}", encoding="utf-8")
+    encrypted_token_json = tmp_path / "token.json.gpg"
+    encrypted_token_json.write_bytes(b"encrypted")
 
     def fail_token_load(info, scopes):
         raise ValueError("invalid token")
@@ -17,6 +18,9 @@ def test_get_credentials_wraps_invalid_token_load(monkeypatch, tmp_path):
         google_services.Credentials,
         "from_authorized_user_info",
         fail_token_load,
+    )
+    monkeypatch.setattr(
+        google_services, "read_encrypted_file", lambda path: b"{}"
     )
 
     try:
@@ -27,7 +31,8 @@ def test_get_credentials_wraps_invalid_token_load(monkeypatch, tmp_path):
         raise AssertionError("Expected ExternalServiceError")
 
     assert message == (
-        f"Unable to load Google credentials from {token_json}: invalid token"
+        "Unable to load Google credentials from "
+        f"{encrypted_token_json}: invalid token"
     )
 
 
@@ -146,20 +151,20 @@ def test_get_credentials_preserves_existing_token_on_write_failure(
     assert encrypted_token_json.read_bytes() == b"previous token"
 
 
-def test_get_credentials_migrates_plaintext_token_after_encrypt_success(
-    monkeypatch, tmp_path
-):
+def test_get_credentials_ignores_plaintext_token(monkeypatch, tmp_path):
     token_json = tmp_path / "token.json"
     token_json.write_text("{}", encoding="utf-8")
     write_calls = []
 
-    class ValidCredentials:
-        valid = True
+    class Flow:
+        def run_local_server(self, port):
+            return SimpleNamespace(valid=True, to_json=lambda: '{"new": true}')
 
+    monkeypatch.setattr("builtins.input", lambda prompt: "client.json")
     monkeypatch.setattr(
-        google_services.Credentials,
-        "from_authorized_user_info",
-        lambda info, scopes: ValidCredentials(),
+        google_services.InstalledAppFlow,
+        "from_client_secrets_file",
+        lambda path, scopes: Flow(),
     )
     monkeypatch.setattr(
         google_services,
@@ -167,49 +172,14 @@ def test_get_credentials_migrates_plaintext_token_after_encrypt_success(
         lambda *args, **kwargs: write_calls.append((args, kwargs)),
     )
 
-    credentials = google_services.get_credentials(
-        str(token_json), fingerprint="abc"
-    )
+    google_services.get_credentials(str(token_json), fingerprint="abc")
 
-    assert isinstance(credentials, ValidCredentials)
     assert write_calls == [
-        ((f"{token_json}.gpg", b"{}"), {"fingerprint": "abc"})
+        (
+            (f"{token_json}.gpg", b'{"new": true}'),
+            {"fingerprint": "abc"},
+        )
     ]
-    assert not token_json.exists()
-
-
-def test_get_credentials_keeps_plaintext_token_after_migration_failure(
-    monkeypatch, tmp_path
-):
-    token_json = tmp_path / "token.json"
-    token_json.write_text("{}", encoding="utf-8")
-
-    class ValidCredentials:
-        valid = True
-
-    monkeypatch.setattr(
-        google_services.Credentials,
-        "from_authorized_user_info",
-        lambda info, scopes: ValidCredentials(),
-    )
-    monkeypatch.setattr(
-        google_services,
-        "write_encrypted_file",
-        lambda *args, **kwargs: (_ for _ in ()).throw(
-            UtilityOperationError("no public key")
-        ),
-    )
-
-    try:
-        google_services.get_credentials(str(token_json))
-    except ExternalServiceError as e:
-        message = str(e)
-    else:
-        raise AssertionError("Expected ExternalServiceError")
-
-    assert message == (
-        f"Unable to write Google credentials to {token_json}.gpg: no public key"
-    )
     assert token_json.read_text(encoding="utf-8") == "{}"
 
 

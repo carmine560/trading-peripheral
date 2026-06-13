@@ -88,11 +88,8 @@ python trading_peripheral.py -G
 `trading_peripheral.py` stores its configuration in a GnuPG-encrypted file
 located at `%LOCALAPPDATA%\trading-peripheral\trading_peripheral.ini.gpg`. The
 Google OAuth token used by the `-r` and `-m` options is stored as
-`%LOCALAPPDATA%\trading-peripheral\token.json.gpg`. If an existing plaintext
-`token.json` is found and `token.json.gpg` does not exist, the script encrypts
-the token and removes the plaintext file after encryption succeeds. The `-d`
-option creates a snapshot of the Hyper SBI 2 application data and encrypts it
-using GnuPG.
+`%LOCALAPPDATA%\trading-peripheral\token.json.gpg`. The `-d` option creates a
+snapshot of the Hyper SBI 2 application data and encrypts it using GnuPG.
 
 By default, the script uses your default GnuPG key. To use a different key,
 specify its fingerprint with the `-G` option. The configuration file, Google
