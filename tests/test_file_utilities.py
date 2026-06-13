@@ -73,15 +73,14 @@ def test_backup_file_prunes_old_backups(tmp_path):
     ]
 
 
-def test_select_venv_finds_python_interpreter(tmp_path):
-    activate = tmp_path / ".venv" / "bin" / "activate"
-    activate.parent.mkdir(parents=True)
-    activate.write_text("", encoding="utf-8")
+def test_select_venv_interpreter_finds_python_interpreter(tmp_path):
+    interpreter = tmp_path / ".venv" / "bin" / "python"
+    interpreter.parent.mkdir(parents=True)
+    interpreter.write_text("", encoding="utf-8")
 
-    result = file_utilities.select_venv(tmp_path.as_posix())
+    result = file_utilities.select_venv_interpreter(tmp_path.as_posix())
 
-    assert Path(result[0]) == activate
-    assert result[1] == "python"
+    assert Path(result) == interpreter
 
 
 def test_read_encrypted_file_returns_gpg_stdout(tmp_path, monkeypatch):
