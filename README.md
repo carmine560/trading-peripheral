@@ -117,10 +117,10 @@ automated login.
   * `-w`: backup the `PROCESS` watchlists
   * `-d`: take a snapshot of the `PROCESS` application data
   * `-D`: restore the `PROCESS` application data from a snapshot
-  * `-BS`: save a WSL Bash script to `%USERPROFILE%\Downloads` to launch this
+  * `-BS [OUTPUT_DIRECTORY]`: generate a WSL Bash script to launch this script
+    and exit
+  * `-PS [OUTPUT_DIRECTORY]`: generate a PowerShell 7 script to launch this
     script and exit
-  * `-PS`: save a PowerShell 7 script to `%USERPROFILE%\Downloads` to launch
-    this script and exit
   * `-G`: configure general options and exit
   * `-O`: configure order status formats and exit
   * `-A`: configure actions and exit
