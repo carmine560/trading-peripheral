@@ -118,10 +118,7 @@ def _configure_sbi_sections(config, trade):
         "size_column": "6",
         "price_column": "${order_type_column}",
     }
-    config[trade.brokerage_variables_section] = {
-        "username": "",
-        "password": "",
-    }
+    config[trade.brokerage_variables_section] = {}
 
 
 def _configure_hypersbi2_sections(config, trade):
