@@ -22,7 +22,7 @@ def configure(trade, can_interpolate=True, can_override=True):
         config = configparser.ConfigParser(interpolation=None)
 
     config["General"] = {
-        "headless": "True",
+        "headless": "False",
         "user_data_directory": "",
         "profile_directory": "Default",
         "wait_timeout": "4",
@@ -151,22 +151,8 @@ def _configure_hypersbi2_sections(config, trade):
         "get_order_status": [
             ("get", "https://login.sbisec.co.jp/login/entry"),
             ("sleep", "0.8"),
-            (
-                "send_keys",
-                '//input[@name="username"]',
-                f"${{{trade.brokerage_variables_section}:username}}",
-            ),
-            (
-                "send_keys",
-                '//input[@name="password"]',
-                f"${{{trade.brokerage_variables_section}:password}}",
-            ),
-            ("click", '//button[@id="pw-btn"]'),
-            (
-                "exist",
-                '//*[contains(@class, "_karte-close")]',
-                [("click", '//*[contains(@class, "_karte-close")]')],
-            ),
+            ("click", '//button[@id="pk-btn"]'),
+            ("wait_absent", '//button[@id="pk-btn"]', "60"),
             ("click", '//a[.//text()="口座管理"]'),
             ("click", '//p/a[text()="注文照会"]'),
         ],
@@ -178,22 +164,8 @@ def _build_watchlist_actions(trade, tool_from, tool_to, name, action_id):
     return [
         ("get", "https://login.sbisec.co.jp/login/entry"),
         ("sleep", "0.8"),
-        (
-            "send_keys",
-            '//input[@name="username"]',
-            f"${{{trade.brokerage_variables_section}:username}}",
-        ),
-        (
-            "send_keys",
-            '//input[@name="password"]',
-            f"${{{trade.brokerage_variables_section}:password}}",
-        ),
-        ("click", '//button[@id="pw-btn"]'),
-        (
-            "exist",
-            '//*[contains(@class, "_karte-close")]',
-            [("click", '//*[contains(@class, "_karte-close")]')],
-        ),
+        ("click", '//button[@id="pk-btn"]'),
+        ("wait_absent", '//button[@id="pk-btn"]', "60"),
         ("click", '//a[.//text()="ポートフォリオ"]'),
         (
             "click",
