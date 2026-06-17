@@ -22,9 +22,7 @@ def configure(trade, can_interpolate=True, can_override=True):
         config = configparser.ConfigParser(interpolation=None)
 
     config["General"] = {
-        "headless": "False",
-        "user_data_directory": "",
-        "profile_directory": "Default",
+        "firefox_profile_directory": "",
         "wait_timeout": "4",
         "email_message_from": "",
         "email_message_to": "",

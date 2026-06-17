@@ -133,9 +133,7 @@ def test_run_browser_actions_retries_after_initialize_failure(monkeypatch):
     trade = _FakeTrade()
     config = ConfigParser(interpolation=None)
     config["General"] = {
-        "headless": "True",
-        "user_data_directory": "",
-        "profile_directory": "Default",
+        "firefox_profile_directory": "",
         "wait_timeout": "4",
     }
     config[trade.actions_section] = {
@@ -148,7 +146,7 @@ def test_run_browser_actions_retries_after_initialize_failure(monkeypatch):
     def fake_initialize(**kwargs):
         init_calls.append(kwargs)
         if len(init_calls) == 1:
-            raise RuntimeError("Chrome failed to start")
+            raise RuntimeError("Browser failed to start")
         return driver
 
     actions = []

@@ -11,14 +11,19 @@ from core_utilities import datetime_utilities
 def test_write_and_read_config_round_trip(tmp_path):
     config_path = tmp_path / "settings.ini"
     written = ConfigParser(interpolation=None)
-    written["General"] = {"headless": "True", "wait_timeout": "4"}
+    written["General"] = {
+        "firefox_profile_directory": "C:/Firefox/Selenium",
+        "wait_timeout": "4",
+    }
 
     config_io.write_config(written, config_path.as_posix())
 
     loaded = ConfigParser(interpolation=None)
     config_io.read_config(loaded, config_path.as_posix())
 
-    assert loaded["General"]["headless"] == "True"
+    assert (
+        loaded["General"]["firefox_profile_directory"] == "C:/Firefox/Selenium"
+    )
     assert loaded["General"]["wait_timeout"] == "4"
 
 
@@ -31,7 +36,7 @@ def test_write_and_read_encrypted_config_uses_shared_file_helpers(
     written = ConfigParser(interpolation=None)
     written["General"] = {
         "fingerprint": "fingerprint",
-        "headless": "True",
+        "firefox_profile_directory": "C:/Firefox/Selenium",
     }
 
     def write_encrypted_file(path, data, fingerprint=""):
@@ -53,16 +58,24 @@ def test_write_and_read_encrypted_config_uses_shared_file_helpers(
     config_io.read_config(loaded, config_path.as_posix(), is_encrypted=True)
 
     assert encrypted_files[encrypted_path.as_posix()][1] == "fingerprint"
-    assert loaded["General"]["headless"] == "True"
+    assert (
+        loaded["General"]["firefox_profile_directory"] == "C:/Firefox/Selenium"
+    )
 
 
 def test_check_config_changes_resets_option_to_default(tmp_path, monkeypatch):
     config_path = tmp_path / "settings.ini"
     default_config = ConfigParser(interpolation=None)
-    default_config["General"] = {"headless": "True", "wait_timeout": "4"}
+    default_config["General"] = {
+        "firefox_profile_directory": "C:/Firefox/Selenium",
+        "wait_timeout": "4",
+    }
 
     user_config = ConfigParser(interpolation=None)
-    user_config["General"] = {"headless": "False", "wait_timeout": "4"}
+    user_config["General"] = {
+        "firefox_profile_directory": "C:/Firefox/Default",
+        "wait_timeout": "4",
+    }
     config_io.write_config(user_config, config_path.as_posix())
 
     monkeypatch.setattr(
@@ -75,7 +88,7 @@ def test_check_config_changes_resets_option_to_default(tmp_path, monkeypatch):
 
     loaded = ConfigParser(interpolation=None)
     config_io.read_config(loaded, config_path.as_posix())
-    assert loaded["General"].get("headless") is None
+    assert loaded["General"].get("firefox_profile_directory") is None
     assert loaded["General"]["wait_timeout"] == "4"
 
 

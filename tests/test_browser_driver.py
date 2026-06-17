@@ -212,58 +212,39 @@ def test_wait_for_clickable_reports_timeout_context(monkeypatch):
     assert "title='Example'" in message
 
 
-def test_initialize_configures_headless_browser(monkeypatch):
-    recorded_arguments = []
-
+def test_initialize_configures_firefox_profile(monkeypatch):
     class FakeOptions:
-        def add_argument(self, argument):
-            recorded_arguments.append(argument)
+        def __init__(self):
+            self.profile = None
 
-    class FakeChromeDriver:
+    class FakeFirefoxDriver:
         def __init__(self, options):
             self.options = options
-
-        def execute_cdp_cmd(self, command, payload):
-            self.cdp_command = (command, payload)
-
-        def execute_script(self, script):
-            return "HeadlessChrome"
 
     driver_holder = {}
 
     monkeypatch.setattr(browser_driver, "Options", FakeOptions)
     monkeypatch.setattr(
         browser_driver.webdriver,
-        "Chrome",
+        "Firefox",
         lambda options: driver_holder.setdefault(
-            "driver", FakeChromeDriver(options)
+            "driver", FakeFirefoxDriver(options)
         ),
     )
 
     driver = browser_driver.initialize(
-        headless=True,
-        user_data_directory="C:/Chrome/Selenium",
-        profile_directory="Default",
+        firefox_profile_directory="C:/Firefox/Selenium"
     )
 
-    assert "--headless=new" in recorded_arguments
-    assert "--user-data-dir=C:/Chrome/Selenium" in recorded_arguments
-    assert "--profile-directory=Default" in recorded_arguments
-    assert "--restore-last-session=false" not in recorded_arguments
-    assert driver.cdp_command == (
-        "Network.setUserAgentOverride",
-        {"userAgent": "Chrome"},
-    )
+    assert driver.options.profile == "C:/Firefox/Selenium"
 
 
-def test_initialize_skips_headless_only_configuration(monkeypatch):
-    recorded_arguments = []
-
+def test_initialize_leaves_profile_unset_by_default(monkeypatch):
     class FakeOptions:
-        def add_argument(self, argument):
-            recorded_arguments.append(argument)
+        def __init__(self):
+            self.profile = None
 
-    class FakeChromeDriver:
+    class FakeFirefoxDriver:
         def __init__(self, options):
             self.options = options
 
@@ -272,12 +253,12 @@ def test_initialize_skips_headless_only_configuration(monkeypatch):
     monkeypatch.setattr(browser_driver, "Options", FakeOptions)
     monkeypatch.setattr(
         browser_driver.webdriver,
-        "Chrome",
+        "Firefox",
         lambda options: driver_holder.setdefault(
-            "driver", FakeChromeDriver(options)
+            "driver", FakeFirefoxDriver(options)
         ),
     )
 
-    browser_driver.initialize(headless=False)
+    driver = browser_driver.initialize()
 
-    assert recorded_arguments == []
+    assert driver.options.profile is None

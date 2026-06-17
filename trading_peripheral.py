@@ -53,16 +53,16 @@ class Trade(initializer.Initializer):
 def _run_browser_actions(args, trade, config):
     """Execute browser-based actions using a Selenium WebDriver."""
     ensure_section_exists(config, trade.actions_section)
-    # ChromeDriver may crash on an unsettled system after hibernation resume,
-    # leaving the driver in a broken state, so wrap both initialize() and
-    # execute_action() in the retry loop.
+    # The browser driver may crash on an unsettled system after hibernation
+    # resume, leaving the driver in a broken state, so wrap both initialize()
+    # and execute_action() in the retry loop.
     for attempt in range(1, BROWSER_ACTION_MAX_ATTEMPTS + 1):
         driver = None
         try:
             driver = browser_driver.initialize(
-                headless=config["General"].getboolean("headless"),
-                user_data_directory=config["General"]["user_data_directory"],
-                profile_directory=config["General"]["profile_directory"],
+                firefox_profile_directory=config["General"][
+                    "firefox_profile_directory"
+                ],
             )
             if args.s:
                 browser_driver.execute_action(
