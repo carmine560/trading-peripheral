@@ -36,7 +36,7 @@ def configure(trade, can_interpolate=True, can_override=True):
         _configure_hypersbi2_sections(config, trade)
 
     if can_override:
-        read_config(config, trade.config_path, is_encrypted=True)
+        read_config(config, trade.config_path)
 
     return config
 
@@ -285,7 +285,6 @@ def configure_exit(args, trade):
                     prompts=prompts,
                     items=items,
                     all_values=all_values,
-                    is_encrypted=True,
                 )
                 break
 
@@ -296,6 +295,5 @@ def configure_exit(args, trade):
             trade.config_path,
             excluded_sections=(trade.brokerage_variables_section,),
             backup_parameters=backup_parameters,
-            is_encrypted=True,
         )
         sys.exit()

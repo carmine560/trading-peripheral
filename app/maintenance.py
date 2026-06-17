@@ -236,7 +236,7 @@ def insert_maintenance_schedules(trade, config):
         fingerprint=config["General"]["fingerprint"],
     )
     if not previous_calendar_id and section["calendar_id"]:
-        write_config(config, trade.config_path, is_encrypted=True)
+        write_config(config, trade.config_path)
 
     previous_bodies = evaluate_value(section["previous_bodies"])
     try:
@@ -246,9 +246,9 @@ def insert_maintenance_schedules(trade, config):
     except Exception:
         if str(previous_bodies) != section["previous_bodies"]:
             section["previous_bodies"] = str(previous_bodies)
-            write_config(config, trade.config_path, is_encrypted=True)
+            write_config(config, trade.config_path)
         raise
     section["previous_bodies"] = str(previous_bodies)
 
     section["last_inserted"] = now.isoformat()
-    write_config(config, trade.config_path, is_encrypted=True)
+    write_config(config, trade.config_path)

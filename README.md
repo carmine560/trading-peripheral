@@ -27,8 +27,8 @@ Windows](https://www.python.org/downloads/windows/) with Hyper SBI 2 on Windows
 
   * [Firefox](https://www.firefox.com/en-US/) to authenticate to the website
     and load the web page
-  * [GnuPG](https://gnupg.org/index.html) to encrypt and decrypt the
-    configuration file and a snapshot of the Hyper SBI 2 application data
+  * [GnuPG](https://gnupg.org/index.html) to encrypt and decrypt the Google
+    OAuth token and a snapshot of the Hyper SBI 2 application data
   * [`charset-normalizer`](https://github.com/jawah/charset_normalizer),
     [`lxml`](https://github.com/lxml/lxml),
     [`pandas`](https://github.com/pandas-dev/pandas), and
@@ -69,10 +69,10 @@ python -m pytest -q
 
 The `-r` option uses the Gmail API, and the `-m` option uses the Google
 Calendar API. Follow [*Gmail API
-Quickstart*](https://developers.google.com/gmail/api/quickstart/python) and the
+Quickstart*](https://developers.google.com/gmail/api/quickstart/python) and
 [*Google Calendar API
-Quickstart*](https://developers.google.com/calendar/api/quickstart/python) web
-pages to obtain your `client_secret_*.json` file.
+Quickstart*](https://developers.google.com/calendar/api/quickstart/python) to
+obtain your `client_secret_*.json` file.
 
 Create a non-default Firefox profile and specify its “Root Directory” as the
 value of the `firefox_profile_directory` option, as shown below:
@@ -81,23 +81,18 @@ value of the `firefox_profile_directory` option, as shown below:
 python trading_peripheral.py -G
 ```
 
-### Encrypt Configuration File, OAuth Token, and Snapshot of Hyper SBI 2 Application Data
+`trading_peripheral.py` stores its configuration in a file located at
+`%LOCALAPPDATA%\trading-peripheral\trading_peripheral.ini`.
 
-`trading_peripheral.py` stores its configuration in a GnuPG-encrypted file
-located at `%LOCALAPPDATA%\trading-peripheral\trading_peripheral.ini.gpg`. The
-Google OAuth token used by the `-r` and `-m` options is stored as
+### Encrypt OAuth Token and Snapshot of Hyper SBI 2 Application Data
+
+The Google OAuth token used by the `-r` and `-m` options is stored in
 `%LOCALAPPDATA%\trading-peripheral\token.json.gpg`. The `-d` option creates a
 snapshot of the Hyper SBI 2 application data and encrypts it using GnuPG.
 
 By default, the script uses your default GnuPG key. To use a different key,
-specify its fingerprint with the `-G` option. The configuration file, Google
-OAuth token, and encrypted snapshot use the same fingerprint setting.
-
-#### SBI Securities Login Credentials
-
-Enter your SBI Securities username and password in the `SBI Securities
-Variables` section of the configuration file. These values are used for
-automated login.
+specify its fingerprint with the `-G` option. The Google OAuth token and
+encrypted snapshot use the same fingerprint setting.
 
 ### Options
 

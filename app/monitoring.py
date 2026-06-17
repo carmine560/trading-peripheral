@@ -63,4 +63,4 @@ def check_web_page_send_email_message(trade, config, section):
         return
 
     config[section]["latest_news_text"] = latest_news_text
-    write_config(config, trade.config_path, is_encrypted=True)
+    write_config(config, trade.config_path)
