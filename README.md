@@ -9,7 +9,7 @@ The `trading_peripheral.py` Python script can:
     send a notification via Gmail if they are updated
   * Check the [*SBI Securities Maintenance
     Schedules*](https://search.sbisec.co.jp/v2/popwin/info/home/pop6040_maintenance.html)
-    web page and insert [Hyper SBI
+    and insert [Hyper SBI
     2](https://go.sbisec.co.jp/lp/lp_hyper_sbi2_211112.html) maintenance
     schedules into Google Calendar
   * Replace watchlists on the SBI Securities website with Hyper SBI 2
@@ -68,7 +68,7 @@ python -m pytest -q
 ## Usage
 
 The `-r` option uses the Gmail API, and the `-m` option uses the Google
-Calendar API. Follow [*Gmail API
+Calendar API. Follow the [*Gmail API
 Quickstart*](https://developers.google.com/gmail/api/quickstart/python) and
 [*Google Calendar API
 Quickstart*](https://developers.google.com/calendar/api/quickstart/python) to
