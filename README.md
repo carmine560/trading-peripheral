@@ -69,10 +69,10 @@ python -m pytest -q
 
 The `-r` option uses the Gmail API, and the `-m` option uses the Google
 Calendar API. Follow the [*Gmail API
-Quickstart*](https://developers.google.com/gmail/api/quickstart/python) and
-[*Google Calendar API
-Quickstart*](https://developers.google.com/calendar/api/quickstart/python) to
-obtain your `client_secret_*.json` file.
+Quickstart*](https://developers.google.com/workspace/gmail/api/quickstart/python)
+and [*Google Calendar API
+Quickstart*](https://developers.google.com/workspace/calendar/api/quickstart/python)
+to obtain your `client_secret_*.json` file.
 
 Create a non-default Firefox profile and specify its “Root Directory” as the
 value of the `firefox_profile_directory` option, as shown below:
