@@ -1,6 +1,7 @@
 # `trading-peripheral`
 
-<!-- Python script that retrieves Hyper SBI 2 maintenance schedules and extracts order status from the SBI Securities web page -->
+<!-- Python script that retrieves Hyper SBI 2 maintenance schedules and
+extracts order status from the SBI Securities web page -->
 
 The `trading_peripheral.py` Python script can:
 
