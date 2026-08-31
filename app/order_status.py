@@ -13,6 +13,24 @@ from core_utilities.errors import MarketDataError
 SBI_SECURITIES_ORDER_DETAIL_ROW_OFFSET = 1
 SBI_SECURITIES_EXECUTION_ROW_OFFSET = 2
 SBI_SECURITIES_ROWS_PER_EXECUTION_BLOCK = 3
+SBI_SECURITIES_EXECUTION_DATETIME_REGEX = re.compile(
+    r"^(\d{2})/(\d{2})/(\d{2})\s+(\d{2}:\d{2}:\d{2})$"
+)
+
+
+def _strip_sbi_securities_units(value):
+    """Remove SBI quantity and price display units."""
+    return re.sub(r"[株円]", "", str(value))
+
+
+def _parse_sbi_securities_execution_datetime(value):
+    """Return the ISO date and time from an SBI execution datetime."""
+    match = SBI_SECURITIES_EXECUTION_DATETIME_REGEX.fullmatch(str(value))
+    if match is None:
+        raise ValueError(f"Invalid SBI execution datetime: {value}")
+
+    year, month, day, execution_time = match.groups()
+    return f"20{year}-{month}-{day}", execution_time
 
 
 def extract_sbi_securities_order_status(trade, config, driver):
@@ -70,13 +88,17 @@ def extract_sbi_securities_order_status(trade, config, driver):
             if df.iloc[index, execution_column] == section["execution"]:
                 if len(size_price) == 0:
                     size_price.loc[0] = [
-                        df.iloc[index - 1, size_column],
-                        df.iloc[index - 1, price_column],
+                        _strip_sbi_securities_units(
+                            df.iloc[index - 1, size_column]
+                        ),
+                        _strip_sbi_securities_units(
+                            df.iloc[index - 1, price_column]
+                        ),
                     ]
 
                 size_price.loc[len(size_price)] = [
-                    df.iloc[index, size_column],
-                    df.iloc[index, price_column],
+                    _strip_sbi_securities_units(df.iloc[index, size_column]),
+                    _strip_sbi_securities_units(df.iloc[index, price_column]),
                 ]
                 if (
                     index + 1 == len(df)
@@ -120,9 +142,12 @@ def extract_sbi_securities_order_status(trade, config, driver):
                     section["symbol_replacement"],
                     str(df.iloc[index, symbol_column]),
                 )
-                size = df.iloc[
-                    index + SBI_SECURITIES_ORDER_DETAIL_ROW_OFFSET, size_column
-                ]
+                size = _strip_sbi_securities_units(
+                    df.iloc[
+                        index + SBI_SECURITIES_ORDER_DETAIL_ROW_OFFSET,
+                        size_column,
+                    ]
+                )
                 transaction_type = str(
                     df.iloc[
                         index + SBI_SECURITIES_ORDER_DETAIL_ROW_OFFSET,
@@ -130,21 +155,13 @@ def extract_sbi_securities_order_status(trade, config, driver):
                     ]
                 )
                 if transaction_type.startswith(section["margin_entry_prefix"]):
-                    datetime_value = str(
-                        df.iloc[
-                            index + SBI_SECURITIES_EXECUTION_ROW_OFFSET,
-                            datetime_column,
-                        ]
-                    )
-                    entry_date = re.sub(
-                        section["datetime_regex"],
-                        section["date_replacement"],
-                        datetime_value,
-                    )
-                    entry_time = re.sub(
-                        section["datetime_regex"],
-                        section["time_replacement"],
-                        datetime_value,
+                    entry_date, entry_time = (
+                        _parse_sbi_securities_execution_datetime(
+                            df.iloc[
+                                index + SBI_SECURITIES_EXECUTION_ROW_OFFSET,
+                                datetime_column,
+                            ]
+                        )
                     )
 
                     position = (
@@ -156,8 +173,12 @@ def extract_sbi_securities_order_status(trade, config, driver):
                     )
                     order_trigger = (
                         "stop"
-                        if df.iloc[index, order_trigger_column]
-                        == section["stop_order"]
+                        if re.sub(
+                            r"\s+",
+                            "",
+                            str(df.iloc[index, order_trigger_column]),
+                        )
+                        == re.sub(r"\s+", "", section["stop_order"])
                         else ""
                     )
                     order_type = (
@@ -175,25 +196,25 @@ def extract_sbi_securities_order_status(trade, config, driver):
                         if part
                     )
 
-                    entry_price = df.iloc[
-                        index + SBI_SECURITIES_EXECUTION_ROW_OFFSET,
-                        price_column,
-                    ]
-                else:
-                    exit_time = re.sub(
-                        section["datetime_regex"],
-                        section["time_replacement"],
-                        str(
-                            df.iloc[
-                                index + SBI_SECURITIES_EXECUTION_ROW_OFFSET,
-                                datetime_column,
-                            ]
-                        ),
+                    entry_price = _strip_sbi_securities_units(
+                        df.iloc[
+                            index + SBI_SECURITIES_EXECUTION_ROW_OFFSET,
+                            price_column,
+                        ]
                     )
-                    exit_price = df.iloc[
-                        index + SBI_SECURITIES_EXECUTION_ROW_OFFSET,
-                        price_column,
-                    ]
+                else:
+                    _, exit_time = _parse_sbi_securities_execution_datetime(
+                        df.iloc[
+                            index + SBI_SECURITIES_EXECUTION_ROW_OFFSET,
+                            datetime_column,
+                        ]
+                    )
+                    exit_price = _strip_sbi_securities_units(
+                        df.iloc[
+                            index + SBI_SECURITIES_EXECUTION_ROW_OFFSET,
+                            price_column,
+                        ]
+                    )
 
                     results.append(
                         {

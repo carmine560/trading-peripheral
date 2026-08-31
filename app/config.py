@@ -84,7 +84,7 @@ def _configure_sbi_sections(config, trade):
             "exit_time",
             "exit_price",
         ),
-        "table_identifier": "注文種別",
+        "table_identifier": "注文",
         "exclusion": {
             "equals": ("${order_status_column}", ("取消完了",)),
             "startswith": (
@@ -99,7 +99,7 @@ def _configure_sbi_sections(config, trade):
         "order_trigger_column": "2",
         "stop_order": "逆指値注文",
         "symbol_column": "3",
-        "symbol_regex": r"^.* (\d{4}) 東証$$",
+        "symbol_regex": r"^.*\s(\d{4})\s*(?:/\s*)?東証$$",
         "symbol_replacement": r"\1",
         "margin_transaction_type_column": "${symbol_column}",
         "margin_entry_prefix": "信新",
@@ -110,9 +110,6 @@ def _configure_sbi_sections(config, trade):
         "execution_column": "${symbol_column}",
         "execution": "約定",
         "datetime_column": "5",
-        "datetime_regex": r"^(\d{2}/\d{2}) (\d{2}:\d{2}:\d{2})$$",
-        "date_replacement": r"\1",
-        "time_replacement": r"\2",
         "size_column": "6",
         "price_column": "${order_type_column}",
     }
