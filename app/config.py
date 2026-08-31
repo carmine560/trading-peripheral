@@ -84,7 +84,7 @@ def _configure_sbi_sections(config, trade):
             "exit_time",
             "exit_price",
         ),
-        "table_identifier": "注文",
+        "table_attributes": {"class": "seeds-complex-table"},
         "exclusion": {
             "equals": ("${order_status_column}", ("取消完了",)),
             "startswith": (

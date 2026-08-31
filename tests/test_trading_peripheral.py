@@ -446,7 +446,7 @@ def test_order_status_raises_market_data_error_on_parse_failure(monkeypatch):
     trade = SimpleNamespace(order_status_section="SBI Securities Order Status")
     config = ConfigParser(interpolation=None)
     config[trade.order_status_section] = {
-        "table_identifier": "注文種別",
+        "table_attributes": "{'class': 'seeds-complex-table'}",
     }
     driver = _FakeDriver()
 

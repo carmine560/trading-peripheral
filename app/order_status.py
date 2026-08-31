@@ -40,7 +40,7 @@ def extract_sbi_securities_order_status(trade, config, driver):
     try:
         dfs = pd.read_html(
             StringIO(driver.page_source),
-            match=section["table_identifier"],
+            attrs=evaluate_value(section["table_attributes"]),
             flavor="lxml",
         )
     except ValueError as e:
