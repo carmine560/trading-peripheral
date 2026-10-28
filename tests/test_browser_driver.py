@@ -215,7 +215,10 @@ def test_wait_for_clickable_reports_timeout_context(monkeypatch):
 def test_initialize_configures_firefox_profile(monkeypatch):
     class FakeOptions:
         def __init__(self):
-            self.profile = None
+            self.arguments = []
+
+        def add_argument(self, argument):
+            self.arguments.append(argument)
 
     class FakeFirefoxDriver:
         def __init__(self, options):
@@ -236,13 +239,21 @@ def test_initialize_configures_firefox_profile(monkeypatch):
         firefox_profile_directory="C:/Firefox/Selenium"
     )
 
-    assert driver.options.profile == "C:/Firefox/Selenium"
+    assert driver.options.arguments == [
+        "-profile",
+        "C:/Firefox/Selenium",
+        "--marionette-port",
+        "2828",
+    ]
 
 
 def test_initialize_leaves_profile_unset_by_default(monkeypatch):
     class FakeOptions:
         def __init__(self):
-            self.profile = None
+            self.arguments = []
+
+        def add_argument(self, argument):
+            self.arguments.append(argument)
 
     class FakeFirefoxDriver:
         def __init__(self, options):
@@ -261,4 +272,4 @@ def test_initialize_leaves_profile_unset_by_default(monkeypatch):
 
     driver = browser_driver.initialize()
 
-    assert driver.options.profile is None
+    assert driver.options.arguments == []
